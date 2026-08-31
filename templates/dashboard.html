@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu{% else %}👑 Admin{% endif %} - Dashboard</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">Logout ✕</a>
+</div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard" class="active">📊 Dashboard</a>
+{% if is_admin or session.role in ['admin','manager'] %}
+<a href="/produits">👟 Produits</a>
+<a href="/stock">📦 Stock</a>
+{% endif %}
+<a href="/ventes">💰 Ventes</a>
+<a href="/rapports">📈 Rapports</a>
+<a href="/recus">🧾 Recus</a>
+<a href="/clients">👥 Clients</a>
+{% if is_admin %}
+<a href="/tenants">🏢 Tenants</a>
+<a href="/utilisateurs">👮 Utilisateurs</a>
+<a href="/logs">📝 Logs</a>
+{% endif %}
+<a href="/settings">⚙️ Parametres</a>
+</nav>
+
+<div class="container">
+{% if is_admin %}
+<div class="card" style="background:linear-gradient(135deg,#1a1a3e,#0d0d24);border:1px solid var(--gold)">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+<span style="font-size:16px">🔄</span>
+<span style="color:var(--gold2);font-size:13px;font-weight:bold">Acces rapide</span>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<a href="/switch/admin" style="background:{% if not session.view_tenant %}var(--gold2){% else %}var(--gold){% endif %};color:#000;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">👑 Tous</a>
+<a href="/switch/bukavu" style="background:{% if session.view_tenant == 1 %}var(--green){% else %}var(--blue){% endif %};color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">📍 Bukavu</a>
+<a href="/switch/goma" style="background:{% if session.view_tenant == 2 %}var(--green){% else %}var(--blue){% endif %};color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">📍 Goma</a>
+</div>
+</div>
+{% endif %}
+
+<div class="stats">
+<div class="stat"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></div>
+<div class="stat"><div class="label">Ventes</div><div class="value green">{{nb_ventes}}</div></div>
+<div class="stat"><div class="label">Clients</div><div class="value gold">{{nb_clients}}</div></div>
+</div>
+<div class="stats">
+<div class="stat"><div class="label">CA Total</div><div class="value green">${{ "%.2f"|format(ca_total) }}</div></div>
+<div class="stat"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></div>
+<div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:13px">{{session.role}}</div></div>
+</div>
+
+<div class="card">
+<div class="card-header">📋 Ventes recentes</div>
+<div class="table-scroll">
+<table>
+<tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Vendeur</th></tr>
+{% for r in recent %}
+<tr>
+<td style="font-size:11px">{{r[0]}}</td>
+<td>{{r[1]}}</td>
+<td>{{r[2]}}</td>
+<td style="color:var(--green)">${{ "%.2f"|format(r[3]) }}</td>
+<td style="color:var(--txt2)">{{r[4]}}</td>
+</tr>
+{% endfor %}
+{% if not recent %}
+<tr><td colspan="5" class="empty">Aucune vente</td></tr>
+{% endif %}
+</table>
+</div>
+</div>
+
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>
+{% endblock %}

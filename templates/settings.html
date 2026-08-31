@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>⚙️ Parametres</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/settings" class="active">⚙️ Parametres</a>
+</nav>
+<div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+
+<div class="card">
+<div class="card-header">👤 Mon compte</div>
+<div style="padding:12px">
+<p style="font-size:13px;margin-bottom:4px">Login : <strong>{{login}}</strong></p>
+<p style="font-size:13px">Role : <strong class="tag-entree">{{role}}</strong></p>
+</div></div>
+
+<div class="card">
+<div class="card-header">💱 Taux de change</div>
+<div style="padding:12px">
+<form method="POST" style="display:flex;gap:8px;align-items:end">
+<div style="flex:1">
+<label style="font-size:12px;color:var(--txt2)">1 USD = ? CDF</label>
+<input type="number" name="taux_cdf" value="{{taux}}" step="10" style="width:100%;padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--gold2);font-size:16px;font-weight:bold">
+</div>
+<button type="submit" class="btn btn-gold btn-sm">Mettre a jour</button>
+</form>
+</div></div>
+
+<div class="card">
+<div class="card-header">ℹ️ Info</div>
+<div style="padding:12px;font-size:13px;color:var(--txt2)">
+<p>Version : 2.0 Web</p>
+<p>Base : commerce.db</p>
+<p>Acces mobile : partagez l'adresse de ce serveur</p>
+</div></div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>{% endblock %}

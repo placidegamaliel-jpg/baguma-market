@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>📈 Rapports</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a>
+<a href="/rapports" class="active">📈 Rapports</a>
+<a href="/recus">🧾 Recus</a>
+<a href="/clients">👥 Clients</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+<form method="GET" style="display:flex;gap:6px;margin-bottom:10px">
+<input type="date" name="date" value="{{date}}" style="flex:1;padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
+<button class="btn btn-gold btn-sm" type="submit">Voir</button>
+</form>
+<div class="stats">
+<div class="stat"><div class="label">Ventes</div><div class="value gold">{{nb_ventes}}</div></div>
+<div class="stat"><div class="label">Paires</div><div class="value green">{{total_qte}}</div></div>
+<div class="stat"><div class="label">CA</div><div class="value green">${{ "%.2f"|format(total_usd) }}</div></div>
+</div>
+<div class="card" style="padding:0">
+<div class="table-scroll">
+<table>
+<tr><th>Heure</th><th>Produit</th><th>Qte</th><th>Total</th><th>Client</th><th>Vendeur</th></tr>
+{% for r in rows %}
+<tr>
+<td style="font-size:11px">{{r[0]}}</td>
+<td>{{r[1]}}</td>
+<td>{{r[2]}}</td>
+<td class="tag-entree">${{ "%.2f"|format(r[3]) }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{r[4] or '-'}}</td>
+<td>{{r[5]}}</td>
+</tr>
+{% endfor %}
+{% if not rows %}<tr><td colspan="6" class="empty">Aucune donnee pour cette date</td></tr>{% endif %}
+</table>
+</div></div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>📝 Logs</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs" class="active">📝 Logs</a><a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+<div class="card" style="padding:0"><div class="table-scroll">
+<table>
+<tr><th>Date</th><th>User</th><th>Tenant</th><th>Action</th><th>Details</th></tr>
+{% for l in logs_list %}
+<tr>
+<td style="font-size:11px">{{l.date_heure[:16]}}</td>
+<td>{{l.login}}</td>
+<td style="color:var(--txt2)">{{l.nom or 'Global'}}</td>
+<td class="tag-entree">{{l.action}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{l.details or '-'}}</td>
+</tr>
+{% endfor %}
+{% if not logs_list %}<tr><td colspan="5" class="empty">Aucun log</td></tr>{% endif %}
+</table></div></div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>{% endblock %}

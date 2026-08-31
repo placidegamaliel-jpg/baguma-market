@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🏢 Tenants</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/tenants" class="active">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a><a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+<div class="card" style="padding:0"><div class="table-scroll">
+<table>
+<tr><th>ID</th><th>Nom</th><th>Localisation</th><th>Type</th><th>Statut</th></tr>
+{% for t in tenants_list %}
+<tr>
+<td>{{t.id}}</td>
+<td class="tag-entree">{{t.nom}}</td>
+<td>{{t.localisation}}</td>
+<td style="color:var(--txt2)">{{t.type_commerce}}</td>
+<td class="{{'tag-entree' if t.actif else 'tag-sortie'}}">{{'Actif' if t.actif else 'Inactif'}}</td>
+</tr>
+{% endfor %}
+</table></div></div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>{% endblock %}
