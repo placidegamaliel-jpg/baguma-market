@@ -21,6 +21,7 @@
 <a href="/logs">📝 Logs</a>
 {% endif %}
 <a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications{% if unread_notifs > 0 %} <span style="background:var(--red);color:#fff;padding:1px 6px;border-radius:8px;font-size:10px">{{unread_notifs}}</span>{% endif %}</a>
 </nav>
 
 <div class="container">

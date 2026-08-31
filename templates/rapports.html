@@ -6,40 +6,57 @@
 <a href="/logout" style="color:var(--red);font-size:12px">✕</a>
 </div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a>
-<a href="/rapports" class="active">📈 Rapports</a>
-<a href="/recus">🧾 Recus</a>
-<a href="/clients">👥 Clients</a>
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports" class="active">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
-<a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
-<form method="GET" style="display:flex;gap:6px;margin-bottom:10px">
-<input type="date" name="date" value="{{date}}" style="flex:1;padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
-<button class="btn btn-gold btn-sm" type="submit">Voir</button>
-</form>
-<div class="stats">
-<div class="stat"><div class="label">Ventes</div><div class="value gold">{{nb_ventes}}</div></div>
-<div class="stat"><div class="label">Paires</div><div class="value green">{{total_qte}}</div></div>
-<div class="stat"><div class="label">CA</div><div class="value green">${{ "%.2f"|format(total_usd) }}</div></div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+
+{% for d in sorted_days %}
+{% set day = days[d] %}
+
+<div style="border-left:4px solid var(--green);padding:8px 12px;margin:16px 0 8px;background:rgba(0,184,148,.08);border-radius:0 8px 8px 0">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+<span style="color:var(--green);font-size:15px;font-weight:bold">📅 {{d}}</span>
+<div style="display:flex;gap:12px">
+<span style="color:var(--txt2);font-size:12px">Ventes: <b style="color:var(--gold2)">{{day.nb_ventes}}</b></span>
+<span style="color:var(--txt2);font-size:12px">Qte: <b style="color:var(--gold2)">{{day.total_qte}}</b></span>
+<span style="color:var(--txt2);font-size:12px">Total: <b style="color:var(--green)">${{ "%.2f"|format(day.total_usd) }}</b></span>
 </div>
-<div class="card" style="padding:0">
-<div class="table-scroll">
+</div>
+</div>
+
+<div class="card" style="padding:0;margin-top:4px"><div class="table-scroll">
 <table>
 <tr><th>Heure</th><th>Produit</th><th>Qte</th><th>Total</th><th>Client</th><th>Vendeur</th></tr>
-{% for r in rows %}
+{% for r in day.rows %}
 <tr>
-<td style="font-size:11px">{{r[0]}}</td>
-<td>{{r[1]}}</td>
-<td>{{r[2]}}</td>
-<td class="tag-entree">${{ "%.2f"|format(r[3]) }}</td>
-<td style="font-size:11px;color:var(--txt2)">{{r[4] or '-'}}</td>
-<td>{{r[5]}}</td>
+<td style="font-size:11px">{{r.heure}}</td>
+<td>{{r.nom}}</td>
+<td>{{r.quantite}}</td>
+<td class="tag-entree">${{ "%.2f"|format(r.total_usd) }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
+<td>{{r.vendeur_login}}</td>
 </tr>
 {% endfor %}
-{% if not rows %}<tr><td colspan="6" class="empty">Aucune donnee pour cette date</td></tr>{% endif %}
-</table>
-</div></div>
+</table></div></div>
+{% endfor %}
+
+{% if not sorted_days %}<div class="card"><p class="empty">Aucune vente</p></div>{% endif %}
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
+<style>
+@media print {
+.nav, .topbar, .btn, .footer { display:none !important }
+body { background:#fff !important }
+table { font-size:12px !important; color:#000 !important }
+th { background:#ddd !important; color:#000 !important }
+td { color:#000 !important; border-bottom:1px solid #ccc !important }
+div[style*="border-left:4px solid"] { background:#e8f5e9 !important; border-left-color:#2e7d32 !important }
+span { color:#000 !important }
+}
+</style>
 {% endblock %}

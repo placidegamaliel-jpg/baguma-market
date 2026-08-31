@@ -14,9 +14,11 @@
 <a href="/recus">🧾 Recus</a>
 <a href="/clients">👥 Clients</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/notifications">🔔 Notifications</a>
 <a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
+{% if is_admin %}<a href="/produits/new" class="btn btn-green btn-sm" style="margin-bottom:10px;display:inline-block">+ Nouveau produit</a>{% endif %}
 <form method="GET" style="display:flex;gap:6px;margin-bottom:10px">
 <input type="text" name="search" value="{{search}}" placeholder="Rechercher..." style="flex:1;padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
 <select name="categorie" style="padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
@@ -28,7 +30,7 @@
 <div class="card" style="padding:0">
 <div class="table-scroll">
 <table>
-<tr><th>Produit</th><th>Categorie</th><th>Prix USD</th><th>Prix CDF</th><th>Stock</th>{% if is_admin %}<th>Tenant</th>{% endif %}</tr>
+<tr><th>Produit</th><th>Categorie</th><th>Prix USD</th><th>Prix CDF</th><th>Stock</th>{% if is_admin %}<th>Tenant</th><th>Actions</th>{% endif %}</tr>
 {% for p in prods %}
 <tr>
 <td>{{p.nom}}</td>
@@ -36,10 +38,11 @@
 <td>${{ "%.2f"|format(p.prix_usd) }}</td>
 <td>{{ "{:,.0f}".format(p.prix_cdf) }}</td>
 <td class="{{'tag-sortie' if p.stock<=5 else ''}}">{{p.stock}}</td>
-{% if is_admin %}<td style="font-size:11px">{{tenants_map.get(p.tenant_id, '')}}</td>{% endif %}
+{% if is_admin %}<td style="font-size:11px">{{tenants_map.get(p.tenant_id, '')}}</td>
+<td><a href="/produits/edit/{{p.id}}" style="color:var(--gold2);font-size:12px">✏️</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not prods %}<tr><td colspan="6" class="empty">Aucun produit</td></tr>{% endif %}
+{% if not prods %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}
 </table>
 </div></div>
 <div class="footer">Baguma Market &copy; 2026</div>

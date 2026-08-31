@@ -1,18 +1,32 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>👥 Clients</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>👥 Clients</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+</div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients" class="active">👥 Clients</a>
-{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}<a href="/settings">⚙️ Parametres</a>
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients" class="active">👥 Clients</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 <div class="card" style="padding:0"><div class="table-scroll">
 <table>
-<tr><th>Nom</th><th>Telephone</th><th>Visites</th><th>Total USD</th><th>Total CDF</th></tr>
-{% for c in clients_list %}
-<tr><td>{{c.nom}}</td><td style="color:var(--txt2)">{{c.telephone}}</td><td class="tag-entree">{{c.nb_visites}}</td><td>${{ "%.2f"|format(c.total_usd) }}</td><td>{{ "{:,.0f}".format(c.total_cdf) }}</td></tr>
+<tr><th>Nom</th><th>Telephone</th><th>Visites</th><th>Total USD</th></tr>
+{% for cl in clients_list %}
+<tr>
+<td>{{cl.nom or '-'}}</td>
+<td style="color:var(--txt2)">{{cl.telephone or '-'}}</td>
+<td class="tag-entree">{{cl.nb_visites}}</td>
+<td>${{ "%.2f"|format(cl.total_usd) }}</td>
+</tr>
 {% endfor %}
-{% if not clients_list %}<tr><td colspan="5" class="empty">Aucun client</td></tr>{% endif %}
+{% if not clients_list %}<tr><td colspan="4" class="empty">Aucun client</td></tr>{% endif %}
 </table></div></div>
 <div class="footer">Baguma Market &copy; 2026</div>
-</div>{% endblock %}
+</div>
+{% endblock %}

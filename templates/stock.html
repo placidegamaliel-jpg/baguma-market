@@ -15,6 +15,7 @@
 <a href="/clients">👥 Clients</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
 <a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications</a>
 </nav>
 
 <div class="container">
@@ -27,16 +28,16 @@
 </div>
 
 {% for t in tenant_data %}
-<div class="card" style="overflow:hidden;padding:0">
-<div class="card-header">{{"🇪" if "Bukavu" in t.nom else "🌍"}} {{t.nom}}</div>
+<div class="card" style="overflow:hidden;padding:0;border-left:4px solid {% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %}">
+<div class="card-header" style="background:{% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %}">{% if 'Bukavu' in t.nom %}📍{% else %}🌍{% endif %} {{t.nom}}</div>
 <div style="padding:12px">
 <div class="stats">
 <div class="stat"><div class="label">Entrees</div><div class="value green">{{t.entrees}}</div></div>
 <div class="stat"><div class="label">Sorties</div><div class="value red">{{t.sorties}}</div></div>
-<div class="stat"><div class="label">Stock Net</div><div class="value gold">{{t.net}}</div></div>
+<div class="stat"><div class="label">Stock Net</div><div class="value {% if 'Goma' in t.nom %}green{% else %}gold{% endif %}">{{t.net}}</div></div>
 </div>
 
-<h3 style="font-size:13px;color:var(--green);margin:10px 0 6px">📊 Stock par produit</h3>
+<h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %};margin:10px 0 6px">📊 Stock par produit</h3>
 <div class="table-scroll">
 <table>
 <tr><th>Produit</th><th>Code</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Restant</th><th>Resp.</th></tr>
@@ -102,7 +103,7 @@
 <h2 style="color:var(--red);font-size:16px;margin-bottom:12px">📦 Sortie de stock</h2>
 <form method="POST" action="/stock/sortie">
 <div class="form-group"><label>Commerce</label>
-<select name="tenant_id">
+<select name="tenant_id" id="sortie_tenant">
 {% for t in tenant_data %}<option value="{{t.id}}">{{t.nom}}</option>{% endfor %}
 </select></div>
 <div class="form-group"><label>Produit</label>
@@ -122,6 +123,8 @@
 <script>
 document.getElementById('entree_tenant').value='{{session.tenant_id}}';
 document.getElementById('entree_tenant').style.display='none';
+document.getElementById('sortie_tenant').value='{{session.tenant_id}}';
+document.getElementById('sortie_tenant').style.display='none';
 </script>
 {% endif %}
 <div class="footer">Baguma Market &copy; 2026</div>

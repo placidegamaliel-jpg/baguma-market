@@ -7,6 +7,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "baguma-market-2026-secret")
 DB = os.environ.get("DATABASE_URL", os.path.join(os.path.dirname(os.path.abspath(__file__)), "commerce.db"))
 
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("login.html"), 404
+
 def get_db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -23,6 +27,11 @@ def login_required(f):
 
 def is_admin():
     return session.get("tenant_id", 0) == 0 and session.get("role") == "admin"
+
+def get_effective_tid():
+    if is_admin():
+        return session.get("view_tenant")
+    return session.get("tenant_id")
 
 def get_taux(conn, tenant_id):
     c = conn.cursor()
@@ -45,10 +54,25 @@ TENANT_NAMES = {
 def inject_tenant():
     slug = session.get("tenant_slug")
     tid = session.get("tenant_id", 0)
+    unread = 0
+    if "user_id" in session:
+        try:
+            conn = get_db()
+            c = conn.cursor()
+            etid = get_effective_tid()
+            if etid is not None:
+                c.execute("SELECT COUNT(*) FROM notifications WHERE is_read=0 AND tenant_id=?", (etid,))
+            else:
+                c.execute("SELECT COUNT(*) FROM notifications WHERE is_read=0")
+            unread = c.fetchone()[0]
+            conn.close()
+        except Exception:
+            unread = 0
     return {
         "tenant_slug": slug,
         "tenant_name": TENANT_NAMES.get(tid, "Admin Global"),
         "is_global_admin": tid == 0 and session.get("role") == "admin",
+        "unread_notifs": unread,
     }
 
 @app.route("/", methods=["GET", "POST"])
@@ -123,16 +147,11 @@ def switch_tenant(tenant_slug):
 def dashboard():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
-    vt = session.get("view_tenant")
+    etid = get_effective_tid()
 
-    if adm and vt is not None:
+    if etid is not None:
         cond = " WHERE tenant_id=?"
-        params = (vt,)
-    elif not adm:
-        cond = " WHERE tenant_id=?"
-        params = (tid,)
+        params = (etid,)
     else:
         cond = ""
         params = ()
@@ -149,12 +168,9 @@ def dashboard():
     c.execute(f"SELECT COUNT(*) FROM produits{cond}{stock_cond}", params)
     low_stock = c.fetchone()[0]
 
-    if adm and vt is not None:
+    if etid is not None:
         vcond = " WHERE v.tenant_id=?"
-        vparams = (vt,)
-    elif not adm:
-        vcond = " WHERE v.tenant_id=?"
-        vparams = (tid,)
+        vparams = (etid,)
     else:
         vcond = ""
         vparams = ()
@@ -167,23 +183,22 @@ def dashboard():
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
-                           recent=recent, is_admin=adm)
+                           recent=recent, is_admin=is_admin())
 
 @app.route("/produits")
 @login_required
 def produits():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
+    etid = get_effective_tid()
     search = request.args.get("search", "")
     cat = request.args.get("categorie", "")
 
     cond_parts = []
     params = []
-    if not adm:
+    if etid is not None:
         cond_parts.append("p.tenant_id=?")
-        params.append(tid)
+        params.append(etid)
     if search:
         cond_parts.append("p.nom LIKE ?")
         params.append(f"%{search}%")
@@ -200,27 +215,26 @@ def produits():
     cats = [r[0] for r in c.fetchall()]
 
     tenants_map = {}
-    if adm:
+    if is_admin():
         c.execute("SELECT id, nom FROM tenants")
         for r in c.fetchall():
             tenants_map[r["id"]] = r["nom"]
 
     conn.close()
     return render_template("produits.html", prods=prods, cats=cats, search=search,
-                           cat_selected=cat, is_admin=adm, tenants_map=tenants_map)
+                           cat_selected=cat, is_admin=is_admin(), tenants_map=tenants_map)
 
 @app.route("/stock")
 @login_required
 def stock():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
+    etid = get_effective_tid()
 
-    if adm:
-        c.execute("SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+    if etid is not None:
+        c.execute("SELECT id, nom FROM tenants WHERE id=? AND actif=1", (etid,))
     else:
-        c.execute("SELECT id, nom FROM tenants WHERE id=? AND actif=1", (tid,))
+        c.execute("SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
     tenants = c.fetchall()
 
     tenant_data = []
@@ -248,32 +262,40 @@ def stock():
         tenant_data.append({"id": tid2, "nom": t["nom"], "entrees": entrees, "sorties": sorties,
                             "net": entrees - sorties, "stock_produits": stock_produits, "historique": historique})
 
-    c.execute("SELECT id, nom FROM produits WHERE tenant_id=? ORDER BY nom" if not adm else
-              "SELECT id, nom FROM produits ORDER BY nom", (tid,) if not adm else ())
-    if adm:
+    if etid is not None:
+        c.execute("SELECT id, nom FROM produits WHERE tenant_id=? ORDER BY nom", (etid,))
+    else:
         c.execute("SELECT id, nom FROM produits ORDER BY nom")
     prods = c.fetchall()
-    c.execute("SELECT id, login FROM utilisateurs" if adm else
-              "SELECT id, login FROM utilisateurs WHERE tenant_id IN (0,?)", (tid,) if not adm else ())
-    if adm:
+    if etid is not None:
+        c.execute("SELECT id, login FROM utilisateurs WHERE tenant_id IN (0,?)", (etid,))
+    else:
         c.execute("SELECT id, login FROM utilisateurs")
     users = c.fetchall()
 
     conn.close()
-    return render_template("stock.html", tenant_data=tenant_data, is_admin=adm, prods=prods, users=users)
+    return render_template("stock.html", tenant_data=tenant_data, is_admin=is_admin(), prods=prods, users=users)
 
 @app.route("/stock/entree", methods=["POST"])
 @login_required
 def stock_entree():
     conn = get_db()
     c = conn.cursor()
-    data = request.form
-    tid = int(data["tenant_id"]) if is_admin() else session["tenant_id"]
-    pid = int(data["produit_id"])
-    qte = int(data["quantite"])
+    try:
+        data = request.form
+        tid = int(data["tenant_id"]) if is_admin() else session["tenant_id"]
+        pid = int(data["produit_id"])
+        qte = int(data["quantite"])
+    except (ValueError, KeyError):
+        conn.close()
+        flash("Donnees invalides", "error")
+        return redirect(url_for("stock"))
     marque = data.get("marque", "")
     code = data.get("code", "")
-    resp_id = int(data.get("responsable_id", session["user_id"]))
+    try:
+        resp_id = int(data.get("responsable_id", session["user_id"]))
+    except ValueError:
+        resp_id = session["user_id"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     c.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?)",
@@ -291,12 +313,20 @@ def stock_entree():
 def stock_sortie():
     conn = get_db()
     c = conn.cursor()
-    data = request.form
-    tid = int(data["tenant_id"]) if is_admin() else session["tenant_id"]
-    pid = int(data["produit_id"])
-    qte = int(data["quantite"])
+    try:
+        data = request.form
+        tid = int(data["tenant_id"]) if is_admin() else session["tenant_id"]
+        pid = int(data["produit_id"])
+        qte = int(data["quantite"])
+    except (ValueError, KeyError):
+        conn.close()
+        flash("Donnees invalides", "error")
+        return redirect(url_for("stock"))
     code = data.get("code", "")
-    resp_id = int(data.get("responsable_id", session["user_id"]))
+    try:
+        resp_id = int(data.get("responsable_id", session["user_id"]))
+    except ValueError:
+        resp_id = session["user_id"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     c.execute("SELECT stock FROM produits WHERE id=?", (pid,))
@@ -321,18 +351,28 @@ def stock_sortie():
 def ventes():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
+    etid = get_effective_tid()
 
     if request.method == "POST":
         data = request.form
-        pid = int(data["produit_id"])
-        qte = int(data["quantite"])
-        tid_sale = int(data.get("tenant_id", tid)) if adm else tid
+        try:
+            pid = int(data.get("produit_id", 0))
+            qte = int(data.get("quantite", 0))
+        except (ValueError, TypeError):
+            pid = 0
+            qte = 0
+        if not pid or not qte:
+            conn.close()
+            flash("Veuillez selectionner un produit et une quantite", "error")
+            return redirect(url_for("ventes"))
+        tid_sale = int(data.get("tenant_id") or etid or session["tenant_id"]) if is_admin() else session["tenant_id"]
         client_nom = data.get("client_nom", "")
         client_tel = data.get("client_tel", "")
         is_honneur = 1 if data.get("honneur") else 0
-        prix_custom = float(data.get("prix_custom", 0))
+        try:
+            prix_custom = float(data.get("prix_custom") or 0)
+        except ValueError:
+            prix_custom = 0
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         c.execute("SELECT stock FROM produits WHERE id=?", (pid,))
@@ -361,10 +401,12 @@ def ventes():
 
         c.execute("INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                   (now_date, now_heure, pid, qte, prix_usd, prix_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, is_honneur, tid_sale, session["login"]))
+        c.execute("INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id) VALUES (?,?,?,?,?,?,?,?,?)",
+                  (recu_num, client_nom, client_tel, total_usd, total_cdf, is_honneur, now_date, now_heure, tid_sale))
         c.execute("UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
 
         if client_tel:
-            c.execute("SELECT id FROM clients WHERE telephone=? AND tenant_id=?", (client_tel, tid_sale))
+            c.execute("SELECT id FROM clients WHERE telephone=?", (client_tel,))
             cl = c.fetchone()
             if cl:
                 c.execute("UPDATE clients SET nb_visites=nb_visites+1, total_usd=total_usd+?, total_cdf=total_cdf+?, nom=? WHERE id=?",
@@ -380,82 +422,89 @@ def ventes():
         flash(f"Vente enregistree : {qte}x produit = ${total_usd:.2f}", "success")
         return redirect(url_for("ventes"))
 
-    if adm:
-        c.execute("SELECT id, nom, prix_usd, stock FROM produits WHERE tenant_id=? ORDER BY nom", (tid,))
+    if etid is not None:
+        c.execute("SELECT id, nom, prix_usd, stock FROM produits WHERE tenant_id=? AND stock>0 ORDER BY nom", (etid,))
     else:
-        c.execute("SELECT id, nom, prix_usd, stock FROM produits WHERE tenant_id=? AND stock>0 ORDER BY nom", (tid,))
+        c.execute("SELECT id, nom, prix_usd, stock FROM produits WHERE stock>0 ORDER BY nom")
     prods = c.fetchall()
 
-    cond = "" if adm else " WHERE v.tenant_id=?"
-    params = () if adm else (tid,)
-    c.execute(f"""SELECT v.id, v.date||' '||v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
-        FROM ventes v JOIN produits p ON v.produit_id=p.id{cond} ORDER BY v.date DESC, v.heure DESC LIMIT 50""", params)
+    if etid is not None:
+        c.execute("""SELECT v.id, v.date||' '||v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
+            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=? ORDER BY v.date DESC, v.heure DESC LIMIT 50""", (etid,))
+    else:
+        c.execute("""SELECT v.id, v.date||' '||v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
+            FROM ventes v JOIN produits p ON v.produit_id=p.id ORDER BY v.date DESC, v.heure DESC LIMIT 50""")
     ventes_list = c.fetchall()
 
-    taux = get_taux(conn, tid)
+    taux = get_taux(conn, etid or session["tenant_id"])
     conn.close()
-    return render_template("ventes.html", prods=prods, ventes_list=ventes_list, is_admin=adm, taux=taux)
+    return render_template("ventes.html", prods=prods, ventes_list=ventes_list, is_admin=is_admin(), taux=taux)
 
 @app.route("/rapports")
 @login_required
 def rapports():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
-    date_str = request.args.get("date", datetime.now().strftime("%Y-%m-%d"))
+    etid = get_effective_tid()
 
-    cond = " AND v.date=?"
-    params_base = [date_str]
-    if not adm:
-        cond += " AND v.tenant_id=?"
-        params_base.append(tid)
+    if etid is not None:
+        c.execute("""SELECT v.date, v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login
+            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=?
+            ORDER BY v.date DESC, v.heure DESC LIMIT 500""", (etid,))
+    else:
+        c.execute("""SELECT v.date, v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login
+            FROM ventes v JOIN produits p ON v.produit_id=p.id
+            ORDER BY v.date DESC, v.heure DESC LIMIT 500""")
+    all_rows = c.fetchall()
 
-    c.execute(f"""SELECT v.date||' '||v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num
-        FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE 1=1{cond} ORDER BY v.date, v.heure""", params_base)
-    rows = c.fetchall()
+    days = {}
+    for r in all_rows:
+        d = r["date"]
+        if d not in days:
+            days[d] = {"rows": [], "total_usd": 0, "total_qte": 0, "nb_ventes": 0}
+        days[d]["rows"].append(r)
+        days[d]["total_usd"] += r["total_usd"]
+        days[d]["total_qte"] += r["quantite"]
+        days[d]["nb_ventes"] += 1
 
-    total_usd = sum(r["total_usd"] for r in rows)
-    total_qte = sum(r["quantite"] for r in rows)
-    nb_ventes = len(rows)
+    sorted_days = sorted(days.keys(), reverse=True)
 
     conn.close()
-    return render_template("rapports.html", rows=rows, date=date_str, total_usd=total_usd,
-                           total_qte=total_qte, nb_ventes=nb_ventes, is_admin=adm)
+    return render_template("rapports.html", days=days, sorted_days=sorted_days, is_admin=is_admin())
 
 @app.route("/clients")
 @login_required
 def clients():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
+    etid = get_effective_tid()
 
-    if adm:
-        c.execute("SELECT * FROM clients ORDER BY nb_visites DESC LIMIT 100")
+    if etid is not None:
+        c.execute("SELECT * FROM clients WHERE tenant_id=? ORDER BY nb_visites DESC LIMIT 100", (etid,))
     else:
-        c.execute("SELECT * FROM clients WHERE tenant_id=? ORDER BY nb_visites DESC LIMIT 100", (tid,))
+        c.execute("SELECT * FROM clients ORDER BY nb_visites DESC LIMIT 100")
     clients_list = c.fetchall()
 
     conn.close()
-    return render_template("clients.html", clients_list=clients_list, is_admin=adm)
+    return render_template("clients.html", clients_list=clients_list, is_admin=is_admin())
 
 @app.route("/recus")
 @login_required
 def recus():
     conn = get_db()
     c = conn.cursor()
-    tid = session["tenant_id"]
-    adm = is_admin()
+    etid = get_effective_tid()
 
-    cond = "" if adm else " WHERE r.tenant_id=?"
-    params = () if adm else (tid,)
-    c.execute(f"""SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
-        FROM recus r{cond} ORDER BY r.date DESC LIMIT 100""", params)
+    if etid is not None:
+        c.execute("""SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
+            FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
+    else:
+        c.execute("""SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
+            FROM recus r ORDER BY r.date DESC LIMIT 100""")
     recus_list = c.fetchall()
 
     conn.close()
-    return render_template("recus.html", recus_list=recus_list, is_admin=adm)
+    return render_template("recus.html", recus_list=recus_list, is_admin=is_admin())
 
 @app.route("/logs")
 @login_required
@@ -498,28 +547,156 @@ def utilisateurs():
     conn.close()
     return render_template("utilisateurs.html", users=users, tenants=tenants)
 
+def create_notif(conn, tenant_id, message, responsable="Admin"):
+    c = conn.cursor()
+    c.execute("INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (?,?,0,?,?)",
+              (tenant_id, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), responsable))
+    conn.commit()
+
+@app.route("/produits/edit/<int:pid>", methods=["GET", "POST"])
+@login_required
+def produit_edit(pid):
+    if not is_admin():
+        return redirect(url_for("produits"))
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT p.*, c.nom as cat_nom FROM produits p JOIN categories c ON p.categorie_id=c.id WHERE p.id=?", (pid,))
+    prod = c.fetchone()
+    if not prod:
+        conn.close()
+        return redirect(url_for("produits"))
+    if request.method == "POST":
+        data = request.form
+        try:
+            prix_usd = float(data["prix_usd"])
+        except (ValueError, KeyError):
+            conn.close()
+            flash("Prix invalide", "error")
+            return redirect(url_for("produits"))
+        taux = get_taux(conn, prod["tenant_id"])
+        prix_cdf = prix_usd * taux
+        ancien_prix = prod["prix_usd"]
+        c.execute("UPDATE produits SET prix_usd=?, prix_cdf=? WHERE id=?", (prix_usd, prix_cdf, pid))
+        if prix_usd != ancien_prix:
+            create_notif(conn, prod["tenant_id"],
+                f"Prix modifie : {prod['nom']} passe de ${ancien_prix:.2f} a ${prix_usd:.2f}",
+                session["login"])
+        conn.commit()
+        conn.close()
+        flash(f"Prix mis a jour : {prod['nom']} = ${prix_usd:.2f}", "success")
+        return redirect(url_for("produits"))
+    conn.close()
+    return render_template("produit_edit.html", prod=prod, is_admin=is_admin())
+
+@app.route("/produits/new", methods=["GET", "POST"])
+@login_required
+def produit_new():
+    if not is_admin():
+        return redirect(url_for("produits"))
+    conn = get_db()
+    c = conn.cursor()
+    etid = get_effective_tid()
+    c.execute("SELECT id, nom FROM categories ORDER BY nom")
+    cats = c.fetchall()
+    c.execute("SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+    tenants = c.fetchall()
+    if request.method == "POST":
+        data = request.form
+        nom = data.get("nom", "").strip()
+        try:
+            cat_id = int(data["categorie_id"])
+            prix_usd = float(data["prix_usd"])
+            stock_val = int(data.get("stock", 0))
+        except (ValueError, KeyError):
+            conn.close()
+            flash("Donnees invalides", "error")
+            return redirect(url_for("produit_new"))
+        if not nom:
+            conn.close()
+            flash("Le nom est obligatoire", "error")
+            return redirect(url_for("produit_new"))
+        tid_prod = int(data["tenant_id"]) if is_admin() else (etid or session["tenant_id"])
+        taux = get_taux(conn, tid_prod)
+        prix_cdf = prix_usd * taux
+        c.execute("INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (?,?,?,?,?,?)",
+                  (nom, cat_id, prix_usd, prix_cdf, stock_val, tid_prod))
+        conn.commit()
+        create_notif(conn, tid_prod, f"Nouveau produit : {nom} - ${prix_usd:.2f}", session["login"])
+        conn.close()
+        flash(f"Produit ajoute : {nom}", "success")
+        return redirect(url_for("produits"))
+    conn.close()
+    return render_template("produit_new.html", cats=cats, tenants=tenants, is_admin=is_admin(), etid=etid)
+
+@app.route("/notifications")
+@login_required
+def notifications():
+    conn = get_db()
+    c = conn.cursor()
+    etid = get_effective_tid()
+    if etid is not None:
+        c.execute("SELECT * FROM notifications WHERE tenant_id=? ORDER BY created_at DESC LIMIT 50", (etid,))
+    else:
+        c.execute("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50")
+    notifs = c.fetchall()
+    c.execute("SELECT COUNT(*) FROM notifications WHERE is_read=0" + (" AND tenant_id=?" if etid is not None else ""),
+              (etid,) if etid is not None else ())
+    unread = c.fetchone()[0]
+    conn.close()
+    return render_template("notifications.html", notifs=notifs, unread=unread, is_admin=is_admin())
+
+@app.route("/notifications/read/<int:nid>", methods=["POST"])
+@login_required
+def notif_read(nid):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE notifications SET is_read=1 WHERE id=?", (nid,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("notifications"))
+
+@app.route("/notifications/read-all", methods=["POST"])
+@login_required
+def notif_read_all():
+    conn = get_db()
+    c = conn.cursor()
+    etid = get_effective_tid()
+    if etid is not None:
+        c.execute("UPDATE notifications SET is_read=1 WHERE tenant_id=?", (etid,))
+    else:
+        c.execute("UPDATE notifications SET is_read=1")
+    conn.commit()
+    conn.close()
+    return redirect(url_for("notifications"))
+
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
     conn = get_db()
     c = conn.cursor()
     tid = session["tenant_id"]
+    etid = get_effective_tid() or tid
 
     if request.method == "POST":
         data = request.form
         if "taux_cdf" in data:
-            taux = float(data["taux_cdf"])
+            try:
+                taux = float(data["taux_cdf"])
+            except ValueError:
+                flash("Valeur invalide", "error")
+                conn.close()
+                return redirect(url_for("settings"))
             c.execute("INSERT OR REPLACE INTO settings (tenant_id, key, value) VALUES (?, 'taux_cdf', ?)",
-                      (tid, str(taux)))
+                      (etid, str(taux)))
             conn.commit()
             flash(f"Taux mis a jour : 1 USD = {taux} CDF", "success")
         conn.close()
         return redirect(url_for("settings"))
 
-    taux = get_taux(conn, tid)
+    taux = get_taux(conn, etid)
     conn.close()
     return render_template("settings.html", taux=taux, is_admin=is_admin(),
                            login=session["login"], role=session["role"])
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)

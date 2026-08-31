@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>➕ Nouveau Produit</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/produits" class="active">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+<div class="card">
+<h2 style="color:var(--green);font-size:16px;margin-bottom:12px">➕ Ajouter un produit</h2>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+<form method="POST">
+<div class="form-group"><label>Nom du produit</label><input type="text" name="nom" required placeholder="Ex: Nike Air Force 1"></div>
+<div class="form-group"><label>Categorie</label>
+<select name="categorie_id" required>{% for c in cats %}<option value="{{c.id}}">{{c.nom}}</option>{% endfor %}</select>
+</div>
+<div class="form-group"><label>Prix USD</label><input type="number" name="prix_usd" step="0.01" min="0" required placeholder="0.00"></div>
+<div class="form-group"><label>Stock initial</label><input type="number" name="stock" min="0" value="0"></div>
+{% if is_admin %}
+<div class="form-group"><label>Tenant</label>
+<select name="tenant_id" required>{% for t in tenants %}<option value="{{t.id}}" {{'selected' if etid==t.id}}>{{t.nom}}</option>{% endfor %}</select>
+</div>
+{% endif %}
+<div style="display:flex;gap:8px;margin-top:12px">
+<button type="submit" class="btn btn-green" style="flex:1">Ajouter</button>
+<a href="/produits" class="btn btn-gold" style="flex:1;text-align:center">Annuler</a>
+</div>
+</form>
+</div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>
+{% endblock %}

@@ -1,11 +1,22 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🧾 Recus</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>🧾 Recus</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+</div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a><a href="/rapports">📈 Rapports</a><a href="/recus" class="active">🧾 Recus</a><a href="/clients">👥 Clients</a>
-{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}<a href="/settings">⚙️ Parametres</a>
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus" class="active">🧾 Recus</a><a href="/clients">👥 Clients</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+
+{% if not is_admin %}<button class="btn btn-blue btn-sm" onclick="window.print()" style="margin-bottom:10px">🖨️ Imprimer</button>{% endif %}
+
 <div class="card" style="padding:0"><div class="table-scroll">
 <table>
 <tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th></tr>
@@ -21,4 +32,14 @@
 {% if not recus_list %}<tr><td colspan="5" class="empty">Aucun recu</td></tr>{% endif %}
 </table></div></div>
 <div class="footer">Baguma Market &copy; 2026</div>
-</div>{% endblock %}
+</div>
+<style>
+@media print {
+.nav, .topbar, .btn, .footer { display:none !important }
+body { background:#fff !important }
+table { font-size:12px !important; color:#000 !important }
+th { background:#ddd !important; color:#000 !important }
+td { color:#000 !important; border-bottom:1px solid #ccc !important }
+}
+</style>
+{% endblock %}
