@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory
 import os
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY", "baguma-market-2026-secret")
 DB_URL = os.environ.get("DATABASE_URL", "")
 LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "commerce.db")
@@ -70,6 +70,14 @@ def get_taux(conn, tenant_id):
 
 TENANT_SLUGS = {"goma": 2, "bukavu": 1, "admin": 0}
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("login.html"), 404
+
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory("static", "manifest.json")
 
 @app.context_processor
 def inject_tenant():
