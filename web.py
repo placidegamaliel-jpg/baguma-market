@@ -61,10 +61,22 @@ init_pg_schema()
 
 @app.route("/init")
 def init_route():
-    if IS_PG:
-        init_pg_schema()
-        return "Schema init done. Check Render logs."
-    return "No PostgreSQL configured"
+    if not IS_PG:
+        return "No PostgreSQL configured"
+    try:
+        import psycopg2
+        url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
+        conn = psycopg2.connect(url)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM tenants")
+        count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM utilisateurs")
+        ucount = cur.fetchone()[0]
+        conn.close()
+        return f"Tenants: {count}, Users: {ucount}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def get_db():
     if IS_PG:
