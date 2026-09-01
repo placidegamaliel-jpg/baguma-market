@@ -15,27 +15,25 @@ def init_pg_schema():
     if not IS_PG:
         return
     try:
-        import psycopg2
+        import psycopg
         url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
-        conn = psycopg2.connect(url)
-        conn.autocommit = True
-        cur = conn.cursor()
+        conn = psycopg.connect(url, autocommit=True)
         for stmt in SCHEMA_SQL.split(";"):
             stmt = stmt.strip()
             if stmt:
-                cur.execute(stmt)
-        cur.execute("SELECT COUNT(*) FROM tenants")
+                conn.execute(stmt)
+        cur = conn.execute("SELECT COUNT(*) FROM tenants")
         if cur.fetchone()[0] == 0:
-            cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
-            cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Goma', 1, 'Goma', 'Chaussures')")
-            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('0891624401', '251988', 0, 'admin')")
-            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
-            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
-            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
-            cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
-            cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
+            conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Goma', 1, 'Goma', 'Chaussures')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('0891624401', '251988', 0, 'admin')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
             for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
-                cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat,''))
+                conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat,''))
         conn.close()
         print("PostgreSQL schema initialized OK")
     except Exception as e:
@@ -64,14 +62,12 @@ def init_route():
     if not IS_PG:
         return "No PostgreSQL configured"
     try:
-        import psycopg2
+        import psycopg
         url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
-        conn = psycopg2.connect(url)
-        conn.autocommit = True
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM tenants")
+        conn = psycopg.connect(url, autocommit=True)
+        cur = conn.execute("SELECT COUNT(*) FROM tenants")
         count = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM utilisateurs")
+        cur = conn.execute("SELECT COUNT(*) FROM utilisateurs")
         ucount = cur.fetchone()[0]
         conn.close()
         return f"Tenants: {count}, Users: {ucount}"
@@ -80,14 +76,12 @@ def init_route():
 
 def get_db():
     if IS_PG:
-        import psycopg2
-        import psycopg2.extras
+        import psycopg
+        import psycopg.rows
         url = DB_URL
         if "?" not in url:
             url += "?sslmode=require"
-        conn = psycopg2.connect(url)
-        conn.autocommit = False
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        conn = psycopg.connect(url, row_factory=psycopg.rows.dict_row)
         return conn
     else:
         import sqlite3
@@ -96,27 +90,22 @@ def get_db():
         return conn
 
 def db_execute(conn, sql, params=()):
-    cur = conn.cursor()
-    cur.execute(sql, params)
-    return cur
+    return conn.execute(sql, params)
 
 def db_fetchone(conn, sql, params=()):
-    cur = db_execute(conn, sql, params)
+    cur = conn.execute(sql, params)
     return cur.fetchone()
 
 def db_fetchall(conn, sql, params=()):
-    cur = db_execute(conn, sql, params)
+    cur = conn.execute(sql, params)
     return cur.fetchall()
 
 def db_insert(conn, sql, params=()):
-    cur = db_execute(conn, sql, params)
-    if IS_PG:
-        try:
-            return cur.fetchone()["id"]
-        except Exception:
-            return None
-    else:
-        return cur.lastrowid
+    cur = conn.execute(sql, params)
+    try:
+        return cur.fetchone()[0]
+    except Exception:
+        return None
 
 def login_required(f):
     from functools import wraps
