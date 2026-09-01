@@ -16,8 +16,9 @@ def init_pg_schema():
         return
     try:
         import psycopg
-        url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
-        conn = psycopg.connect(url, autocommit=True)
+        url = DB_URL
+        conn = psycopg.connect(url)
+        conn.autocommit = True
         for stmt in SCHEMA_SQL.split(";"):
             stmt = stmt.strip()
             if stmt:
@@ -63,8 +64,7 @@ def init_route():
         return "No PostgreSQL configured"
     try:
         import psycopg
-        url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
-        conn = psycopg.connect(url, autocommit=True)
+        conn = psycopg.connect(DB_URL, autocommit=True)
         cur = conn.execute("SELECT COUNT(*) FROM tenants")
         count = cur.fetchone()[0]
         cur = conn.execute("SELECT COUNT(*) FROM utilisateurs")
@@ -78,10 +78,7 @@ def get_db():
     if IS_PG:
         import psycopg
         import psycopg.rows
-        url = DB_URL
-        if "?" not in url:
-            url += "?sslmode=require"
-        conn = psycopg.connect(url, row_factory=psycopg.rows.dict_row)
+        conn = psycopg.connect(DB_URL, row_factory=psycopg.rows.dict_row)
         return conn
     else:
         import sqlite3
