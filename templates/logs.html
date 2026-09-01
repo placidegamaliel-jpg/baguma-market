@@ -2,7 +2,10 @@
 {% block body %}
 <div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>📝 Logs</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a><a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs" class="active">📝 Logs</a><a href="/settings">⚙️ Parametres</a>
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
+<a href="/tenants" class="active">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs" class="active">📝 Logs</a>
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
 <div class="card" style="padding:0"><div class="table-scroll">
@@ -12,7 +15,7 @@
 <tr>
 <td style="font-size:11px">{{l.date_heure[:16]}}</td>
 <td>{{l.login}}</td>
-<td style="color:var(--txt2)">{{l.nom or 'Global'}}</td>
+<td style="color:var(--txt2)">{{l.tenant_nom or 'Global'}}</td>
 <td class="tag-entree">{{l.action}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{l.details or '-'}}</td>
 </tr>

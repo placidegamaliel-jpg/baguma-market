@@ -7,15 +7,10 @@
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a>
-<a href="/produits" class="active">👟 Produits</a>
-<a href="/stock">📦 Stock</a>
-<a href="/ventes">💰 Ventes</a>
-<a href="/rapports">📈 Rapports</a>
-<a href="/recus">🧾 Recus</a>
-<a href="/clients">👥 Clients</a>
+<a href="/produits" class="active">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
-<a href="/notifications">🔔 Notifications</a>
-<a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
 {% if is_admin %}<a href="/produits/new" class="btn btn-green btn-sm" style="margin-bottom:10px;display:inline-block">+ Nouveau produit</a>{% endif %}
@@ -34,7 +29,7 @@
 {% for p in prods %}
 <tr>
 <td>{{p.nom}}</td>
-<td style="color:var(--txt2)">{{p[2]}}</td>
+<td style="color:var(--txt2)">{{p.cat_nom}}</td>
 <td>${{ "%.2f"|format(p.prix_usd) }}</td>
 <td>{{ "{:,.0f}".format(p.prix_cdf) }}</td>
 <td class="{{'tag-sortie' if p.stock<=5 else ''}}">{{p.stock}}</td>
@@ -42,7 +37,7 @@
 <td><a href="/produits/edit/{{p.id}}" style="color:var(--gold2);font-size:12px">✏️</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not prods %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}
+{% if not prods %}<tr><td colspan="{% if is_admin %}7{% else %}5{% endif %}" class="empty">Aucun produit</td></tr>{% endif %}
 </table>
 </div></div>
 <div class="footer">Baguma Market &copy; 2026</div>

@@ -1,8 +1,8 @@
-const CACHE_NAME = 'baguma-v1';
-const URLS = ['/', '/login', '/dashboard'];
+const CACHE_NAME = 'baguma-v2';
+const URLS = ['/', '/dashboard', '/produits', '/ventes', '/rapports', '/recus', '/clients', '/dettes', '/stock', '/notifications'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(URLS)));
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(URLS)).catch(()=>{}));
   self.skipWaiting();
 });
 

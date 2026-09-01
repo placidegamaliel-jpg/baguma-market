@@ -1,0 +1,30 @@
+==================================================
+           BAGUMA COMMERCE
+        RAPPORT JOURNALIER
+==================================================
+  Date: 2026-08-31
+  Taux: 1 USD = 2,400 CDF
+--------------------------------------------------
+  RESUME:
+  Total ventes USD: $$387.00
+  Total ventes CDF: 1,070,000 CDF
+  Clients servis: 1
+  Recus generes: 3
+  Stock restant: 6074
+  Clients d'honneur: 5
+--------------------------------------------------
+  DETAIL PAR PRODUIT:
+--------------------------------------------------
+  Demi Botte  x8  $17.00/u  =  $136.00  380,800
+  DN  x5  $17.00/u  =  $85.00  238,000
+  Campus  x4  $10.00/u  =  $40.00  112,000
+  Air Force 1  x3  $11.00/u  =  $33.00  92,400
+  Botte a plateforme  x1  $17.00/u  =  $17.00  47,600
+  Botte de travail  x1  $17.00/u  =  $17.00  40,800
+  Botte de randonnee  x1  $17.00/u  =  $17.00  47,600
+  Botte de cowboy / Santiag  x1  $17.00/u  =  $17.00  40,800
+  Asixe  x1  $16.00/u  =  $16.00  44,800
+  Claquette / slide  x1  $9.00/u  =  $9.00  25,200
+==================================================
+        Genere par Baguma Commerce
+==================================================

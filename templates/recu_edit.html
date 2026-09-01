@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>✏️ Modifier Recu</h1>
+<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus" class="active">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+<div class="card">
+<h2 style="color:var(--gold2);font-size:16px;margin-bottom:12px">✏️ Modifier Recu #{{recu.numero}}</h2>
+<p style="color:var(--txt2);font-size:12px;margin-bottom:16px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
+<form method="POST">
+<div class="form-group">
+<label>Client Nom</label>
+<input type="text" name="client_nom" value="{{recu.client_nom or ''}}" placeholder="Nom du client">
+</div>
+<div class="form-group">
+<label>Client Telephone</label>
+<input type="text" name="client_tel" value="{{recu.client_tel or ''}}" placeholder="+243...">
+</div>
+<div class="form-group">
+<label>Total USD</label>
+<input type="number" name="total_usd" value="{{recu.total_usd}}" step="0.01" min="0" required>
+</div>
+<div class="form-group" style="display:flex;align-items:center;gap:8px">
+<input type="checkbox" name="est_honneur" id="recu_honneur" {{'checked' if recu.est_honneur}}>
+<label for="recu_honneur" style="color:var(--hon);font-size:13px">⭐ Client d'honneur</label>
+</div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button type="submit" class="btn btn-green" style="flex:1">Enregistrer</button>
+<a href="/recus" class="btn btn-gold" style="flex:1;text-align:center">Annuler</a>
+</div>
+</form>
+</div>
+
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>
+<style>
+@media print {
+.nav, .topbar, .btn, .footer, form { display:none !important }
+body { background:#fff !important }
+.card { border:1px solid #ccc !important; background:#fff !important }
+h2, p, span { color:#000 !important }
+}
+</style>
+{% endblock %}

@@ -7,7 +7,7 @@
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
-<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus" class="active">🧾 Recus</a><a href="/clients">👥 Clients</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus" class="active">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
 <a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
@@ -19,17 +19,18 @@
 
 <div class="card" style="padding:0"><div class="table-scroll">
 <table>
-<tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th></tr>
+<tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th>{% if is_admin %}<th>Actions</th>{% endif %}</tr>
 {% for r in recus_list %}
 <tr>
-<td style="font-size:11px;color:var(--gold2)">{{r[1]}}</td>
-<td style="font-size:11px">{{r[2]}}</td>
-<td class="tag-entree">${{ "%.2f"|format(r[3]) }}</td>
-<td style="font-size:11px;color:var(--txt2)">{{r[5] or '-'}}</td>
-<td>{{'⭐' if r[6] else '-'}}</td>
+<td style="font-size:11px;color:var(--gold2)">{{r.numero}}</td>
+<td style="font-size:11px">{{r.date}}</td>
+<td class="tag-entree">${{ "%.2f"|format(r.total_usd) }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
+<td>{{'⭐' if r.est_honneur else '-'}}</td>
+{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" style="color:var(--gold2);font-size:12px">✏️</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not recus_list %}<tr><td colspan="5" class="empty">Aucun recu</td></tr>{% endif %}
+{% if not recus_list %}<tr><td colspan="{% if is_admin %}6{% else %}5{% endif %}" class="empty">Aucun recu</td></tr>{% endif %}
 </table></div></div>
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>

@@ -9,10 +9,7 @@
 <a href="/dashboard">📊 Dashboard</a>
 <a href="/produits">👟 Produits</a>
 <a href="/stock" class="active">📦 Stock</a>
-<a href="/ventes">💰 Ventes</a>
-<a href="/rapports">📈 Rapports</a>
-<a href="/recus">🧾 Recus</a>
-<a href="/clients">👥 Clients</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
 <a href="/settings">⚙️ Parametres</a>
 <a href="/notifications">🔔 Notifications</a>
@@ -49,7 +46,7 @@
 <td class="tag-entree">{{s.total_entrees}}</td>
 <td class="tag-sortie">{{s.total_sorties}}</td>
 <td class="{{'tag-sortie' if s.stock_disponible <= 0 else 'tag-entree'}}">{{s.stock_disponible}}</td>
-<td style="font-size:11px;color:var(--txt2)">{{s[6] or '-'}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{s.responsable or '-'}}</td>
 </tr>
 {% endfor %}
 {% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}

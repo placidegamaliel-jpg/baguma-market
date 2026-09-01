@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS tenant_prices (id SERIAL PRIMARY KEY, tenant_id INTEG
 CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, tenant_id INTEGER DEFAULT 0, user_id INTEGER DEFAULT NULL, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, responsable TEXT DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS notif_settings (tenant_id INTEGER PRIMARY KEY, alertes_actives INTEGER DEFAULT 1, notif_ventes INTEGER DEFAULT 1, notif_stock INTEGER DEFAULT 1, notif_prix INTEGER DEFAULT 1, notif_connexion INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key))
+CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
+CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 """
 
 init_pg_schema()
@@ -64,7 +65,7 @@ def init_route():
     try:
         import psycopg
         conn = psycopg.connect(DB_URL, connect_timeout=10)
-        r = conn.execute("SELECT 1").fetchone()
+        conn.execute("SELECT 1")
         conn.close()
         return "PostgreSQL OK"
     except Exception as e:
@@ -203,7 +204,6 @@ def login_tenant(tenant_slug):
     if slug in TENANT_SLUGS:
         session["url_tenant"] = TENANT_SLUGS[slug]
         session["tenant_slug"] = slug
-        return redirect(url_for("login"))
     return redirect(url_for("login"))
 
 @app.route("/logout")
@@ -250,6 +250,11 @@ def dashboard():
     row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}{stock_cond}", params)
     low_stock = row["cnt"]
 
+    dettes_cond = " AND est_paye=0" if cond else " WHERE est_paye=0"
+    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt, COALESCE(SUM(montant_usd),0) as total FROM dettes{cond}{dettes_cond}", params)
+    nb_dettes = row["cnt"]
+    total_dettes = row["total"]
+
     if etid is not None:
         vcond = " WHERE v.tenant_id=%s" if IS_PG else " WHERE v.tenant_id=?"
         vparams = (etid,)
@@ -264,7 +269,7 @@ def dashboard():
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
-                           recent=recent, is_admin=is_admin())
+                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes)
 
 @app.route("/produits")
 @login_required
@@ -323,19 +328,27 @@ def stock():
                           "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='sortie'", (tid2,))
         sorties = row["s"]
 
-        stock_produits = db_fetchall(conn, """SELECT sr.produit_nom, sr.code_produit, sr.marque, sr.total_entrees, sr.total_sorties, sr.stock_disponible,
+        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, s.code_produit, s.marque,
+                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
+                       SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
+                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
                        (SELECT u.login FROM stock s2 JOIN utilisateurs u ON s2.user_id=u.id
-                        WHERE s2.product_id=sr.product_id AND s2.tenant_id=sr.tenant_id AND s2.mouvement='sortie'
+                        WHERE s2.product_id=s.product_id AND s2.tenant_id=s.tenant_id AND s2.mouvement='sortie'
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
-                FROM stock_restant sr
-                WHERE sr.tenant_id=%s
-                ORDER BY sr.produit_nom""" if IS_PG else """SELECT sr.produit_nom, sr.code_produit, sr.marque, sr.total_entrees, sr.total_sorties, sr.stock_disponible,
+                FROM stock s JOIN produits p ON s.product_id=p.id
+                WHERE s.tenant_id=%s
+                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, p.nom
+                ORDER BY p.nom""" if IS_PG else """SELECT p.nom as produit_nom, s.code_produit, s.marque,
+                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
+                       SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
+                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
                        (SELECT u.login FROM stock s2 JOIN utilisateurs u ON s2.user_id=u.id
-                        WHERE s2.product_id=sr.product_id AND s2.tenant_id=sr.tenant_id AND s2.mouvement='sortie'
+                        WHERE s2.product_id=s.product_id AND s2.tenant_id=s.tenant_id AND s2.mouvement='sortie'
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
-                FROM stock_restant sr
-                WHERE sr.tenant_id=?
-                ORDER BY sr.produit_nom""", (tid2,))
+                FROM stock s JOIN produits p ON s.product_id=p.id
+                WHERE s.tenant_id=?
+                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, p.nom
+                ORDER BY p.nom""", (tid2,))
 
         historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.quantite, u.login
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
@@ -490,6 +503,11 @@ def ventes():
                   (recu_num, client_nom, client_tel, total_usd, total_cdf, is_honneur, now_date, now_heure, tid_sale))
         db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
 
+        if is_honneur:
+            db_insert(conn, "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (%s,%s,%s,%s,%s,0,%s,%s,%s,%s)" if IS_PG else
+                      "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (?,?,?,?,?,0,?,?,?,?)",
+                      (tid_sale, client_nom, client_tel, total_usd, total_cdf, now_date, now_heure, recu_num, session["login"]))
+
         if client_tel:
             cl = db_fetchone(conn, "SELECT id FROM clients WHERE telephone=%s" if IS_PG else "SELECT id FROM clients WHERE telephone=?", (client_tel,))
             if cl:
@@ -580,15 +598,52 @@ def recus():
     etid = get_effective_tid()
 
     if etid is not None:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
-            FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
+        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
+            FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
             FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
     else:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur
+        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
             FROM recus r ORDER BY r.date DESC LIMIT 100""")
 
     conn.close()
     return render_template("recus.html", recus_list=recus_list, is_admin=is_admin())
+
+@app.route("/recus/edit/<int:rid>", methods=["GET", "POST"])
+@login_required
+def recu_edit(rid):
+    if not is_admin():
+        flash("Seul l'admin peut modifier les recus", "error")
+        return redirect(url_for("recus"))
+    conn = get_db()
+    recu = db_fetchone(conn, "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=%s" if IS_PG else
+                       "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=?", (rid,))
+    if not recu:
+        conn.close()
+        return redirect(url_for("recus"))
+    if request.method == "POST":
+        data = request.form
+        client_nom = data.get("client_nom", recu["client_nom"])
+        client_tel = data.get("client_tel", recu["client_tel"])
+        try:
+            total_usd = float(data.get("total_usd", recu["total_usd"]))
+        except ValueError:
+            total_usd = recu["total_usd"]
+        taux = get_taux(conn, recu["tenant_id"])
+        total_cdf = total_usd * taux
+        est_honneur = 1 if data.get("est_honneur") else 0
+        db_execute(conn, "UPDATE recus SET client_nom=%s, client_tel=%s, total_usd=%s, total_cdf=%s, est_honneur=%s WHERE id=%s" if IS_PG else
+                   "UPDATE recus SET client_nom=?, client_tel=?, total_usd=?, total_cdf=?, est_honneur=? WHERE id=?",
+                   (client_nom, client_tel, total_usd, total_cdf, est_honneur, rid))
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], recu["tenant_id"], "recu_modifie", f"Recu #{recu['numero']}", now))
+        conn.commit()
+        conn.close()
+        flash(f"Recu #{recu['numero']} modifie", "success")
+        return redirect(url_for("recus"))
+    conn.close()
+    return render_template("recu_edit.html", recu=recu, is_admin=is_admin())
 
 @app.route("/logs")
 @login_required
@@ -600,7 +655,7 @@ def logs():
         FROM logs l LEFT JOIN tenants t ON l.tenant_id=t.id
         ORDER BY l.date_heure DESC LIMIT 200""")
     conn.close()
-    return render_template("logs.html", logs_list=logs_list)
+    return render_template("logs.html", logs_list=logs_list, is_admin=is_admin())
 
 @app.route("/tenants")
 @login_required
@@ -610,7 +665,7 @@ def tenants():
     conn = get_db()
     tenants_list = db_fetchall(conn, "SELECT * FROM tenants ORDER BY id")
     conn.close()
-    return render_template("tenants.html", tenants_list=tenants_list)
+    return render_template("tenants.html", tenants_list=tenants_list, is_admin=is_admin())
 
 @app.route("/utilisateurs")
 @login_required
@@ -622,7 +677,7 @@ def utilisateurs():
         FROM utilisateurs u LEFT JOIN tenants t ON u.tenant_id=t.id ORDER BY u.id""")
     tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
     conn.close()
-    return render_template("utilisateurs.html", users=users, tenants=tenants)
+    return render_template("utilisateurs.html", users=users, tenants=tenants, is_admin=is_admin())
 
 def create_notif(conn, tenant_id, message, responsable="Admin"):
     db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (%s,%s,0,%s,%s)" if IS_PG else
@@ -702,6 +757,108 @@ def produit_new():
         return redirect(url_for("produits"))
     conn.close()
     return render_template("produit_new.html", cats=cats, tenants=tenants, is_admin=is_admin(), etid=etid)
+
+@app.route("/dettes", methods=["GET", "POST"])
+@login_required
+def dettes():
+    conn = get_db()
+    etid = get_effective_tid()
+
+    if request.method == "POST":
+        if not is_admin():
+            conn.close()
+            flash("Seul l'admin peut ajouter des dettes", "error")
+            return redirect(url_for("dettes"))
+        data = request.form
+        client_nom = data.get("client_nom", "").strip()
+        client_tel = data.get("client_tel", "").strip()
+        try:
+            montant_usd = float(data.get("montant_usd", 0))
+        except ValueError:
+            montant_usd = 0
+        notes = data.get("notes", "")
+        tid_dette = int(data["tenant_id"]) if is_admin() else session["tenant_id"]
+        taux = get_taux(conn, tid_dette)
+        montant_cdf = montant_usd * taux
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now_date = datetime.now().strftime("%Y-%m-%d")
+        now_heure = datetime.now().strftime("%H:%M:%S")
+
+        if not client_nom or montant_usd <= 0:
+            conn.close()
+            flash("Nom du client et montant requis", "error")
+            return redirect(url_for("dettes"))
+
+        db_insert(conn, "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, notes, vendeur_login) VALUES (%s,%s,%s,%s,%s,0,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, notes, vendeur_login) VALUES (?,?,?,?,?,0,?,?,?,?)",
+                  (tid_dette, client_nom, client_tel, montant_usd, montant_cdf, now_date, now_heure, notes, session["login"]))
+        create_notif(conn, tid_dette, f"Nouvelle dette : {client_nom} - ${montant_usd:.2f}", session["login"])
+        conn.commit()
+        conn.close()
+        flash(f"Dette enregistree : {client_nom} = ${montant_usd:.2f}", "success")
+        return redirect(url_for("dettes"))
+
+    if etid is not None:
+        dettes_list = db_fetchall(conn, """SELECT d.*, t.nom as tenant_nom FROM dettes d LEFT JOIN tenants t ON d.tenant_id=t.id
+            WHERE d.tenant_id=%s ORDER BY d.date DESC, d.heure DESC LIMIT 100""" if IS_PG else """SELECT d.*, t.nom as tenant_nom FROM dettes d LEFT JOIN tenants t ON d.tenant_id=t.id
+            WHERE d.tenant_id=? ORDER BY d.date DESC, d.heure DESC LIMIT 100""", (etid,))
+    else:
+        dettes_list = db_fetchall(conn, """SELECT d.*, t.nom as tenant_nom FROM dettes d LEFT JOIN tenants t ON d.tenant_id=t.id
+            ORDER BY d.date DESC, d.heure DESC LIMIT 100""")
+
+    non_payees = [d for d in dettes_list if not d["est_paye"]]
+    payees = [d for d in dettes_list if d["est_paye"]]
+    total_non_paye = sum(d["montant_usd"] for d in non_payees)
+
+    tenants_list = []
+    if is_admin():
+        tenants_list = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+
+    conn.close()
+    return render_template("dettes.html", dettes_list=dettes_list, non_payees=non_payees, payees=payees,
+                           total_non_paye=total_non_paye, is_admin=is_admin(), tenants=tenants_list)
+
+@app.route("/dettes/payer/<int:did>", methods=["POST"])
+@login_required
+def dette_payer(did):
+    if not is_admin():
+        flash("Seul l'admin peut marquer une dette comme payee", "error")
+        return redirect(url_for("dettes"))
+    conn = get_db()
+    dette = db_fetchone(conn, "SELECT * FROM dettes WHERE id=%s" if IS_PG else "SELECT * FROM dettes WHERE id=?", (did,))
+    if dette:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_execute(conn, "UPDATE dettes SET est_paye=1, date_paiement=%s, admin_id=%s WHERE id=%s" if IS_PG else
+                   "UPDATE dettes SET est_paye=1, date_paiement=?, admin_id=? WHERE id=?",
+                   (now, session["user_id"], did))
+        create_notif(conn, dette["tenant_id"], f"Dette payee : {dette['client_nom']} - ${dette['montant_usd']:.2f}", session["login"])
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], dette["tenant_id"], "dette_payee", f"{dette['client_nom']} - ${dette['montant_usd']:.2f}", now))
+        conn.commit()
+        flash(f"Dette de {dette['client_nom']} marquee comme payee", "success")
+    conn.close()
+    return redirect(url_for("dettes"))
+
+@app.route("/dettes/supprimer/<int:did>", methods=["POST"])
+@login_required
+def dette_supprimer(did):
+    if not is_admin():
+        flash("Seul l'admin peut supprimer des dettes", "error")
+        return redirect(url_for("dettes"))
+    conn = get_db()
+    dette = db_fetchone(conn, "SELECT * FROM dettes WHERE id=%s" if IS_PG else "SELECT * FROM dettes WHERE id=?", (did,))
+    if dette:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_execute(conn, "DELETE FROM dettes WHERE id=%s" if IS_PG else "DELETE FROM dettes WHERE id=?", (did,))
+        create_notif(conn, dette["tenant_id"], f"Dette supprimee : {dette['client_nom']} - ${dette['montant_usd']:.2f}", session["login"])
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], dette["tenant_id"], "dette_supprimee", f"{dette['client_nom']} - ${dette['montant_usd']:.2f}", now))
+        conn.commit()
+        flash(f"Dette de {dette['client_nom']} supprimee", "success")
+    conn.close()
+    return redirect(url_for("dettes"))
 
 @app.route("/notifications")
 @login_required
