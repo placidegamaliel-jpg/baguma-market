@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, valu
 
 init_pg_schema()
 
+@app.route("/init")
+def init_route():
+    if IS_PG:
+        init_pg_schema()
+        return "Schema init done. Check Render logs."
+    return "No PostgreSQL configured"
+
 def get_db():
     if IS_PG:
         import psycopg2
