@@ -169,14 +169,50 @@ def migrate():
         print("Example: $env:DATABASE_URL='postgres://user:pass@host:5432/baguma'")
         return
 
+    url = DB_URL
+    if "?" not in url:
+        url += "?sslmode=require"
+
     print("Connecting to PostgreSQL...")
-    pg = psycopg2.connect(DB_URL)
+    pg = psycopg2.connect(url)
     pg.autocommit = True
     cur = pg.cursor()
 
     print("Creating schema...")
     cur.execute(SCHEMA)
     print("Schema created OK")
+
+    cur.execute("SELECT COUNT(*) FROM tenants")
+    if cur.fetchone()[0] == 0:
+        print("Seeding initial data...")
+        cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
+        cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Goma', 1, 'Goma', 'Chaussures')")
+        cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('0891624401', '251988', 0, 'admin')")
+        cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
+        cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
+        cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
+        cats = [('Chaussures Homme','👞'), ('Chaussures Femme','👠'), ('Chaussures Enfant','👟'), ('Accessoires','👜'), ('Sport','⚽')]
+        for nom, emoji in cats:
+            cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (nom, emoji))
+        cat_rows = cur.execute("SELECT id, nom FROM categories ORDER BY id")
+        cat_ids = {r[1]: r[0] for r in cur.execute("SELECT id, nom FROM categories ORDER BY id").fetchall()}
+        produits = [
+            ('Nike Air Max','Nike',90), ('Nike Air Force','Nike',85), ('Adidas Ultraboost','Adidas',95),
+            ('Adidas Stan Smith','Adidas',75), ('Puma RS-X','Puma',70), ('Reebok Classic','Reebok',65),
+            ('New Balance 574','New Balance',80), ('Converse Chuck','Converse',55), ('Vans Old Skool','Vans',50),
+            ('Timberland 6-Inch','Timberland',120)
+        ]
+        for nom, marque, prix in produits:
+            cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0) RETURNING id", (nom,))
+        cat_id_list = [r[0] for r in cur.execute("SELECT id FROM categories ORDER BY id").fetchall()]
+        for i, (nom, marque, prix) in enumerate(produits):
+            cat_id = cat_id_list[i] if i < len(cat_id_list) else 1
+            cur.execute("INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,100,0)", (nom, cat_id, prix, prix*2800))
+            cur.execute("INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,100,1)", (nom, cat_id, prix, prix*2800))
+            cur.execute("INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,100,2)", (nom, cat_id, prix, prix*2800))
+        cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
+        cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
+        print("Initial data seeded!")
 
     if not os.path.exists(LOCAL_DB):
         print("No local commerce.db found. Schema only.")
