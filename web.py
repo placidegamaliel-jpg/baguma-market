@@ -7,13 +7,18 @@ app.secret_key = os.environ.get("SECRET_KEY", "baguma-market-2026-secret")
 DB_URL = os.environ.get("DATABASE_URL", "")
 LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "commerce.db")
 
-IS_PG = DB_URL.startswith("postgres")
+if DB_URL and not DB_URL.startswith("postgresql"):
+    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+IS_PG = DB_URL.startswith("postgresql")
 
 def get_db():
     if IS_PG:
         import psycopg2
         import psycopg2.extras
-        conn = psycopg2.connect(DB_URL)
+        url = DB_URL
+        if "?" not in url:
+            url += "?sslmode=require"
+        conn = psycopg2.connect(url)
         conn.autocommit = False
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         return conn
