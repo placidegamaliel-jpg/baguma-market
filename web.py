@@ -11,6 +11,54 @@ if DB_URL and not DB_URL.startswith("postgresql"):
     DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 IS_PG = DB_URL.startswith("postgresql")
 
+def init_pg_schema():
+    if not IS_PG:
+        return
+    try:
+        import psycopg2
+        url = DB_URL + ("?sslmode=require" if "?" not in DB_URL else "")
+        conn = psycopg2.connect(url)
+        conn.autocommit = True
+        cur = conn.cursor()
+        for stmt in SCHEMA_SQL.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                cur.execute(stmt)
+        cur.execute("SELECT COUNT(*) FROM tenants")
+        if cur.fetchone()[0] == 0:
+            cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
+            cur.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Goma', 1, 'Goma', 'Chaussures')")
+            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('0891624401', '251988', 0, 'admin')")
+            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
+            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
+            cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
+            cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
+            cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
+            for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
+                cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat,''))
+        conn.close()
+        print("PostgreSQL schema initialized OK")
+    except Exception as e:
+        print(f"Schema init error: {e}")
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS tenants (id SERIAL PRIMARY KEY, nom TEXT UNIQUE NOT NULL, actif INTEGER DEFAULT 1, date_creation TEXT, localisation TEXT DEFAULT '', type_commerce TEXT DEFAULT 'Chaussures');
+CREATE TABLE IF NOT EXISTS utilisateurs (id SERIAL PRIMARY KEY, login TEXT UNIQUE, code TEXT, tenant_id INTEGER DEFAULT 0, role TEXT DEFAULT 'vendeur');
+CREATE TABLE IF NOT EXISTS categories (id SERIAL PRIMARY KEY, nom TEXT, emoji TEXT, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS produits (id SERIAL PRIMARY KEY, categorie_id INTEGER, nom TEXT, prix_usd REAL, prix_cdf REAL, stock INTEGER DEFAULT 100, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS ventes (id SERIAL PRIMARY KEY, produit_id INTEGER, quantite INTEGER, total_usd REAL, total_cdf REAL, date TEXT, heure TEXT, recu_num TEXT DEFAULT '', client_nom TEXT DEFAULT '', client_tel TEXT DEFAULT '', prix_unit_usd REAL DEFAULT 0, prix_unit_cdf REAL DEFAULT 0, est_client_honneur INTEGER DEFAULT 0, client_id INTEGER DEFAULT NULL, tenant_id INTEGER DEFAULT 0, vendeur_login TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS recus (id SERIAL PRIMARY KEY, numero TEXT UNIQUE, client_nom TEXT, client_tel TEXT, total_usd REAL, total_cdf REAL, est_honneur INTEGER DEFAULT 0, date TEXT, heure TEXT, client_id INTEGER DEFAULT NULL, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS clients (id SERIAL PRIMARY KEY, nom TEXT, telephone TEXT, nb_visites INTEGER DEFAULT 0, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, premier_visite TEXT, derniere_visite TEXT, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, login TEXT, tenant_id INTEGER DEFAULT 0, action TEXT, details TEXT, date_heure TEXT);
+CREATE TABLE IF NOT EXISTS tenant_prices (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, produit_id INTEGER NOT NULL, prix_usd REAL, prix_cdf REAL, UNIQUE(tenant_id, produit_id));
+CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, tenant_id INTEGER DEFAULT 0, user_id INTEGER DEFAULT NULL, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, responsable TEXT DEFAULT NULL);
+CREATE TABLE IF NOT EXISTS notif_settings (tenant_id INTEGER PRIMARY KEY, alertes_actives INTEGER DEFAULT 1, notif_ventes INTEGER DEFAULT 1, notif_stock INTEGER DEFAULT 1, notif_prix INTEGER DEFAULT 1, notif_connexion INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key))
+"""
+
+init_pg_schema()
+
 def get_db():
     if IS_PG:
         import psycopg2
