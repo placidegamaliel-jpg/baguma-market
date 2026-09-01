@@ -16,8 +16,7 @@ def init_pg_schema():
         return
     try:
         import psycopg
-        url = DB_URL
-        conn = psycopg.connect(url)
+        conn = psycopg.connect(DB_URL)
         conn.autocommit = True
         for stmt in SCHEMA_SQL.split(";"):
             stmt = stmt.strip()
