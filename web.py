@@ -725,6 +725,3 @@ def settings():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
-    except Exception as e:
-        print(f"DB init error: {e}")
-        app._db_initialized = True
