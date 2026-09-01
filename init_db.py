@@ -1,5 +1,5 @@
-import psycopg2
-import psycopg2.extras
+import psycopg
+import psycopg.rows
 import sqlite3
 import os
 
@@ -174,7 +174,7 @@ def migrate():
         url += "?sslmode=require"
 
     print("Connecting to PostgreSQL...")
-    pg = psycopg2.connect(url)
+    pg = psycopg.connect(url, autocommit=True)
     pg.autocommit = True
     cur = pg.cursor()
 
