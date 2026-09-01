@@ -19,7 +19,10 @@
 </div>
 <div class="form-group">
 <label>Code</label>
-<input type="password" name="code" placeholder="Code secret" required>
+<div style="position:relative">
+<input type="password" name="code" id="code" placeholder="Code secret" required style="padding-right:40px">
+<button type="button" onclick="toggleCode()" id="eyeBtn" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gold2);font-size:18px;cursor:pointer;padding:4px">👁</button>
+</div>
 </div>
 <div class="form-group">
 <label>Ville</label>
@@ -34,4 +37,12 @@
 <p style="color:var(--txt2);font-size:11px;margin-top:16px">Tous droits reserves - Baguma Market 2026</p>
 </div>
 </div>
+<script>
+function toggleCode(){
+  var inp=document.getElementById('code');
+  var btn=document.getElementById('eyeBtn');
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈'}
+  else{inp.type='password';btn.textContent='👁'}
+}
+</script>
 {% endblock %}
