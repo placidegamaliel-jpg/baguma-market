@@ -179,7 +179,10 @@ def login():
                 session["tenant_slug"] = ville
             else:
                 conn.close()
-                flash("Ce compte n'est pas autorise pour cette ville", "error")
+                if not ville:
+                    flash("Veuillez selectionner votre ville", "error")
+                else:
+                    flash("Ce compte n'est pas autorise pour cette ville", "error")
                 return redirect(url_for("login"))
             session["user_id"] = row["id"]
             session["login"] = row["login"]
