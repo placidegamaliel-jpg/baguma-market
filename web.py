@@ -61,21 +61,14 @@ init_pg_schema()
 def init_route():
     if not IS_PG:
         return "No PostgreSQL configured"
-    import psycopg
-    modes = ["disable", "allow", "prefer", "require"]
-    base = DB_URL.split("?")[0]
-    results = []
-    for mode in modes:
-        url = base + "?sslmode=" + mode
-        try:
-            conn = psycopg.connect(url, connect_timeout=10)
-            r = conn.execute("SELECT 1").fetchone()
-            conn.close()
-            results.append(f"OK sslmode={mode}")
-            return f"FOUND: sslmode={mode} works! URL={url}"
-        except Exception as e:
-            results.append(f"FAIL sslmode={mode}: {str(e)[:60]}")
-    return "ALL FAILED: " + " | ".join(results)
+    try:
+        import psycopg
+        conn = psycopg.connect(DB_URL, connect_timeout=10)
+        r = conn.execute("SELECT 1").fetchone()
+        conn.close()
+        return "PostgreSQL OK"
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def get_db():
     if IS_PG:
