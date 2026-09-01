@@ -61,23 +61,27 @@ init_pg_schema()
 def init_route():
     if not IS_PG:
         return "No PostgreSQL configured"
-    try:
-        import psycopg
-        conn = psycopg.connect(DB_URL, autocommit=True)
-        cur = conn.execute("SELECT COUNT(*) FROM tenants")
-        count = cur.fetchone()[0]
-        cur = conn.execute("SELECT COUNT(*) FROM utilisateurs")
-        ucount = cur.fetchone()[0]
-        conn.close()
-        return f"Tenants: {count}, Users: {ucount}"
-    except Exception as e:
-        return f"Error: {str(e)}"
+    import psycopg
+    modes = ["disable", "allow", "prefer", "require"]
+    base = DB_URL.split("?")[0]
+    results = []
+    for mode in modes:
+        url = base + "?sslmode=" + mode
+        try:
+            conn = psycopg.connect(url, connect_timeout=10)
+            r = conn.execute("SELECT 1").fetchone()
+            conn.close()
+            results.append(f"OK sslmode={mode}")
+            return f"FOUND: sslmode={mode} works! URL={url}"
+        except Exception as e:
+            results.append(f"FAIL sslmode={mode}: {str(e)[:60]}")
+    return "ALL FAILED: " + " | ".join(results)
 
 def get_db():
     if IS_PG:
         import psycopg
         import psycopg.rows
-        conn = psycopg.connect(DB_URL, row_factory=psycopg.rows.dict_row)
+        conn = psycopg.connect(DB_URL, sslmode="require", row_factory=psycopg.rows.dict_row)
         return conn
     else:
         import sqlite3
