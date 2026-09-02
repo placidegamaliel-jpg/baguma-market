@@ -174,8 +174,8 @@ def login():
         code = request.form.get("code", "").strip()
         ville = request.form.get("ville", "").strip().lower()
         conn = get_db()
-        row = db_fetchone(conn, "SELECT id, login, tenant_id, role FROM utilisateurs WHERE login=%s AND code=%s" if IS_PG else
-                          "SELECT id, login, tenant_id, role FROM utilisateurs WHERE login=? AND code=?", (login_val, code))
+        row = db_fetchone(conn, "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(%s) AND code=%s" if IS_PG else
+                          "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(?) AND code=?", (login_val, code))
         if row:
             user_tid = row["tenant_id"]
             user_role = row["role"]
