@@ -11,15 +11,7 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}
-<div class="flash {{cat}}" style="text-align:left;border-radius:10px">{{msg}}</div>
-{% endfor %}
-{% endwith %}
-
-<form method="POST" style="text-align:left">
-<div class="form-group">
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% for cat, msg in messages %}
-<div class="flash {{cat}}" id="flash-msg">{{msg}}</div>
+<div class="flash {{cat}}" id="flash-msg" style="text-align:left;border-radius:10px">{{msg}}</div>
 {% endfor %}
 {% endwith %}
 
@@ -34,8 +26,8 @@
 </div>
 </div>
 <div class="form-group">
+<p style="color:var(--txt2);font-size:12px;margin-bottom:8px;font-weight:600">Ville</p>
 <select name="ville" style="border-radius:12px">
-<option value="">-- Choisir votre ville --</option>
 <option value="">-- Choisir votre ville --</option>
 <option value="bukavu">📍 Bukavu</option>
 <option value="goma">📍 Goma</option>
