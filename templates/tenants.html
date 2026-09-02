@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🏢 Tenants</h1><a href="/logout" style="color:var(--red);font-size:12px">✕</a></div>
+<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🏢 Tenants</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
 <a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
@@ -8,16 +8,16 @@
 <a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
-<div class="card" style="padding:0"><div class="table-scroll">
+<div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
 <tr><th>ID</th><th>Nom</th><th>Localisation</th><th>Type</th><th>Statut</th></tr>
 {% for t in tenants_list %}
 <tr>
-<td>{{t.id}}</td>
-<td class="tag-entree">{{t.nom}}</td>
+<td style="color:var(--txt2)">{{t.id}}</td>
+<td class="tag-entree" style="font-weight:600">{{t.nom}}</td>
 <td>{{t.localisation}}</td>
 <td style="color:var(--txt2)">{{t.type_commerce}}</td>
-<td class="{{'tag-entree' if t.actif else 'tag-sortie'}}">{{'Actif' if t.actif else 'Inactif'}}</td>
+<td class="{{'tag-entree' if t.actif else 'tag-sortie'}}" style="font-weight:600">{{'Actif' if t.actif else 'Inactif'}}</td>
 </tr>
 {% endfor %}
 </table></div></div>

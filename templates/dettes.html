@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>💳 Dettes</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
@@ -16,57 +16,57 @@
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
 <div class="stats">
-<div class="stat"><div class="label">Non Payees</div><div class="value" style="color:var(--hon)">{{non_payees|length}}</div></div>
-<div class="stat"><div class="label">Total Impaye</div><div class="value" style="color:var(--hon)">${{ "%.2f"|format(total_non_paye) }}</div></div>
+<div class="stat"><div class="label">Non Payees</div><div class="value pink">{{non_payees|length}}</div></div>
+<div class="stat"><div class="label">Total Impaye</div><div class="value pink">${{ "%.2f"|format(total_non_paye) }}</div></div>
 <div class="stat"><div class="label">Payees</div><div class="value green">{{payees|length}}</div></div>
 </div>
 
 {% if is_admin %}
-<button class="btn btn-green" onclick="document.getElementById('modalDette').style.display='flex'" style="margin-bottom:10px">+ Nouvelle dette</button>
+<button class="btn btn-green" onclick="document.getElementById('modalDette').style.display='flex'" style="margin-bottom:12px">+ Nouvelle dette</button>
 {% endif %}
 
-<div class="card" style="padding:0;margin-bottom:12px">
-<div class="card-header" style="background:var(--hon)">🔴 Non Payees ({{non_payees|length}})</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+<div class="card-header" style="background:linear-gradient(135deg,var(--pink),var(--red))">🔴 Non Payees ({{non_payees|length}})</div>
 <div class="table-scroll">
 <table>
 <tr><th>Date</th><th>Client</th><th>Telephone</th><th>Montant</th><th>Commerce</th><th>Vendeur</th><th>Actions</th></tr>
 {% for d in non_payees %}
-<tr style="border-left:3px solid var(--hon)">
-<td style="font-size:11px">{{d.date}}</td>
-<td style="font-weight:bold">{{d.client_nom}}</td>
+<tr style="border-left:3px solid var(--pink)">
+<td style="font-size:11px;color:var(--txt2)">{{d.date}}</td>
+<td style="font-weight:600">{{d.client_nom}}</td>
 <td style="color:var(--txt2);font-size:11px">{{d.client_tel or '-'}}</td>
-<td style="color:var(--hon);font-weight:bold">${{ "%.2f"|format(d.montant_usd) }}</td>
-<td style="font-size:11px">{{d.tenant_nom or '-'}}</td>
+<td style="color:var(--pink);font-weight:700">${{ "%.2f"|format(d.montant_usd) }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{d.tenant_nom or '-'}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{d.vendeur_login or '-'}}</td>
-<td>
+<td style="display:flex;gap:6px;justify-content:center">
 {% if is_admin %}
 <form method="POST" action="/dettes/payer/{{d.id}}" style="display:inline">
-<button type="submit" class="btn btn-green btn-sm" style="padding:2px 8px;font-size:10px">✅ Payer</button>
+<button type="submit" class="btn btn-green btn-sm" style="padding:4px 10px;font-size:10px">✅ Payer</button>
 </form>
 <form method="POST" action="/dettes/supprimer/{{d.id}}" style="display:inline" onsubmit="return confirm('Supprimer cette dette ?')">
-<button type="submit" class="btn btn-red btn-sm" style="padding:2px 8px;font-size:10px">🗑️</button>
+<button type="submit" class="btn btn-red btn-sm" style="padding:4px 10px;font-size:10px">🗑️</button>
 </form>
 {% endif %}
 </td>
 </tr>
 {% endfor %}
-{% if not non_payees %}<tr><td colspan="7" class="empty">Aucune dette impayee</td></tr>{% endif %}
+{% if not non_payees %}<tr><td colspan="7" class="empty">Aucune dette impayee 🎉</td></tr>{% endif %}
 </table>
 </div></div>
 
-<div class="card" style="padding:0">
-<div class="card-header" style="background:var(--green);color:#000">🟢 Payees ({{payees|length}})</div>
+<div class="card" style="padding:0;overflow:hidden">
+<div class="card-header" style="background:linear-gradient(135deg,var(--accent),#00b894);color:#000">🟢 Payees ({{payees|length}})</div>
 <div class="table-scroll">
 <table>
 <tr><th>Date</th><th>Client</th><th>Telephone</th><th>Montant</th><th>Commerce</th><th>Paiement</th></tr>
 {% for d in payees %}
-<tr style="border-left:3px solid var(--green)">
-<td style="font-size:11px">{{d.date}}</td>
-<td>{{d.client_nom}}</td>
+<tr style="border-left:3px solid var(--accent)">
+<td style="font-size:11px;color:var(--txt2)">{{d.date}}</td>
+<td style="font-weight:500">{{d.client_nom}}</td>
 <td style="color:var(--txt2);font-size:11px">{{d.client_tel or '-'}}</td>
-<td class="tag-entree">${{ "%.2f"|format(d.montant_usd) }}</td>
-<td style="font-size:11px">{{d.tenant_nom or '-'}}</td>
-<td style="font-size:11px;color:var(--green)">{{d.date_paiement[:16] if d.date_paiement else '-'}}</td>
+<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(d.montant_usd) }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{d.tenant_nom or '-'}}</td>
+<td style="font-size:11px;color:var(--accent)">{{d.date_paiement[:16] if d.date_paiement else '-'}}</td>
 </tr>
 {% endfor %}
 {% if not payees %}<tr><td colspan="6" class="empty">Aucune dette payee</td></tr>{% endif %}
@@ -74,9 +74,9 @@
 </div></div>
 
 {% if is_admin %}
-<div id="modalDette" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
-<div class="card" style="width:90%;max-width:400px;max-height:90vh;overflow-y:auto">
-<h2 style="color:var(--hon);font-size:16px;margin-bottom:12px">💳 Nouvelle dette</h2>
+<div id="modalDette" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center">
+<div class="card" style="width:90%;max-width:420px;max-height:90vh;overflow-y:auto;border-radius:20px;padding:28px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:20px">💳 Nouvelle dette</h2>
 <form method="POST">
 <div class="form-group"><label>Commerce</label>
 <select name="tenant_id">
@@ -86,9 +86,9 @@
 <div class="form-group"><label>Telephone</label><input type="text" name="client_tel" placeholder="+243..."></div>
 <div class="form-group"><label>Montant (USD) *</label><input type="number" name="montant_usd" step="0.01" min="0.01" required placeholder="0.00"></div>
 <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="Details optionnels"></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button type="submit" class="btn btn-green" style="flex:1">Enregistrer</button>
-<button type="button" class="btn btn-gold" onclick="this.closest('#modalDette').style.display='none'">Annuler</button>
+<div style="display:flex;gap:10px;margin-top:16px">
+<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Enregistrer</button>
+<button type="button" class="btn btn-gold" onclick="this.closest('#modalDette').style.display='none'" style="flex:1;padding:14px">Annuler</button>
 </div>
 </form>
 </div></div>

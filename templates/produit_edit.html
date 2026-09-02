@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>✏️ Modifier Prix</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits" class="active">👟 Produits</a><a href="/stock">📦 Stock</a>
@@ -14,22 +14,26 @@
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
-<div class="card">
-<h2 style="color:var(--gold2);font-size:16px;margin-bottom:12px">✏️ {{prod.nom}}</h2>
-<p style="color:var(--txt2);font-size:12px;margin-bottom:16px">Categorie: {{prod.cat_nom}} | Tenant: {{prod.tenant_id}}</p>
+<div class="card" style="border-radius:20px;padding:28px">
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+<div style="width:56px;height:56px;background:linear-gradient(135deg,var(--gold),var(--orange));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px">✏️</div>
+<div>
+<h2 style="color:var(--txt);font-size:18px;font-weight:700">{{prod.nom}}</h2>
+<p style="color:var(--txt2);font-size:12px">Categorie: {{prod.cat_nom}} | Tenant: {{prod.tenant_id}}</p>
+</div>
+</div>
 <form method="POST">
 <div class="form-group">
 <label>Prix USD</label>
 <input type="number" name="prix_usd" value="{{prod.prix_usd}}" step="0.01" min="0" required>
 </div>
-<p style="color:var(--txt2);font-size:12px;margin-bottom:12px">Prix actuel CDF: {{ "{:,.0f}".format(prod.prix_cdf) }}</p>
-<div style="display:flex;gap:8px">
-<button type="submit" class="btn btn-green" style="flex:1">Enregistrer</button>
-<a href="/produits" class="btn btn-gold" style="flex:1;text-align:center">Annuler</a>
+<p style="color:var(--txt2);font-size:12px;margin-bottom:16px">Prix actuel CDF: <b style="color:var(--gold)">{{ "{:,.0f}".format(prod.prix_cdf) }}</b></p>
+<div style="display:flex;gap:10px">
+<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Enregistrer</button>
+<a href="/produits" class="btn btn-gold" style="flex:1;padding:14px;text-align:center">Annuler</a>
 </div>
 </form>
 </div>
-
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
 <style>

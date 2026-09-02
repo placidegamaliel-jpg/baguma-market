@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>🧾 Recus</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
@@ -15,19 +15,19 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
-{% if not is_admin %}<button class="btn btn-blue btn-sm" onclick="window.print()" style="margin-bottom:10px">🖨️ Imprimer</button>{% endif %}
+{% if not is_admin %}<button class="btn btn-blue btn-sm" onclick="window.print()" style="margin-bottom:12px">🖨️ Imprimer</button>{% endif %}
 
-<div class="card" style="padding:0"><div class="table-scroll">
+<div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
 <tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th>{% if is_admin %}<th>Actions</th>{% endif %}</tr>
 {% for r in recus_list %}
 <tr>
-<td style="font-size:11px;color:var(--gold2)">{{r.numero}}</td>
-<td style="font-size:11px">{{r.date}}</td>
-<td class="tag-entree">${{ "%.2f"|format(r.total_usd) }}</td>
+<td style="font-size:11px;color:var(--accent);font-weight:600">{{r.numero}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{r.date}}</td>
+<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
 <td>{{'⭐' if r.est_honneur else '-'}}</td>
-{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" style="color:var(--gold2);font-size:12px">✏️</a></td>{% endif %}
+{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️ Modifier</a></td>{% endif %}
 </tr>
 {% endfor %}
 {% if not recus_list %}<tr><td colspan="{% if is_admin %}6{% else %}5{% endif %}" class="empty">Aucun recu</td></tr>{% endif %}
@@ -39,7 +39,7 @@
 .nav, .topbar, .btn, .footer { display:none !important }
 body { background:#fff !important }
 table { font-size:12px !important; color:#000 !important }
-th { background:#ddd !important; color:#000 !important }
+th { background:#e8f5e9 !important; color:#2e7d32 !important }
 td { color:#000 !important; border-bottom:1px solid #ccc !important }
 }
 </style>

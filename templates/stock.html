@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>📦 Stock</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a>
@@ -14,56 +14,53 @@
 <a href="/settings">⚙️ Parametres</a>
 <a href="/notifications">🔔 Notifications</a>
 </nav>
-
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
-<div style="display:flex;gap:8px;margin-bottom:12px">
+<div style="display:flex;gap:10px;margin-bottom:16px">
 <button class="btn btn-green btn-sm" onclick="document.getElementById('modalEntree').style.display='flex'">+ Entree</button>
 <button class="btn btn-red btn-sm" onclick="document.getElementById('modalSortie').style.display='flex'">- Sortie</button>
 </div>
 
 {% for t in tenant_data %}
-<div class="card" style="overflow:hidden;padding:0;border-left:4px solid {% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %}">
-<div class="card-header" style="background:{% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %}">{% if 'Bukavu' in t.nom %}📍{% else %}🌍{% endif %} {{t.nom}}</div>
-<div style="padding:12px">
+<div class="card" style="overflow:hidden;padding:0;border-left:4px solid {% if 'Goma' in t.nom %}var(--accent){% else %}var(--blue){% endif %}">
+<div class="card-header" style="background:{% if 'Goma' in t.nom %}linear-gradient(135deg,var(--accent),#00b894){% else %}linear-gradient(135deg,var(--blue),#3b82f6){% endif %}">{% if 'Bukavu' in t.nom %}📍{% else %}🌍{% endif %} {{t.nom}}</div>
+<div style="padding:16px">
 <div class="stats">
 <div class="stat"><div class="label">Entrees</div><div class="value green">{{t.entrees}}</div></div>
 <div class="stat"><div class="label">Sorties</div><div class="value red">{{t.sorties}}</div></div>
-<div class="stat"><div class="label">Stock Net</div><div class="value {% if 'Goma' in t.nom %}green{% else %}gold{% endif %}">{{t.net}}</div></div>
+<div class="stat"><div class="label">Stock Net</div><div class="value {% if 'Goma' in t.nom %}green{% else %}{% endif %}">{{t.net}}</div></div>
 </div>
-
-<h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--green){% else %}var(--blue){% endif %};margin:10px 0 6px">📊 Stock par produit</h3>
+<h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--accent){% else %}var(--blue){% endif %};margin:14px 0 8px;font-weight:600">📊 Stock par produit</h3>
 <div class="table-scroll">
 <table>
 <tr><th>Produit</th><th>Code</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Restant</th><th>Resp.</th></tr>
 {% for s in t.stock_produits %}
 <tr>
-<td>{{s.produit_nom}}</td>
-<td style="color:var(--txt2)">{{s.code_produit or '-'}}</td>
-<td>{{s.marque or '-'}}</td>
-<td class="tag-entree">{{s.total_entrees}}</td>
-<td class="tag-sortie">{{s.total_sorties}}</td>
-<td class="{{'tag-sortie' if s.stock_disponible <= 0 else 'tag-entree'}}">{{s.stock_disponible}}</td>
+<td style="font-weight:500">{{s.produit_nom}}</td>
+<td style="color:var(--txt2);font-size:11px">{{s.code_produit or '-'}}</td>
+<td style="color:var(--txt2)">{{s.marque or '-'}}</td>
+<td class="tag-entree" style="font-weight:600">{{s.total_entrees}}</td>
+<td class="tag-sortie" style="font-weight:600">{{s.total_sorties}}</td>
+<td class="{{'tag-sortie' if s.stock_disponible <= 0 else 'tag-entree'}}" style="font-weight:700">{{s.stock_disponible}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{s.responsable or '-'}}</td>
 </tr>
 {% endfor %}
-{% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}
+{% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit en stock</td></tr>{% endif %}
 </table>
 </div>
-
-<h3 style="font-size:13px;color:var(--txt2);margin:12px 0 6px">📝 Historique</h3>
+<h3 style="font-size:13px;color:var(--txt2);margin:16px 0 8px;font-weight:600">📝 Historique</h3>
 <div class="table-scroll">
 <table>
 <tr><th>Date</th><th>Type</th><th>Produit</th><th>Code</th><th>Qte</th><th>Resp.</th></tr>
 {% for h in t.historique %}
 <tr>
-<td style="font-size:11px">{{h.date_mouvement[:16]}}</td>
-<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}">{{h.mouvement|upper}}</td>
-<td>{{h.nom}}</td>
-<td>{{h.code_produit or '-'}}</td>
-<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}">{{'+' if h.mouvement=='entree' else '-'}}{{h.quantite}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{h.date_mouvement[:16]}}</td>
+<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:600">{{h.mouvement|upper}}</td>
+<td style="font-weight:500">{{h.nom}}</td>
+<td style="color:var(--txt2)">{{h.code_produit or '-'}}</td>
+<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:700">{{'+' if h.mouvement=='entree' else '-'}}{{h.quantite}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{h.login}}</td>
 </tr>
 {% endfor %}
@@ -73,9 +70,9 @@
 </div></div>
 {% endfor %}
 
-<div id="modalEntree" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
-<div class="card" style="width:90%;max-width:400px">
-<h2 style="color:var(--green);font-size:16px;margin-bottom:12px">📦 Entree de stock</h2>
+<div id="modalEntree" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center">
+<div class="card" style="width:90%;max-width:420px;border-radius:20px;padding:28px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:20px">📦 Entree de stock</h2>
 <form method="POST" action="/stock/entree">
 <div class="form-group"><label>Commerce</label>
 <select name="tenant_id" id="entree_tenant">
@@ -88,16 +85,16 @@
 <div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required placeholder="Nombre de paires"></div>
 <div class="form-group"><label>Responsable</label>
 <select name="responsable_id">{% for u in users %}<option value="{{u.id}}" {{'selected' if u.id==session.user_id}}>{{u.login}}</option>{% endfor %}</select></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button type="submit" class="btn btn-green" style="flex:1">Valider</button>
-<button type="button" class="btn btn-gold" onclick="this.closest('#modalEntree').style.display='none'" style="flex:1">Annuler</button>
+<div style="display:flex;gap:10px;margin-top:16px">
+<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Valider</button>
+<button type="button" class="btn btn-gold" onclick="this.closest('#modalEntree').style.display='none'" style="flex:1;padding:14px">Annuler</button>
 </div>
 </form>
 </div></div>
 
-<div id="modalSortie" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
-<div class="card" style="width:90%;max-width:400px">
-<h2 style="color:var(--red);font-size:16px;margin-bottom:12px">📦 Sortie de stock</h2>
+<div id="modalSortie" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center">
+<div class="card" style="width:90%;max-width:420px;border-radius:20px;padding:28px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:20px">📦 Sortie de stock</h2>
 <form method="POST" action="/stock/sortie">
 <div class="form-group"><label>Commerce</label>
 <select name="tenant_id" id="sortie_tenant">
@@ -109,9 +106,9 @@
 <div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required placeholder="Nombre de paires"></div>
 <div class="form-group"><label>Responsable</label>
 <select name="responsable_id">{% for u in users %}<option value="{{u.id}}" {{'selected' if u.id==session.user_id}}>{{u.login}}</option>{% endfor %}</select></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button type="submit" class="btn btn-red" style="flex:1">Valider</button>
-<button type="button" class="btn btn-gold" onclick="this.closest('#modalSortie').style.display='none'">Annuler</button>
+<div style="display:flex;gap:10px;margin-top:16px">
+<button type="submit" class="btn btn-red" style="flex:1;padding:14px">Valider</button>
+<button type="button" class="btn btn-gold" onclick="this.closest('#modalSortie').style.display='none'" style="flex:1;padding:14px">Annuler</button>
 </div>
 </form>
 </div></div>

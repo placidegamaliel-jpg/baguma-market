@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>👟 Produits</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a>
@@ -13,31 +13,31 @@
 <a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
-{% if is_admin %}<a href="/produits/new" class="btn btn-green btn-sm" style="margin-bottom:10px;display:inline-block">+ Nouveau produit</a>{% endif %}
-<form method="GET" style="display:flex;gap:6px;margin-bottom:10px">
-<input type="text" name="search" value="{{search}}" placeholder="Rechercher..." style="flex:1;padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
-<select name="categorie" style="padding:10px;background:#0d0d24;border:1px solid var(--gold);border-radius:6px;color:var(--txt)">
+{% if is_admin %}<a href="/produits/new" class="btn btn-green btn-sm" style="margin-bottom:12px">+ Nouveau produit</a>{% endif %}
+<form method="GET" style="display:flex;gap:8px;margin-bottom:12px">
+<input type="text" name="search" value="{{search}}" placeholder="Rechercher un produit..." style="flex:1;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<select name="categorie" style="padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <option value="">Toutes</option>
 {% for c in cats %}<option value="{{c}}" {{'selected' if c==cat_selected}}>{{c}}</option>{% endfor %}
 </select>
 <button class="btn btn-gold btn-sm" type="submit">OK</button>
 </form>
-<div class="card" style="padding:0">
+<div class="card" style="padding:0;overflow:hidden">
 <div class="table-scroll">
 <table>
 <tr><th>Produit</th><th>Categorie</th><th>Prix USD</th><th>Prix CDF</th><th>Stock</th>{% if is_admin %}<th>Tenant</th><th>Actions</th>{% endif %}</tr>
 {% for p in prods %}
 <tr>
-<td>{{p.nom}}</td>
+<td style="font-weight:500">{{p.nom}}</td>
 <td style="color:var(--txt2)">{{p.cat_nom}}</td>
-<td>${{ "%.2f"|format(p.prix_usd) }}</td>
-<td>{{ "{:,.0f}".format(p.prix_cdf) }}</td>
-<td class="{{'tag-sortie' if p.stock<=5 else ''}}">{{p.stock}}</td>
-{% if is_admin %}<td style="font-size:11px">{{tenants_map.get(p.tenant_id, '')}}</td>
-<td><a href="/produits/edit/{{p.id}}" style="color:var(--gold2);font-size:12px">✏️</a></td>{% endif %}
+<td class="tag-entree" style="font-weight:600">${{ "%.2f"|format(p.prix_usd) }}</td>
+<td style="color:var(--txt2)">{{ "{:,.0f}".format(p.prix_cdf) }}</td>
+<td class="{{'tag-sortie' if p.stock<=5 else 'tag-entree'}}" style="font-weight:600">{{p.stock}}</td>
+{% if is_admin %}<td style="font-size:11px;color:var(--txt2)">{{tenants_map.get(p.tenant_id, '')}}</td>
+<td><a href="/produits/edit/{{p.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not prods %}<tr><td colspan="{% if is_admin %}7{% else %}5{% endif %}" class="empty">Aucun produit</td></tr>{% endif %}
+{% if not prods %}<tr><td colspan="{% if is_admin %}7{% else %}5{% endif %}" class="empty">Aucun produit trouve</td></tr>{% endif %}
 </table>
 </div></div>
 <div class="footer">Baguma Market &copy; 2026</div>

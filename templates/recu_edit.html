@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>✏️ Modifier Recu</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
@@ -14,9 +14,9 @@
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
-<div class="card">
-<h2 style="color:var(--gold2);font-size:16px;margin-bottom:12px">✏️ Modifier Recu #{{recu.numero}}</h2>
-<p style="color:var(--txt2);font-size:12px;margin-bottom:16px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
+<div class="card" style="border-radius:20px;padding:28px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:8px">✏️ Modifier Recu #{{recu.numero}}</h2>
+<p style="color:var(--txt2);font-size:12px;margin-bottom:20px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
 <form method="POST">
 <div class="form-group">
 <label>Client Nom</label>
@@ -30,17 +30,16 @@
 <label>Total USD</label>
 <input type="number" name="total_usd" value="{{recu.total_usd}}" step="0.01" min="0" required>
 </div>
-<div class="form-group" style="display:flex;align-items:center;gap:8px">
-<input type="checkbox" name="est_honneur" id="recu_honneur" {{'checked' if recu.est_honneur}}>
-<label for="recu_honneur" style="color:var(--hon);font-size:13px">⭐ Client d'honneur</label>
+<div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(244,114,182,0.05);border:1px solid rgba(244,114,182,0.15);border-radius:12px">
+<input type="checkbox" name="est_honneur" id="recu_honneur" {{'checked' if recu.est_honneur}} style="width:18px;height:18px;accent-color:var(--pink)">
+<label for="recu_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
 </div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button type="submit" class="btn btn-green" style="flex:1">Enregistrer</button>
-<a href="/recus" class="btn btn-gold" style="flex:1;text-align:center">Annuler</a>
+<div style="display:flex;gap:10px;margin-top:20px">
+<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Enregistrer</button>
+<a href="/recus" class="btn btn-gold" style="flex:1;padding:14px;text-align:center">Annuler</a>
 </div>
 </form>
 </div>
-
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
 <style>

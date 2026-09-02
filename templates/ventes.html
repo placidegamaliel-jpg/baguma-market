@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>💰 Ventes</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a>
@@ -17,29 +17,29 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
-<button class="btn btn-green" onclick="document.getElementById('modalVente').style.display='flex'" style="margin-bottom:10px">+ Nouvelle vente</button>
+<button class="btn btn-green" onclick="document.getElementById('modalVente').style.display='flex'" style="margin-bottom:12px">+ Nouvelle vente</button>
 
-<div class="card" style="padding:0">
+<div class="card" style="padding:0;overflow:hidden">
 <div class="table-scroll">
 <table>
 <tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Client</th><th>Resp.</th></tr>
 {% for v in ventes_list %}
 <tr>
-<td style="font-size:11px">{{v.datetime[:16] if v.datetime else ''}}</td>
-<td>{{v.nom}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{v.datetime[:16] if v.datetime else ''}}</td>
+<td style="font-weight:500">{{v.nom}}</td>
 <td>{{v.quantite}}</td>
-<td class="tag-entree">${{ "%.2f"|format(v.total_usd) }}</td>
+<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(v.total_usd) }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{v.client_nom or '-'}}</td>
-<td style="font-size:11px">{{v.vendeur_login}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{v.vendeur_login}}</td>
 </tr>
 {% endfor %}
 {% if not ventes_list %}<tr><td colspan="6" class="empty">Aucune vente</td></tr>{% endif %}
 </table>
 </div></div>
 
-<div id="modalVente" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center">
-<div class="card" style="width:90%;max-width:400px;max-height:90vh;overflow-y:auto">
-<h2 style="color:var(--green);font-size:16px;margin-bottom:12px">💰 Nouvelle vente</h2>
+<div id="modalVente" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center">
+<div class="card" style="width:90%;max-width:420px;max-height:90vh;overflow-y:auto;border-radius:20px;padding:28px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:20px">💰 Nouvelle vente</h2>
 <form method="POST">
 {% if is_admin %}
 <div class="form-group"><label>Tenant</label>
@@ -56,18 +56,18 @@
 <div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required value="1" id="vente_qte" oninput="updateTotal()"></div>
 <div class="form-group"><label>Client Nom</label><input type="text" name="client_nom" placeholder="Nom du client"></div>
 <div class="form-group"><label>Client Telephone</label><input type="text" name="client_tel" placeholder="+243..."></div>
-<div class="form-group" style="display:flex;align-items:center;gap:8px">
-<input type="checkbox" name="honneur" id="vente_honneur" onchange="toggleHonneur()">
-<label for="vente_honneur" style="color:var(--hon);font-size:13px">⭐ Client d'honneur</label>
+<div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(244,114,182,0.05);border:1px solid rgba(244,114,182,0.15);border-radius:12px">
+<input type="checkbox" name="honneur" id="vente_honneur" onchange="toggleHonneur()" style="width:18px;height:18px;accent-color:var(--pink)">
+<label for="vente_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
 </div>
 <div class="form-group" id="honneur_prix" style="display:none"><label>Prix custom (USD)</label><input type="number" name="prix_custom" step="0.01" id="vente_prix_custom" oninput="updateTotal()"></div>
-<div style="background:var(--bg);padding:10px;border-radius:6px;text-align:center;margin:8px 0">
-<span style="color:var(--txt2);font-size:12px">Total : </span>
-<span id="vente_total" style="color:var(--green);font-size:20px;font-weight:bold">$0.00</span>
+<div style="background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.15);padding:16px;border-radius:14px;text-align:center;margin:12px 0">
+<span style="color:var(--txt2);font-size:12px;font-weight:500">Total : </span>
+<span id="vente_total" style="color:var(--accent);font-size:26px;font-weight:800">$0.00</span>
 </div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button type="submit" class="btn btn-green" style="flex:1">Valider</button>
-<button type="button" class="btn btn-gold" onclick="this.closest('#modalVente').style.display='none'">Annuler</button>
+<div style="display:flex;gap:10px;margin-top:16px">
+<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Valider</button>
+<button type="button" class="btn btn-gold" onclick="this.closest('#modalVente').style.display='none'" style="flex:1;padding:14px">Annuler</button>
 </div>
 </form>
 </div></div>

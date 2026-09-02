@@ -2,8 +2,8 @@
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu{% else %}👑 Admin{% endif %} - Dashboard</h1>
-<a href="/logout" style="color:var(--red);font-size:12px">Logout ✕</a>
+<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu{% else %}👑 Admin{% endif %}</h1>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Logout ✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard" class="active">📊 Dashboard</a>
@@ -11,20 +11,20 @@
 <a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>{% endif %}
 <a href="/settings">⚙️ Parametres</a>
-<a href="/notifications">🔔 Notifications{% if unread_notifs > 0 %} <span style="background:var(--red);color:#fff;padding:1px 6px;border-radius:8px;font-size:10px">{{unread_notifs}}</span>{% endif %}</a>
+<a href="/notifications">🔔 Notifications{% if unread_notifs > 0 %} <span class="badge">{{unread_notifs}}</span>{% endif %}</a>
 </nav>
 
 <div class="container">
 {% if is_admin %}
-<div class="card" style="background:linear-gradient(135deg,#1a1a3e,#0d0d24);border:1px solid var(--gold)">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-<span style="font-size:16px">🔄</span>
-<span style="color:var(--gold2);font-size:13px;font-weight:bold">Acces rapide</span>
+<div class="card" style="border:1px solid rgba(0,212,170,0.2);background:linear-gradient(135deg,rgba(0,212,170,0.05),rgba(79,172,254,0.03))">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+<span style="font-size:20px">🔄</span>
+<span style="color:var(--txt);font-size:14px;font-weight:600">Acces rapide</span>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
-<a href="/switch/admin" style="background:{% if not session.view_tenant %}var(--gold2){% else %}var(--gold){% endif %};color:#000;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">👑 Tous</a>
-<a href="/switch/bukavu" style="background:{% if session.view_tenant == 1 %}var(--green){% else %}var(--blue){% endif %};color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">📍 Bukavu</a>
-<a href="/switch/goma" style="background:{% if session.view_tenant == 2 %}var(--green){% else %}var(--blue){% endif %};color:#fff;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:bold">📍 Goma</a>
+<a href="/switch/admin" style="background:{% if not session.view_tenant %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if not session.view_tenant %}#000{% else %}var(--txt){% endif %};padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid {% if not session.view_tenant %}transparent{% else %}var(--glass-border){% endif %};transition:all .2s">👑 Tous</a>
+<a href="/switch/bukavu" style="background:{% if session.view_tenant == 1 %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if session.view_tenant == 1 %}#000{% else %}var(--txt){% endif %};padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid {% if session.view_tenant == 1 %}transparent{% else %}var(--glass-border){% endif %};transition:all .2s">📍 Bukavu</a>
+<a href="/switch/goma" style="background:{% if session.view_tenant == 2 %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if session.view_tenant == 2 %}#000{% else %}var(--txt){% endif %};padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid {% if session.view_tenant == 2 %}transparent{% else %}var(--glass-border){% endif %};transition:all .2s">📍 Goma</a>
 </div>
 </div>
 {% endif %}
@@ -32,16 +32,16 @@
 <div class="stats">
 <div class="stat"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></div>
 <div class="stat"><div class="label">Ventes</div><div class="value green">{{nb_ventes}}</div></div>
-<div class="stat"><div class="label">Clients</div><div class="value gold">{{nb_clients}}</div></div>
+<div class="stat"><div class="label">Clients</div><div class="value">{{nb_clients}}</div></div>
 </div>
 <div class="stats">
 <div class="stat"><div class="label">CA Total</div><div class="value green">${{ "%.2f"|format(ca_total) }}</div></div>
 <div class="stat"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></div>
-<div class="stat"><div class="label">Dettes</div><div class="value" style="color:var(--hon)">{{nb_dettes}}</div></div>
+<div class="stat"><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></div>
 </div>
 <div class="stats">
-<div class="stat" style="grid-column:span 2"><div class="label">Total Dettes Impayees</div><div class="value" style="color:var(--hon)">${{ "%.2f"|format(total_dettes) }}</div></div>
-<div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:13px">{{session.role}}</div></div>
+<div class="stat" style="grid-column:span 2"><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></div>
+<div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
 </div>
 
 <div class="card">
@@ -51,15 +51,15 @@
 <tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Vendeur</th></tr>
 {% for r in recent %}
 <tr>
-<td style="font-size:11px">{{r.datetime}}</td>
-<td>{{r.nom}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{r.datetime}}</td>
+<td style="font-weight:500">{{r.nom}}</td>
 <td>{{r.quantite}}</td>
-<td style="color:var(--green)">${{ "%.2f"|format(r.total_usd) }}</td>
+<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
 <td style="color:var(--txt2)">{{r.vendeur_login}}</td>
 </tr>
 {% endfor %}
 {% if not recent %}
-<tr><td colspan="5" class="empty">Aucune vente</td></tr>
+<tr><td colspan="5" class="empty">Aucune vente enregistree</td></tr>
 {% endif %}
 </table>
 </div>
