@@ -229,12 +229,17 @@ def switch_tenant(tenant_slug):
     if not is_admin():
         return redirect(url_for("dashboard"))
     slug = tenant_slug.lower()
+    conn = get_db()
     if slug == "admin":
         session.pop("view_tenant", None)
         session["view_tenant_name"] = "Admin Global"
-    elif slug in TENANT_SLUGS:
-        session["view_tenant"] = TENANT_SLUGS[slug]
-        session["view_tenant_name"] = TENANT_NAMES[TENANT_SLUGS[slug]]
+    else:
+        t = db_fetchone(conn, "SELECT id, nom FROM tenants WHERE LOWER(nom)=%s" if IS_PG else
+                        "SELECT id, nom FROM tenants WHERE LOWER(nom)=?", (slug,))
+        if t:
+            session["view_tenant"] = t["id"]
+            session["view_tenant_name"] = t["nom"]
+    conn.close()
     return redirect(url_for("dashboard"))
 
 @app.route("/dashboard")
@@ -278,10 +283,13 @@ def dashboard():
         FROM ventes v JOIN produits p ON v.produit_id=p.id{vcond}
         ORDER BY v.date DESC, v.heure DESC LIMIT 10""", vparams)
 
+    all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
-                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes)
+                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes,
+                           all_tenants=all_tenants)
 
 @app.route("/produits")
 @login_required
