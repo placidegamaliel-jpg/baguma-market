@@ -732,7 +732,7 @@ def utilisateur_new():
     login = data.get("login", "").strip()
     code = data.get("code", "").strip()
     role = data.get("role", "vendeur")
-    tenant_id = int(data.get("tenant_id", 0))
+    tenant_nom = data.get("tenant_nom", "").strip()
     if not login or not code:
         flash("Login et code requis", "error")
         return redirect(url_for("utilisateurs"))
@@ -742,13 +742,28 @@ def utilisateur_new():
         conn.close()
         flash("Ce login existe deja", "error")
         return redirect(url_for("utilisateurs"))
+    tenant_id = 0
+    if tenant_nom:
+        t = db_fetchone(conn, "SELECT id FROM tenants WHERE nom=%s" if IS_PG else "SELECT id FROM tenants WHERE nom=?", (tenant_nom,))
+        if t:
+            tenant_id = t["id"]
+        else:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            tenant_id = db_insert(conn, "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (%s,1,'','') RETURNING id" if IS_PG else
+                                  "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (?,1','','')",
+                                  ()) or 1
+            if IS_PG:
+                cur = conn.execute("SELECT id FROM tenants WHERE nom=%s", (tenant_nom,))
+                row = cur.fetchone()
+                if row:
+                    tenant_id = row["id"]
     db_insert(conn, "INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES (%s,%s,%s,%s) RETURNING id" if IS_PG else
               "INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES (?,?,?,?)",
               (login, code, tenant_id, role))
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
-              (session["user_id"], session["login"], tenant_id, "utilisateur_ajoute", f"{login} ({role})", now))
+              (session["user_id"], session["login"], tenant_id, "utilisateur_ajoute", f"{login} ({role}) - tenant:{tenant_nom}", now))
     conn.commit()
     conn.close()
     flash(f"Utilisateur {login} ajoute", "success")
