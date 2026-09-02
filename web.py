@@ -691,6 +691,59 @@ def utilisateurs():
     conn.close()
     return render_template("utilisateurs.html", users=users, tenants=tenants, is_admin=is_admin())
 
+@app.route("/utilisateurs/new", methods=["POST"])
+@login_required
+def utilisateur_new():
+    if not is_admin():
+        flash("Seul l'admin peut ajouter des utilisateurs", "error")
+        return redirect(url_for("dashboard"))
+    data = request.form
+    login = data.get("login", "").strip()
+    code = data.get("code", "").strip()
+    role = data.get("role", "vendeur")
+    tenant_id = int(data.get("tenant_id", 0))
+    if not login or not code:
+        flash("Login et code requis", "error")
+        return redirect(url_for("utilisateurs"))
+    conn = get_db()
+    existing = db_fetchone(conn, "SELECT id FROM utilisateurs WHERE login=%s" if IS_PG else "SELECT id FROM utilisateurs WHERE login=?", (login,))
+    if existing:
+        conn.close()
+        flash("Ce login existe deja", "error")
+        return redirect(url_for("utilisateurs"))
+    db_insert(conn, "INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES (%s,%s,%s,%s) RETURNING id" if IS_PG else
+              "INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES (?,?,?,?)",
+              (login, code, tenant_id, role))
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+              (session["user_id"], session["login"], tenant_id, "utilisateur_ajoute", f"{login} ({role})", now))
+    conn.commit()
+    conn.close()
+    flash(f"Utilisateur {login} ajoute", "success")
+    return redirect(url_for("utilisateurs"))
+
+@app.route("/utilisateurs/supprimer/<int:uid>", methods=["POST"])
+@login_required
+def utilisateur_supprimer(uid):
+    if not is_admin():
+        flash("Seul l'admin peut supprimer des utilisateurs", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    user = db_fetchone(conn, "SELECT * FROM utilisateurs WHERE id=%s" if IS_PG else "SELECT * FROM utilisateurs WHERE id=?", (uid,))
+    if user and user["login"] not in ("0891624401", "graciella@gmail.com"):
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_execute(conn, "DELETE FROM utilisateurs WHERE id=%s" if IS_PG else "DELETE FROM utilisateurs WHERE id=?", (uid,))
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], user["tenant_id"], "utilisateur_supprime", f"{user['login']} ({user['role']})", now))
+        conn.commit()
+        flash(f"Utilisateur {user['login']} supprime", "success")
+    else:
+        flash("Impossible de supprimer cet utilisateur", "error")
+    conn.close()
+    return redirect(url_for("utilisateurs"))
+
 def create_notif(conn, tenant_id, message, responsable="Admin"):
     db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (%s,%s,0,%s,%s)" if IS_PG else
               "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (?,0,?,?)",

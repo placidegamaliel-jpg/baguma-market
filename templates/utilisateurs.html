@@ -8,14 +8,46 @@
 <a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
+
+<div class="card" style="border-radius:20px;padding:24px;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+<div style="width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">➕</div>
+<p style="font-size:15px;font-weight:600">Ajouter un utilisateur</p>
+</div>
+<form method="POST" action="/utilisateurs/new" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+<div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Login</label><input type="text" name="login" required placeholder="Email ou telephone" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none"></div>
+<div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Code</label><input type="text" name="code" required placeholder="Code secret" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none"></div>
+<div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Role</label>
+<select name="role" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<option value="vendeur">Vendeur</option>
+<option value="admin">Admin</option>
+</select></div>
+<div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Tenant</label>
+<select name="tenant_id" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<option value="0">Global (Admin)</option>
+{% for t in tenants %}<option value="{{t.id}}">{{t.nom}}</option>{% endfor %}
+</select></div>
+<button type="submit" class="btn btn-green" style="padding:12px 20px">Ajouter</button>
+</form>
+</div>
+
 <div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
-<tr><th>Login</th><th>Role</th><th>Tenant</th></tr>
+<tr><th>Login</th><th>Role</th><th>Tenant</th><th>Actions</th></tr>
 {% for u in users %}
 <tr>
 <td style="font-weight:500">{{u.login}}</td>
 <td class="{{'tag-entree' if u.role=='admin' else ''}}" style="font-weight:600">{{u.role}}</td>
 <td style="color:var(--txt2)">{{u.tenant_nom or 'Global'}}</td>
+<td>
+{% if u.login not in ('0891624401', 'graciella@gmail.com') %}
+<form method="POST" action="/utilisateurs/supprimer/{{u.id}}" style="display:inline" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+<button type="submit" class="btn" style="background:linear-gradient(135deg,#ff4757,#ff6b81);padding:4px 10px;font-size:11px;border-radius:8px">🗑️</button>
+</form>
+{% endif %}
+</td>
 </tr>
 {% endfor %}
 </table></div></div>
