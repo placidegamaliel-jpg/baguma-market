@@ -20,14 +20,15 @@
 <div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Login</label><input type="text" name="login" required placeholder="Email ou telephone" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none"></div>
 <div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Code</label><input type="text" name="code" required placeholder="Code secret" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none"></div>
 <div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Role</label>
-<select name="role" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<select name="role" id="roleSelect" onchange="toggleTenant()" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <option value="vendeur">Vendeur</option>
 <option value="admin">Admin</option>
 </select></div>
-<div style="flex:1;min-width:120px"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Tenant (nom)</label><input type="text" name="tenant_nom" placeholder="Ex: Bukavu" list="tenants-list" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<div style="flex:1;min-width:120px" id="tenantField"><label style="font-size:12px;color:var(--txt2);font-weight:500;display:block;margin-bottom:6px">Tenant (nom)</label><input type="text" name="tenant_nom" placeholder="Ex: Bukavu" list="tenants-list" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <datalist id="tenants-list">{% for t in tenants %}<option value="{{t.nom}}">{% endfor %}</datalist></div>
 <button type="submit" class="btn btn-green" style="padding:12px 20px">Ajouter</button>
 </form>
+<script>function toggleTenant(){var r=document.getElementById('roleSelect').value;document.getElementById('tenantField').style.display=r==='admin'?'none':'block'}</script>
 </div>
 
 <div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
