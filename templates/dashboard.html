@@ -30,17 +30,17 @@
 {% endif %}
 
 <div class="stats">
-<div class="stat"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></div>
-<div class="stat"><div class="label">Ventes</div><div class="value green">{{nb_ventes}}</div></div>
-<div class="stat"><div class="label">Clients</div><div class="value">{{nb_clients}}</div></div>
+<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></a>
+<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Ventes</div><div class="value green">{{nb_ventes}}</div></a>
+<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Clients</div><div class="value">{{nb_clients}}</div></a>
 </div>
 <div class="stats">
-<div class="stat"><div class="label">CA Total</div><div class="value green">${{ "%.2f"|format(ca_total) }}</div></div>
-<div class="stat"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></div>
-<div class="stat"><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></div>
+<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">CA Total</div><div class="value green">${{ "%.2f"|format(ca_total) }}</div></a>
+<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></a>
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></a>
 </div>
 <div class="stats">
-<div class="stat" style="grid-column:span 2"><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></div>
+<a href="/dettes" class="stat" style="grid-column:span 2;text-decoration:none;cursor:pointer"><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></a>
 <div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
 </div>
 
