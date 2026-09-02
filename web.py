@@ -182,7 +182,7 @@ def login():
                 if not ville:
                     flash("Veuillez selectionner votre ville", "error")
                 else:
-                    flash("Ce compte n'est pas autorise pour cette ville", "error")
+                    flash("Compte non autorise pour cette ville", "error")
                 return redirect(url_for("login"))
             session["user_id"] = row["id"]
             session["login"] = row["login"]
@@ -198,7 +198,7 @@ def login():
             conn.close()
             return redirect(url_for("dashboard"))
         conn.close()
-        flash("Login ou code incorrect", "error")
+        flash("Code incorrect", "error")
     return render_template("login.html")
 
 @app.route("/<tenant_slug>")

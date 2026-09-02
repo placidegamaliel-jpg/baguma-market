@@ -113,6 +113,8 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 {% block body %}{% endblock %}
 <script>
 function toggleNav(){document.getElementById('mainNav').classList.toggle('active')}
+var flashes=document.querySelectorAll('.flash');
+flashes.forEach(function(f){setTimeout(function(){f.style.transition='opacity 0.5s';f.style.opacity='0';setTimeout(function(){f.remove()},500)},5000)});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/static/sw.js').catch(()=>{})}
 </script>
 </body>

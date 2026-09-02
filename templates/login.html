@@ -17,19 +17,25 @@
 
 <form method="POST" style="text-align:left">
 <div class="form-group">
-<label>Login</label>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}
+<div class="flash {{cat}}" id="flash-msg">{{msg}}</div>
+{% endfor %}
+{% endwith %}
+
+<form method="POST" style="text-align:left">
+<div class="form-group">
 <input type="text" name="login" placeholder="Email ou telephone" required autofocus style="border-radius:12px">
 </div>
 <div class="form-group">
-<label>Code</label>
 <div style="position:relative">
 <input type="password" name="code" id="code" placeholder="Code secret" required style="padding-right:48px;border-radius:12px">
 <button type="button" onclick="toggleCode()" id="eyeBtn" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--glass);border:1px solid var(--glass-border);color:var(--txt2);width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s">👁</button>
 </div>
 </div>
 <div class="form-group">
-<label>Ville</label>
 <select name="ville" required style="border-radius:12px">
+<option value="">-- Choisir votre ville --</option>
 <option value="">-- Choisir votre ville --</option>
 <option value="bukavu">📍 Bukavu</option>
 <option value="goma">📍 Goma</option>
@@ -50,5 +56,7 @@ function toggleCode(){
   if(inp.type==='password'){inp.type='text';btn.textContent='🙈'}
   else{inp.type='password';btn.textContent='👁'}
 }
+var flash=document.getElementById('flash-msg');
+if(flash){setTimeout(function(){flash.style.transition='opacity 0.5s';flash.style.opacity='0';setTimeout(function(){flash.remove()},500)},5000)}
 </script>
 {% endblock %}
