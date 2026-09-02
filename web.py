@@ -22,6 +22,14 @@ def init_pg_schema():
             stmt = stmt.strip()
             if stmt:
                 conn.execute(stmt)
+        for alter in [
+            "ALTER TABLE produits ADD COLUMN IF NOT EXISTS code TEXT DEFAULT ''",
+            "ALTER TABLE produits ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''"
+        ]:
+            try:
+                conn.execute(alter)
+            except Exception:
+                pass
         cur = conn.execute("SELECT COUNT(*) FROM tenants")
         if cur.fetchone()[0] == 0:
             conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
