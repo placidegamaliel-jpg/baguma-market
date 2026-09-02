@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS notif_settings (tenant_id INTEGER PRIMARY KEY, alerte
 CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
+CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 """
 
 init_pg_schema()
@@ -852,7 +853,12 @@ def dette_supprimer(did):
     conn = get_db()
     dette = db_fetchone(conn, "SELECT * FROM dettes WHERE id=%s" if IS_PG else "SELECT * FROM dettes WHERE id=?", (did,))
     if dette:
+        import json
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data_json = json.dumps(dict(dette), default=str)
+        db_insert(conn, "INSERT INTO corbeille (table_name, original_id, data, deleted_by, deleted_at, tenant_id) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                  "INSERT INTO corbeille (table_name, original_id, data, deleted_by, deleted_at, tenant_id) VALUES (?,?,?,?,?,?)",
+                  ("dettes", did, data_json, session["login"], now, dette["tenant_id"]))
         db_execute(conn, "DELETE FROM dettes WHERE id=%s" if IS_PG else "DELETE FROM dettes WHERE id=?", (did,))
         create_notif(conn, dette["tenant_id"], f"Dette supprimee : {dette['client_nom']} - ${dette['montant_usd']:.2f}", session["login"])
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
@@ -862,6 +868,63 @@ def dette_supprimer(did):
         flash(f"Dette de {dette['client_nom']} supprimee", "success")
     conn.close()
     return redirect(url_for("dettes"))
+
+@app.route("/corbeille")
+@login_required
+def corbeille():
+    if not is_admin():
+        flash("Seul l'admin peut acceder a la corbeille", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    items = db_fetchall(conn, "SELECT * FROM corbeille ORDER BY deleted_at DESC")
+    conn.close()
+    return render_template("corbeille.html", items=items, is_admin=is_admin())
+
+@app.route("/corbeille/restore/<int:cid>", methods=["POST"])
+@login_required
+def corbeille_restore(cid):
+    if not is_admin():
+        flash("Seul l'admin peut restaurer des elements", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    item = db_fetchone(conn, "SELECT * FROM corbeille WHERE id=%s" if IS_PG else "SELECT * FROM corbeille WHERE id=?", (cid,))
+    if item:
+        import json
+        data = json.loads(item["data"])
+        table = item["table_name"]
+        oid = item["original_id"]
+        if table == "dettes":
+            db_execute(conn, "INSERT INTO dettes (id, tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, notes, vendeur_login, date_paiement, admin_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                       "INSERT INTO dettes (id, tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, notes, vendeur_login, date_paiement, admin_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                       (oid, data.get("tenant_id", 0), data.get("client_nom", ""), data.get("client_tel", ""), data.get("montant_usd", 0), data.get("montant_cdf", 0), data.get("est_paye", 0), data.get("date", ""), data.get("heure", ""), data.get("recu_num", ""), data.get("notes", ""), data.get("vendeur_login", ""), data.get("date_paiement"), data.get("admin_id")))
+        db_execute(conn, "DELETE FROM corbeille WHERE id=%s" if IS_PG else "DELETE FROM corbeille WHERE id=?", (cid,))
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], item["tenant_id"], "corbeille_restore", f"{table} #{oid} restaure", now))
+        conn.commit()
+        flash(f"Element restaure avec succes", "success")
+    conn.close()
+    return redirect(url_for("corbeille"))
+
+@app.route("/corbeille/supprimer/<int:cid>", methods=["POST"])
+@login_required
+def corbeille_supprimer_definitif(cid):
+    if not is_admin():
+        flash("Seul l'admin peut supprimer definitivement", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    item = db_fetchone(conn, "SELECT * FROM corbeille WHERE id=%s" if IS_PG else "SELECT * FROM corbeille WHERE id=?", (cid,))
+    if item:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db_execute(conn, "DELETE FROM corbeille WHERE id=%s" if IS_PG else "DELETE FROM corbeille WHERE id=?", (cid,))
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], item["tenant_id"], "corbeille_supprime_definitif", f"{item['table_name']} #{item['original_id']} supprime definitivement", now))
+        conn.commit()
+        flash("Element supprime definitivement", "success")
+    conn.close()
+    return redirect(url_for("corbeille"))
 
 @app.route("/notifications")
 @login_required

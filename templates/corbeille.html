@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🗑️ Corbeille</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
+<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a>
+<a href="/corbeille" class="active">🗑️ Corbeille</a>
+<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
+</nav>
+<div class="container">
+<div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
+<table>
+<tr><th>Date</th><th>Table</th><th>ID</th><th>Supprime par</th><th>Details</th><th>Actions</th></tr>
+{% for item in items %}
+<tr>
+<td style="font-size:11px;color:var(--txt2)">{{item.deleted_at[:16]}}</td>
+<td style="font-weight:600;color:var(--accent)">{{item.table_name}}</td>
+<td style="color:var(--txt2)">#{{item.original_id}}</td>
+<td style="font-weight:500">{{item.deleted_by}}</td>
+<td style="font-size:11px;color:var(--txt2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{item.data[:80]}}</td>
+<td style="white-space:nowrap">
+<form method="POST" action="/corbeille/restore/{{item.id}}" style="display:inline">
+<button type="submit" class="btn" style="background:linear-gradient(135deg,#00d4aa,#4facfe);font-size:11px;padding:6px 12px;border-radius:8px">♻️ Restaurer</button>
+</form>
+<form method="POST" action="/corbeille/supprimer/{{item.id}}" style="display:inline" onsubmit="return confirm('Supprimer definitivement cet element ?')">
+<button type="submit" class="btn" style="background:linear-gradient(135deg,#ff4757,#ff6b81);font-size:11px;padding:6px 12px;border-radius:8px">🗑️ Supprimer</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+{% if not items %}<tr><td colspan="6" class="empty">La corbeille est vide</td></tr>{% endif %}
+</table></div></div>
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>{% endblock %}
