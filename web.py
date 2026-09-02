@@ -43,7 +43,7 @@ SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS tenants (id SERIAL PRIMARY KEY, nom TEXT UNIQUE NOT NULL, actif INTEGER DEFAULT 1, date_creation TEXT, localisation TEXT DEFAULT '', type_commerce TEXT DEFAULT 'Chaussures');
 CREATE TABLE IF NOT EXISTS utilisateurs (id SERIAL PRIMARY KEY, login TEXT UNIQUE, code TEXT, tenant_id INTEGER DEFAULT 0, role TEXT DEFAULT 'vendeur');
 CREATE TABLE IF NOT EXISTS categories (id SERIAL PRIMARY KEY, nom TEXT, emoji TEXT, tenant_id INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS produits (id SERIAL PRIMARY KEY, categorie_id INTEGER, nom TEXT, prix_usd REAL, prix_cdf REAL, stock INTEGER DEFAULT 100, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS produits (id SERIAL PRIMARY KEY, categorie_id INTEGER, nom TEXT, code TEXT DEFAULT '', couleur TEXT DEFAULT '', prix_usd REAL, prix_cdf REAL, stock INTEGER DEFAULT 100, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS ventes (id SERIAL PRIMARY KEY, produit_id INTEGER, quantite INTEGER, total_usd REAL, total_cdf REAL, date TEXT, heure TEXT, recu_num TEXT DEFAULT '', client_nom TEXT DEFAULT '', client_tel TEXT DEFAULT '', prix_unit_usd REAL DEFAULT 0, prix_unit_cdf REAL DEFAULT 0, est_client_honneur INTEGER DEFAULT 0, client_id INTEGER DEFAULT NULL, tenant_id INTEGER DEFAULT 0, vendeur_login TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS recus (id SERIAL PRIMARY KEY, numero TEXT UNIQUE, client_nom TEXT, client_tel TEXT, total_usd REAL, total_cdf REAL, est_honneur INTEGER DEFAULT 0, date TEXT, heure TEXT, client_id INTEGER DEFAULT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS clients (id SERIAL PRIMARY KEY, nom TEXT, telephone TEXT, nb_visites INTEGER DEFAULT 0, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, premier_visite TEXT, derniere_visite TEXT, tenant_id INTEGER DEFAULT 0);
@@ -289,14 +289,14 @@ def produits():
         cond_parts.append("p.tenant_id=%s" if IS_PG else "p.tenant_id=?")
         params.append(etid)
     if search:
-        cond_parts.append("p.nom LIKE %s" if IS_PG else "p.nom LIKE ?")
-        params.append(f"%{search}%")
+        cond_parts.append("(p.nom LIKE %s OR p.code LIKE %s)" if IS_PG else "(p.nom LIKE ? OR p.code LIKE ?)")
+        params.extend([f"%{search}%", f"%{search}%"])
     if cat:
         cond_parts.append("c.nom=%s" if IS_PG else "c.nom=?")
         params.append(cat)
     where = " WHERE " + " AND ".join(cond_parts) if cond_parts else ""
 
-    prods = db_fetchall(conn, f"""SELECT p.id, p.nom, c.nom as cat_nom, p.prix_usd, p.prix_cdf, p.stock, p.tenant_id
+    prods = db_fetchall(conn, f"""SELECT p.id, p.nom, p.code, p.couleur, c.nom as cat_nom, p.prix_usd, p.prix_cdf, p.stock, p.tenant_id
         FROM produits p JOIN categories c ON p.categorie_id=c.id{where} ORDER BY p.nom""", params)
 
     cats = [r["nom"] for r in db_fetchall(conn, "SELECT DISTINCT nom FROM categories ORDER BY nom")]
@@ -702,6 +702,8 @@ def produit_edit(pid):
         return redirect(url_for("produits"))
     if request.method == "POST":
         data = request.form
+        code = data.get("code", "").strip()
+        couleur = data.get("couleur", "").strip()
         try:
             prix_usd = float(data["prix_usd"])
         except (ValueError, KeyError):
@@ -711,15 +713,15 @@ def produit_edit(pid):
         taux = get_taux(conn, prod["tenant_id"])
         prix_cdf = prix_usd * taux
         ancien_prix = prod["prix_usd"]
-        db_execute(conn, "UPDATE produits SET prix_usd=%s, prix_cdf=%s WHERE id=%s" if IS_PG else
-                   "UPDATE produits SET prix_usd=?, prix_cdf=? WHERE id=?", (prix_usd, prix_cdf, pid))
+        db_execute(conn, "UPDATE produits SET code=%s, couleur=%s, prix_usd=%s, prix_cdf=%s WHERE id=%s" if IS_PG else
+                   "UPDATE produits SET code=?, couleur=?, prix_usd=?, prix_cdf=? WHERE id=?", (code, couleur, prix_usd, prix_cdf, pid))
         if prix_usd != ancien_prix:
             create_notif(conn, prod["tenant_id"],
                 f"Prix modifie : {prod['nom']} passe de ${ancien_prix:.2f} a ${prix_usd:.2f}",
                 session["login"])
         conn.commit()
         conn.close()
-        flash(f"Prix mis a jour : {prod['nom']} = ${prix_usd:.2f}", "success")
+        flash(f"Produit mis a jour : {prod['nom']}", "success")
         return redirect(url_for("produits"))
     conn.close()
     return render_template("produit_edit.html", prod=prod, is_admin=is_admin())
@@ -736,6 +738,8 @@ def produit_new():
     if request.method == "POST":
         data = request.form
         nom = data.get("nom", "").strip()
+        code = data.get("code", "").strip()
+        couleur = data.get("couleur", "").strip()
         try:
             cat_id = int(data["categorie_id"])
             prix_usd = float(data["prix_usd"])
@@ -751,9 +755,9 @@ def produit_new():
         tid_prod = int(data["tenant_id"]) if is_admin() else (etid or session["tenant_id"])
         taux = get_taux(conn, tid_prod)
         prix_cdf = prix_usd * taux
-        db_insert(conn, "INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
-                  "INSERT INTO produits (nom, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (?,?,?,?,?,?)",
-                  (nom, cat_id, prix_usd, prix_cdf, stock_val, tid_prod))
+        db_insert(conn, "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (?,?,?,?,?,?,?,?)",
+                  (nom, code, couleur, cat_id, prix_usd, prix_cdf, stock_val, tid_prod))
         conn.commit()
         create_notif(conn, tid_prod, f"Nouveau produit : {nom} - ${prix_usd:.2f}", session["login"])
         conn.close()

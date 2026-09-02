@@ -23,6 +23,10 @@
 </div>
 </div>
 <form method="POST">
+<div style="display:flex;gap:10px">
+<div class="form-group" style="flex:1"><label>Code produit</label><input type="text" name="code" value="{{prod.code or ''}}" placeholder="Ex: NAF-001"></div>
+<div class="form-group" style="flex:1"><label>Couleur</label><input type="text" name="couleur" value="{{prod.couleur or ''}}" placeholder="Ex: Blanc"></div>
+</div>
 <div class="form-group">
 <label>Prix USD</label>
 <input type="number" name="prix_usd" value="{{prod.prix_usd}}" step="0.01" min="0" required>
