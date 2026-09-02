@@ -3,6 +3,7 @@
 <div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>⚙️ Parametres</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Dashboard</a><a href="/settings" class="active">⚙️ Parametres</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/corbeille">🗑️ Corbeille</a>{% endif %}
 </nav>
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
