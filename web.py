@@ -718,6 +718,30 @@ def tenant_new():
     flash(f"Tenant {nom} ajoute", "success")
     return redirect(url_for("tenants"))
 
+@app.route("/tenants/supprimer/<int:tid>", methods=["POST"])
+@login_required
+def tenant_supprimer(tid):
+    if not is_admin():
+        flash("Seul l'admin peut supprimer des tenants", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    tenant = db_fetchone(conn, "SELECT * FROM tenants WHERE id=%s" if IS_PG else "SELECT * FROM tenants WHERE id=?", (tid,))
+    if tenant:
+        import json
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data_json = json.dumps(dict(tenant), default=str)
+        db_insert(conn, "INSERT INTO corbeille (table_name, original_id, data, deleted_by, deleted_at, tenant_id) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                  "INSERT INTO corbeille (table_name, original_id, data, deleted_by, deleted_at, tenant_id) VALUES (?,?,?,?,?,?)",
+                  ("tenants", tid, data_json, session["login"], now, 0))
+        db_execute(conn, "UPDATE tenants SET actif=0 WHERE id=%s" if IS_PG else "UPDATE tenants SET actif=0 WHERE id=?", (tid,))
+        db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                  (session["user_id"], session["login"], 0, "tenant_supprime", f"{tenant['nom']} - {tenant['localisation']}", now))
+        conn.commit()
+        flash(f"Tenant {tenant['nom']} supprime", "success")
+    conn.close()
+    return redirect(url_for("tenants"))
+
 @app.route("/utilisateurs")
 @login_required
 def utilisateurs():
@@ -1016,6 +1040,8 @@ def corbeille_restore(cid):
             db_execute(conn, "INSERT INTO dettes (id, tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, notes, vendeur_login, date_paiement, admin_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
                        "INSERT INTO dettes (id, tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, notes, vendeur_login, date_paiement, admin_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                        (oid, data.get("tenant_id", 0), data.get("client_nom", ""), data.get("client_tel", ""), data.get("montant_usd", 0), data.get("montant_cdf", 0), data.get("est_paye", 0), data.get("date", ""), data.get("heure", ""), data.get("recu_num", ""), data.get("notes", ""), data.get("vendeur_login", ""), data.get("date_paiement"), data.get("admin_id")))
+        elif table == "tenants":
+            db_execute(conn, "UPDATE tenants SET actif=1 WHERE id=%s" if IS_PG else "UPDATE tenants SET actif=1 WHERE id=?", (oid,))
         db_execute(conn, "DELETE FROM corbeille WHERE id=%s" if IS_PG else "DELETE FROM corbeille WHERE id=?", (cid,))
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else

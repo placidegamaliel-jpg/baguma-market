@@ -26,7 +26,7 @@
 
 <div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
-<tr><th>ID</th><th>Nom</th><th>Localisation</th><th>Type</th><th>Statut</th></tr>
+<tr><th>ID</th><th>Nom</th><th>Localisation</th><th>Type</th><th>Statut</th><th>Actions</th></tr>
 {% for t in tenants_list %}
 <tr>
 <td style="color:var(--txt2)">{{t.id}}</td>
@@ -34,6 +34,13 @@
 <td>{{t.localisation}}</td>
 <td style="color:var(--txt2)">{{t.type_commerce}}</td>
 <td class="{{'tag-entree' if t.actif else 'tag-sortie'}}" style="font-weight:600">{{'Actif' if t.actif else 'Inactif'}}</td>
+<td>
+{% if t.actif %}
+<form method="POST" action="/tenants/supprimer/{{t.id}}" style="display:inline" onsubmit="return confirm('Supprimer ce tenant ?')">
+<button type="submit" class="btn" style="background:linear-gradient(135deg,#ff4757,#ff6b81);padding:4px 10px;font-size:11px;border-radius:8px">🗑️</button>
+</form>
+{% endif %}
+</td>
 </tr>
 {% endfor %}
 </table></div></div>
