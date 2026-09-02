@@ -679,6 +679,37 @@ def tenants():
     conn.close()
     return render_template("tenants.html", tenants_list=tenants_list, is_admin=is_admin())
 
+@app.route("/tenants/new", methods=["POST"])
+@login_required
+def tenant_new():
+    if not is_admin():
+        flash("Seul l'admin peut ajouter des tenants", "error")
+        return redirect(url_for("dashboard"))
+    data = request.form
+    nom = data.get("nom", "").strip()
+    localisation = data.get("localisation", "").strip()
+    type_commerce = data.get("type_commerce", "").strip()
+    if not nom:
+        flash("Le nom est obligatoire", "error")
+        return redirect(url_for("tenants"))
+    conn = get_db()
+    existing = db_fetchone(conn, "SELECT id FROM tenants WHERE nom=%s" if IS_PG else "SELECT id FROM tenants WHERE nom=?", (nom,))
+    if existing:
+        conn.close()
+        flash("Ce tenant existe deja", "error")
+        return redirect(url_for("tenants"))
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    db_insert(conn, "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (%s,1,%s,%s,%s) RETURNING id" if IS_PG else
+              "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (?,1,?,?,?)",
+              (nom, localisation, type_commerce, now))
+    db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+              (session["user_id"], session["login"], 0, "tenant_ajoute", f"{nom} - {localisation}", now))
+    conn.commit()
+    conn.close()
+    flash(f"Tenant {nom} ajoute", "success")
+    return redirect(url_for("tenants"))
+
 @app.route("/utilisateurs")
 @login_required
 def utilisateurs():
