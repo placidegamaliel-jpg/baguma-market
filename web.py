@@ -132,7 +132,6 @@ def get_taux(conn, tenant_id):
                       "SELECT value FROM settings WHERE tenant_id=? AND key='taux_cdf'", (tenant_id,))
     return float(row["value"]) if row and row["value"] else 2800.0
 
-TENANT_SLUGS = {"goma": 2, "bukavu": 1, "admin": 0}
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 
 @app.errorhandler(404)
@@ -180,7 +179,9 @@ def login():
         if row:
             user_tid = row["tenant_id"]
             user_role = row["role"]
-            ville_tid = TENANT_SLUGS.get(ville, None)
+            t_row = db_fetchone(conn, "SELECT id, nom FROM tenants WHERE LOWER(nom)=%s AND actif=1" if IS_PG else
+                                "SELECT id, nom FROM tenants WHERE LOWER(nom)=? AND actif=1", (ville,))
+            ville_tid = t_row["id"] if t_row else None
             if user_tid == 0 and user_role == "admin":
                 if ville_tid is not None:
                     session["tenant_slug"] = ville
@@ -208,15 +209,14 @@ def login():
             return redirect(url_for("dashboard"))
         conn.close()
         flash("Code incorrect", "error")
-    return render_template("login.html")
-
-@app.route("/<tenant_slug>")
-def login_tenant(tenant_slug):
-    slug = tenant_slug.lower()
-    if slug in TENANT_SLUGS:
-        session["url_tenant"] = TENANT_SLUGS[slug]
-        session["tenant_slug"] = slug
-    return redirect(url_for("login"))
+    tenants = []
+    try:
+        conn = get_db()
+        tenants = db_fetchall(conn, "SELECT nom FROM tenants WHERE actif=1 ORDER BY nom")
+        conn.close()
+    except Exception:
+        pass
+    return render_template("login.html", tenants=tenants)
 
 @app.route("/logout")
 def logout():

@@ -29,8 +29,7 @@
 <p style="color:var(--txt2);font-size:12px;margin-bottom:8px;font-weight:600">Ville</p>
 <select name="ville" style="border-radius:12px">
 <option value="">-- Choisir votre ville --</option>
-<option value="bukavu">📍 Bukavu</option>
-<option value="goma">📍 Goma</option>
+{% for t in tenants %}<option value="{{t.nom}}">📍 {{t.nom}}</option>{% endfor %}
 </select>
 </div>
 <button type="submit" class="btn btn-green" style="width:100%;margin-top:8px;padding:16px;font-size:15px;border-radius:12px">Connexion</button>
