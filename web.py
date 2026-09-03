@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT N
 CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL);
 """
 
 init_pg_schema()
@@ -1109,6 +1110,31 @@ def notif_read_all():
     conn.commit()
     conn.close()
     return redirect(url_for("notifications"))
+
+@app.route("/fin-journee", methods=["POST"])
+@login_required
+def fin_journee():
+    conn = get_db()
+    tid = session["tenant_id"]
+    vendeur_login = session["login"]
+    vendeur_id = session["user_id"]
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    expire = (datetime.now() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (tid,))
+    tenant_nom = t["nom"] if t else "Inconnu"
+    db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at) VALUES (%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+              "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at) VALUES (?,?,?,?,?)",
+              (tid, vendeur_login, vendeur_id, now, expire))
+    db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,%s,0,%s,%s)" if IS_PG else
+              "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,?,0,?,?)",
+              (f"Fin de rapport dans le tenant {tenant_nom} - {vendeur_login}", now, vendeur_login))
+    db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+              (vendeur_id, vendeur_login, tid, "fin_journee", f"Rapport envoye - {tenant_nom}", now))
+    conn.commit()
+    conn.close()
+    flash("Rapport envoye avec succes", "success")
+    return redirect(url_for("dashboard"))
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required

@@ -45,6 +45,14 @@
 <div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
 </div>
 
+{% if session.role == 'vendeur' and session.tenant_id != 0 %}
+<form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ?')">
+<button type="submit" class="btn btn-green" style="width:100%;padding:16px;font-size:15px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px">
+<span style="font-size:20px">📋</span> Fin de journee
+</button>
+</form>
+{% endif %}
+
 <div class="card">
 <div class="card-header">📋 Ventes recentes</div>
 <div class="table-scroll">
