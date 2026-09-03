@@ -1251,38 +1251,22 @@ def messages():
         msg = request.form.get("message", "").strip()
         receiver_login = request.form.get("receiver_login", "")
         receiver_role = request.form.get("receiver_role", "")
-        if msg:
+        if msg and receiver_login:
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (%s,%s,%s,%s,%s,%s,0,%s) RETURNING id" if IS_PG else
                       "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (?,?,?,?,?,?,0,?)",
                       (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
             conn.commit()
-            flash("Message envoye", "success")
         conn.close()
         return redirect(url_for("messages"))
 
+    vendeurs = []
     if is_adm:
-        all_msgs = db_fetchall(conn, "SELECT * FROM messages WHERE sender_role='vendeur' OR receiver_role='admin' ORDER BY created_at DESC LIMIT 100" if IS_PG else
-                               "SELECT * FROM messages WHERE sender_role='vendeur' OR receiver_role='admin' ORDER BY created_at DESC LIMIT 100")
         vendeurs = db_fetchall(conn, "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'" if IS_PG else
                                "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'")
-    else:
-        all_msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND sender_role='vendeur') OR receiver_login=%s ORDER BY created_at DESC LIMIT 100" if IS_PG else
-                               "SELECT * FROM messages WHERE (sender_login=? AND sender_role='vendeur') OR receiver_login=? ORDER BY created_at DESC LIMIT 100",
-                               (login_user, login_user))
-        vendeurs = []
     conn.close()
-    return render_template("messages.html", messages=all_msgs, vendeurs=vendeurs,
+    return render_template("messages.html", vendeurs=vendeurs,
                            is_admin=is_adm, login=login_user, role=role_user)
-
-@app.route("/messages/mark-read/<int:msg_id>")
-@login_required
-def mark_read(msg_id):
-    conn = get_db()
-    db_execute(conn, "UPDATE messages SET is_read=1 WHERE id=%s" if IS_PG else "UPDATE messages SET is_read=1 WHERE id=?", (msg_id,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for("messages"))
 
 @app.route("/messages/api")
 @login_required
@@ -1290,20 +1274,19 @@ def messages_api():
     conn = get_db()
     login_user = session["login"]
     role_user = session["role"]
-    contact = request.args.get("contact", "")
+    contact = request.args.get("contact", "").strip()
+    
+    if not contact:
+        return {"messages": [], "login": login_user}
     
     if role_user == "admin":
-        if contact:
-            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
-                               "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
-                               (login_user, contact, contact, login_user))
-        else:
-            msgs = db_fetchall(conn, "SELECT * FROM messages ORDER BY created_at ASC LIMIT 200" if IS_PG else
-                               "SELECT * FROM messages ORDER BY created_at ASC LIMIT 200")
+        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
+                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
+                           (login_user, contact, contact, login_user))
     else:
-        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_role='admin') OR (sender_login='admin' AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
-                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_role='admin') OR (sender_login='admin' AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
-                           (login_user, login_user))
+        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
+                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
+                           (login_user, 'admin', 'admin', login_user))
     conn.close()
     
     result = []
