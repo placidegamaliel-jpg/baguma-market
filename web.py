@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY", "baguma-market-2026-secret")
+app.config['SERVER_NAME'] = 'baguma-market-1.onrender.com'
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 DB_URL = os.environ.get("DATABASE_URL", "")
 LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "commerce.db")
 

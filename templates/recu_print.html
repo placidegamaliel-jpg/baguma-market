@@ -97,6 +97,12 @@ td:last-child{text-align:right;font-weight:600}
     <div class="auth">Authentifie par Baguma Market</div>
   </div>
 
+  <div style="text-align:center;margin-top:16px;padding:16px;background:#f9f9f9;border-radius:12px">
+    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Scannez pour verifier votre recu</div>
+    <img id="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" style="width:120px;height:120px;border-radius:8px;border:2px solid #eee" alt="QR Code">
+    <div style="font-size:10px;color:#666;margin-top:6px;font-family:monospace">{{url_for('verifier_recu', numero=recu.numero, _external=True)}}</div>
+  </div>
+
   <div class="footer">
     <div class="thanks">Merci pour votre confiance !</div>
     <div class="contact">Baguma Market | {{tenant_nom}}</div>
