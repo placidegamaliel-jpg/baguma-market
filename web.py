@@ -817,8 +817,8 @@ def recu_pdf(rid):
     
     # Totaux
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, f"TOTAL USD : {recu['total_usd']:,.2f}", ln=True, align="C")
     pdf.cell(0, 7, f"TOTAL CDF : {recu['total_cdf']:,.0f}", ln=True, align="C")
+    pdf.cell(0, 7, f"TOTAL USD : {recu['total_usd']:,.2f}", ln=True, align="C")
     pdf.cell(0, 7, "Paiement : Cash", ln=True, align="C")
     
     # Separateur
@@ -835,7 +835,7 @@ def recu_pdf(rid):
     pdf.set_font("Helvetica", "B", 10)
     pdf.cell(0, 7, "Merci pour votre confiance !", ln=True, align="C")
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 6, f"Baguma Market | {tenant_nom}", ln=True, align="C")
+    pdf.cell(0, 6, f"Tel : +243 97 000 0000 | {tenant_nom}", ln=True, align="C")
     
     pdf_path = f"/tmp/recu_{recu['numero']}.pdf"
     pdf.output(pdf_path)

@@ -86,8 +86,8 @@ td:last-child{text-align:right;font-weight:600}
   </div>
 
   <div class="totals">
+    <div class="total-row grand"><span>TOTAL CDF</span><span>{{recu.total_cdf|int}}</span></div>
     <div class="total-row"><span>TOTAL USD</span><span>{{ "%.2f"|format(recu.total_usd) }}</span></div>
-    <div class="total-row"><span>TOTAL CDF</span><span>{{recu.total_cdf|int}}</span></div>
     <div class="total-row"><span>Paiement</span><span><span class="badge badge-cash">Cash</span></span></div>
   </div>
 
@@ -105,7 +105,7 @@ td:last-child{text-align:right;font-weight:600}
 
   <div class="footer">
     <div class="thanks">Merci pour votre confiance !</div>
-    <div class="contact">Baguma Market | {{tenant_nom}}</div>
+    <div class="contact">Tel : +243 97 000 0000 | {{tenant_nom}}</div>
   </div>
 
   <div class="no-print" style="text-align:center;margin-top:20px">
