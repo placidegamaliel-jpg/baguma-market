@@ -312,11 +312,19 @@ def dashboard():
             rapport_envoye = True
             rapport = r
 
+    unread_notifs = 0
+    try:
+        row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0" if IS_PG else "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
+        unread_notifs = row["cnt"] if row else 0
+    except Exception:
+        pass
+
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes,
-                           all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport)
+                           all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
+                           unread_notifs=unread_notifs)
 
 @app.route("/produits")
 @login_required
@@ -1236,9 +1244,6 @@ def rapport_detail(rapport_id):
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
                            login=session["login"], role=session["role"])
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
-
 @app.route("/admin/cleanup")
 def admin_cleanup():
     if not is_admin():
@@ -1260,3 +1265,6 @@ def admin_cleanup():
         html += f"<li>{k}: {v} lignes supprimees</li>"
     html += "</ul><p>Ventes et clients remis a zero.</p><a href='/dashboard'>Retour</a>"
     return html
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
