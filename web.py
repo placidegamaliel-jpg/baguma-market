@@ -318,7 +318,11 @@ def dashboard():
 
     unread_notifs = 0
     try:
-        row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0" if IS_PG else "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
+        if etid is not None:
+            row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0 AND (tenant_id=%s OR tenant_id=0)" if IS_PG else
+                              "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0 AND (tenant_id=? OR tenant_id=0)", (etid,))
+        else:
+            row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
         unread_notifs = row["cnt"] if row else 0
     except Exception:
         pass
@@ -668,11 +672,11 @@ def recus():
     etid = get_effective_tid()
 
     if etid is not None:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
-            FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
+        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+            FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
             FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
     else:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id
+        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
             FROM recus r ORDER BY r.date DESC LIMIT 100""")
 
     conn.close()
@@ -708,6 +712,11 @@ def recu_edit(rid):
         db_execute(conn, "UPDATE recus SET client_nom=%s, client_tel=%s, total_usd=%s, total_cdf=%s, est_honneur=%s WHERE id=%s" if IS_PG else
                    "UPDATE recus SET client_nom=?, client_tel=?, total_usd=?, total_cdf=?, est_honneur=? WHERE id=?",
                    (client_nom, client_tel, total_usd, total_cdf, est_honneur, rid))
+        # Recalculer la signature
+        cle_secrete = app.secret_key
+        contenu = f"{recu['numero']}-{total_usd}-{total_cdf}-{client_nom}-{client_tel}-{recu['date']}-{recu['heure']}-{recu['tenant_id']}"
+        signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
+        db_execute(conn, "UPDATE recus SET signature=%s WHERE id=%s" if IS_PG else "UPDATE recus SET signature=? WHERE id=?", (signature, rid))
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -835,9 +844,9 @@ def utilisateur_new():
             tenant_id = t["id"]
         else:
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            tenant_id = db_insert(conn, "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (%s,1,'','') RETURNING id" if IS_PG else
-                                  "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (?,1','','')",
-                                  ()) or 1
+            tenant_id = db_insert(conn, "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (%s,1,'','',NOW()) RETURNING id" if IS_PG else
+                                  "INSERT INTO tenants (nom, actif, localisation, type_commerce, date_creation) VALUES (?,1,'','',?)",
+                                  (tenant_nom, now)) or 1
             if IS_PG:
                 cur = conn.execute("SELECT id FROM tenants WHERE nom=%s", (tenant_nom,))
                 row = cur.fetchone()
@@ -878,7 +887,7 @@ def utilisateur_supprimer(uid):
 
 def create_notif(conn, tenant_id, message, responsable="Admin"):
     db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (%s,%s,0,%s,%s)" if IS_PG else
-              "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (?,0,?,?)",
+              "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (?, ?, 0, ?, ?)",
               (tenant_id, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), responsable))
     conn.commit()
 
@@ -1263,6 +1272,9 @@ def rapport_detail(rapport_id):
     conn.close()
     if not r:
         flash("Rapport introuvable", "error")
+        return redirect(url_for("dashboard"))
+    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+        flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
                            login=session["login"], role=session["role"])

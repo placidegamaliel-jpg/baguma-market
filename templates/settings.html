@@ -2,8 +2,10 @@
 {% block body %}
 <div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>⚙️ Parametres</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a><a href="/settings" class="active">⚙️ Parametres</a>
-{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/corbeille">🗑️ Corbeille</a>{% endif %}
+<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
+<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
+{% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a><a href="/corbeille">🗑️ Corbeille</a>{% endif %}
+<a href="/settings" class="active">⚙️ Parametres</a>
 <a href="/notifications">🔔 Notifications</a>
 </nav>
 <div class="container">
