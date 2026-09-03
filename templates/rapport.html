@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 style="font-size:1.6rem">Rapport</h1>
+    <p style="opacity:.7;font-size:.85rem">Detail du rapport de fin de journee</p>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Retour</a>
+</div>
+
+<div style="max-width:600px;margin:2rem auto">
+  <div class="card" style="text-align:center;padding:2.5rem">
+    <div style="font-size:3rem;margin-bottom:1rem">📊</div>
+    <h2 style="margin-bottom:1.5rem;font-size:1.3rem">{{ rapport.vendeur_login }}</h2>
+    
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;text-align:left">
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Vendeur</div>
+        <div style="font-size:1rem;font-weight:600">{{ rapport.vendeur_login }}</div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Date</div>
+        <div style="font-size:1rem;font-weight:600">{{ rapport.date_rapport }}</div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Ventes</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--accent)">{{ rapport.nb_ventes }}</div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Clients</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--accent2)">{{ rapport.nb_clients }}</div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Total USD</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--success)">${{ "%.2f"|format(rapport.total_usd) }}</div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <div style="opacity:.7;font-size:.75rem;text-transform:uppercase;margin-bottom:.5rem">Total CDF</div>
+        <div style="font-size:1.3rem;font-weight:700;color:var(--warning)">{{ rapport.total_cdf|int }} CDF</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 style="font-size:1.6rem">Messagerie</h1>
+    <p style="opacity:.7;font-size:.85rem">Communication admin - vendeur</p>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Retour</a>
+</div>
+
+<div style="display:grid;grid-template-columns:280px 1fr;gap:1.5rem;margin-top:1.5rem;min-height:70vh">
+  
+  <div class="card" style="padding:1rem">
+    <h3 style="font-size:1rem;margin-bottom:1rem">
+      {% if is_admin %}Vendeurs{% else %}Admin{% endif %}
+    </h3>
+
+    {% if is_admin %}
+      {% for v in vendeurs %}
+      <div class="card" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer" 
+           onclick="document.getElementById('receiver_login').value='{{ v.login }}';document.getElementById('receiver_role').value='vendeur';document.getElementById('receiver_name').textContent='{{ v.login }}'">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem">
+            {{ v.login[0]|upper }}
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem">{{ v.login }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not vendeurs %}
+      <p style="opacity:.5;font-size:.85rem;text-align:center;padding:2rem 0">Aucun vendeur</p>
+      {% endif %}
+    {% else %}
+      <div class="card" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer"
+           onclick="document.getElementById('receiver_login').value='';document.getElementById('receiver_role').value='admin';document.getElementById('receiver_name').textContent='Admin'">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--danger);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem">A</div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem">Admin</div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="padding:1.5rem;display:flex;flex-direction:column">
+    <div style="flex:1;overflow-y:auto;max-height:55vh;padding-right:.5rem">
+      {% for m in messages %}
+      <div style="margin-bottom:1rem;max-width:80%;{% if m.sender_login == login %}margin-left:auto;text-align:right{% endif %}">
+        <div style="display:inline-block;padding:.8rem 1rem;border-radius:16px;
+          {% if m.sender_login == login %}background:var(--accent);color:#fff{% else %}background:var(--card-bg);border:1px solid var(--border){% endif %};
+          text-align:left;border-bottom-right-radius:4px">
+          <div style="font-size:.7rem;opacity:.7;margin-bottom:.3rem">
+            {{ m.sender_login }} • {{ m.created_at[:16] }}
+          </div>
+          <div style="font-size:.9rem">{{ m.message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not messages %}
+      <p style="opacity:.5;text-align:center;padding:3rem 0">Aucun message</p>
+      {% endif %}
+    </div>
+
+    <form method="POST" style="display:flex;gap:.5rem;margin-top:1rem">
+      <input type="hidden" id="receiver_login" name="receiver_login" value="">
+      <input type="hidden" id="receiver_role" name="receiver_role" value="">
+      <input type="text" name="message" placeholder="Ecrire un message..." required
+             style="flex:1;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.9rem">
+      <button type="submit" class="btn btn-primary" style="padding:.8rem 1.5rem;border-radius:12px">Envoyer</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

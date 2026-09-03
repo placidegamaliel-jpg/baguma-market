@@ -36,7 +36,8 @@ def init_pg_schema():
                 pass
         for tbl in [
             "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL)",
-            "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
+            "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)",
+            "CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)"
         ]:
             try:
                 conn.execute(tbl)
@@ -77,6 +78,7 @@ CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT 
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL);
 """
 
 init_pg_schema()
@@ -1170,9 +1172,10 @@ def fin_journee():
                               "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''", (vendeur_login, today, tid))
         nb_clients = clients["nb"] if clients else 0
 
-        db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (?,?,?,?,?,?,?,?)",
                   (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today))
+        rapport_id = rapport_r[0] if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -1180,7 +1183,7 @@ def fin_journee():
 
         db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,%s,0,%s,%s)" if IS_PG else
                   "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,?,0,?,?)",
-                  (f"Fin de rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f}", now, vendeur_login))
+                  (f"Rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f} | /rapport/{rapport_id}", now, vendeur_login))
 
         db_execute(conn, "DELETE FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
@@ -1222,6 +1225,64 @@ def settings():
     conn.close()
     return render_template("settings.html", taux=taux, is_admin=is_admin(),
                            login=session["login"], role=session["role"])
+
+@app.route("/rapport/<int:rapport_id>")
+@login_required
+def rapport_detail(rapport_id):
+    conn = get_db()
+    r = db_fetchone(conn, "SELECT * FROM rapports WHERE id=%s" if IS_PG else "SELECT * FROM rapports WHERE id=?", (rapport_id,))
+    conn.close()
+    if not r:
+        flash("Rapport introuvable", "error")
+        return redirect(url_for("dashboard"))
+    return render_template("rapport.html", rapport=r, is_admin=is_admin(),
+                           login=session["login"], role=session["role"])
+
+@app.route("/messages", methods=["GET", "POST"])
+@login_required
+def messages():
+    conn = get_db()
+    login_user = session["login"]
+    role_user = session["role"]
+    tid = session["tenant_id"]
+    is_adm = is_admin()
+
+    if request.method == "POST":
+        msg = request.form.get("message", "").strip()
+        receiver_login = request.form.get("receiver_login", "")
+        receiver_role = request.form.get("receiver_role", "")
+        if msg:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (%s,%s,%s,%s,%s,%s,0,%s) RETURNING id" if IS_PG else
+                      "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (?,?,?,?,?,?,0,?)",
+                      (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
+            conn.commit()
+            flash("Message envoye", "success")
+        conn.close()
+        return redirect(url_for("messages"))
+
+    if is_adm:
+        all_msgs = db_fetchall(conn, "SELECT * FROM messages WHERE sender_role='vendeur' OR receiver_role='admin' ORDER BY created_at DESC LIMIT 100" if IS_PG else
+                               "SELECT * FROM messages WHERE sender_role='vendeur' OR receiver_role='admin' ORDER BY created_at DESC LIMIT 100")
+        vendeurs = db_fetchall(conn, "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'" if IS_PG else
+                               "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'")
+    else:
+        all_msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND sender_role='vendeur') OR receiver_login=%s ORDER BY created_at DESC LIMIT 100" if IS_PG else
+                               "SELECT * FROM messages WHERE (sender_login=? AND sender_role='vendeur') OR receiver_login=? ORDER BY created_at DESC LIMIT 100",
+                               (login_user, login_user))
+        vendeurs = []
+    conn.close()
+    return render_template("messages.html", messages=all_msgs, vendeurs=vendeurs,
+                           is_admin=is_adm, login=login_user, role=role_user)
+
+@app.route("/messages/mark-read/<int:msg_id>")
+@login_required
+def mark_read(msg_id):
+    conn = get_db()
+    db_execute(conn, "UPDATE messages SET is_read=1 WHERE id=%s" if IS_PG else "UPDATE messages SET is_read=1 WHERE id=?", (msg_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("messages"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

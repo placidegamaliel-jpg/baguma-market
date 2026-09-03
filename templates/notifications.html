@@ -9,7 +9,7 @@
 <a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
 <a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
 {% if is_admin %}<a href="/tenants">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a><a href="/corbeille">🗑️ Corbeille</a>{% endif %}
-<a href="/notifications" class="active">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
+<a href="/notifications" class="active">🔔 Notifications</a><a href="/messages">💬 Messages</a><a href="/settings">⚙️ Parametres</a>
 </nav>
 <div class="container">
 {% if unread > 0 %}
@@ -27,7 +27,12 @@
 {% for n in notifs %}
 <tr style="border-left:3px solid {% if n.is_read %}var(--txt3){% else %}var(--gold){% endif %}">
 <td style="font-size:11px;white-space:nowrap;color:var(--txt2)">{{n.created_at[:16]}}</td>
-<td style="text-align:left;font-size:12px;font-weight:500;color:{% if n.is_read %}var(--txt2){% else %}var(--gold){% endif %}">{{n.message}}</td>
+<td style="text-align:left;font-size:12px;font-weight:500;color:{% if n.is_read %}var(--txt2){% else %}var(--gold){% endif %}">
+{% if '/rapport/' in n.message %}
+  {% set parts = n.message.split('/rapport/') %}
+  {{ parts[0] }}<a href="/rapport/{{ parts[1] }}" style="color:var(--accent);font-weight:700;text-decoration:underline">Voir rapport</a>
+{% else %}{{n.message}}{% endif %}
+</td>
 <td style="font-size:11px;color:var(--txt2)">{{n.responsable or 'Admin'}}</td>
 <td>{% if not n.is_read %}
 <form method="POST" action="/notifications/read/{{n.id}}" style="display:inline">
