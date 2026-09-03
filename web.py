@@ -1242,6 +1242,12 @@ def rapport_detail(rapport_id):
 @login_required
 def messages():
     conn = get_db()
+    if IS_PG:
+        try:
+            conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
+            conn.commit()
+        except Exception:
+            pass
     login_user = session["login"]
     role_user = session["role"]
     tid = session["tenant_id"]
@@ -1275,6 +1281,12 @@ def messages():
 @login_required
 def messages_api():
     conn = get_db()
+    if IS_PG:
+        try:
+            conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
+            conn.commit()
+        except Exception:
+            pass
     login_user = session["login"]
     role_user = session["role"]
     contact = request.args.get("contact", "").strip()
