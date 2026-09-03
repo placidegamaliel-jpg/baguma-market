@@ -24,7 +24,11 @@ def init_pg_schema():
                 conn.execute(stmt)
         for alter in [
             "ALTER TABLE produits ADD COLUMN IF NOT EXISTS code TEXT DEFAULT ''",
-            "ALTER TABLE produits ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''"
+            "ALTER TABLE produits ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''",
+            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS total_usd REAL DEFAULT 0",
+            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS total_cdf REAL DEFAULT 0",
+            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_ventes INTEGER DEFAULT 0",
+            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_clients INTEGER DEFAULT 0"
         ]:
             try:
                 conn.execute(alter)
