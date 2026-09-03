@@ -1238,3 +1238,25 @@ def rapport_detail(rapport_id):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
+@app.route("/admin/cleanup")
+def admin_cleanup():
+    if not is_admin():
+        return "Admin only"
+    conn = get_db()
+    deleted = {}
+    for tbl in ["rapports", "rapports_temp", "ventes", "clients", "dettes", "recus", "corbeille", "logs", "notifications"]:
+        try:
+            cur = conn.execute(f"SELECT COUNT(*) FROM {tbl}")
+            count = cur.fetchone()[0]
+            conn.execute(f"DELETE FROM {tbl}")
+            deleted[tbl] = count
+        except Exception:
+            deleted[tbl] = "table not found"
+    conn.commit()
+    conn.close()
+    html = "<h1>Donnees effacees</h1><ul>"
+    for k, v in deleted.items():
+        html += f"<li>{k}: {v} lignes supprimees</li>"
+    html += "</ul><a href='/dashboard'>Retour</a>"
+    return html
