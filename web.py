@@ -622,18 +622,110 @@ def ventes():
         prods = db_fetchall(conn, "SELECT id, nom, prix_usd, stock FROM produits WHERE stock>0 ORDER BY nom")
 
     if etid is not None:
-        ventes_list = db_fetchall(conn, """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
-            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=%s ORDER BY v.date DESC, v.heure DESC LIMIT 50""" if IS_PG else """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
-            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=? ORDER BY v.date DESC, v.heure DESC LIMIT 50""", (etid,))
+        ventes_list = db_fetchall(conn, """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur, r.id as recu_id
+            FROM ventes v JOIN produits p ON v.produit_id=p.id LEFT JOIN recus r ON v.recu_num=r.numero WHERE v.tenant_id=%s ORDER BY v.date DESC, v.heure DESC LIMIT 50""" if IS_PG else """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur, r.id as recu_id
+            FROM ventes v JOIN produits p ON v.produit_id=p.id LEFT JOIN recus r ON v.recu_num=r.numero WHERE v.tenant_id=? ORDER BY v.date DESC, v.heure DESC LIMIT 50""", (etid,))
     else:
-        ventes_list = db_fetchall(conn, """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur
-            FROM ventes v JOIN produits p ON v.produit_id=p.id ORDER BY v.date DESC, v.heure DESC LIMIT 50""")
+        ventes_list = db_fetchall(conn, """SELECT v.id, v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login, v.recu_num, v.est_client_honneur, r.id as recu_id
+            FROM ventes v JOIN produits p ON v.produit_id=p.id LEFT JOIN recus r ON v.recu_num=r.numero ORDER BY v.date DESC, v.heure DESC LIMIT 50""")
 
     taux = get_taux(conn, etid or session["tenant_id"])
     all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id") if is_admin() else []
     conn.close()
     return render_template("ventes.html", prods=prods, ventes_list=ventes_list, is_admin=is_admin(), taux=taux,
                            all_tenants=all_tenants, etid=etid)
+
+@app.route("/ventes/validate", methods=["POST"])
+@login_required
+def ventes_validate():
+    data = request.get_json()
+    if not data or not data.get("items"):
+        return jsonify({"ok": False, "msg": "Panier vide"})
+    
+    items = data["items"]
+    client_nom = data.get("client_nom", "")
+    client_tel = data.get("client_tel", "")
+    is_honneur = data.get("honneur", 0)
+    
+    conn = get_db()
+    etid = get_effective_tid()
+    
+    try:
+        tid_sale = int(data.get("tenant_id") or etid or session["tenant_id"])
+    except (ValueError, TypeError):
+        tid_sale = session["tenant_id"]
+    
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_date = datetime.now().strftime("%Y-%m-%d")
+    now_heure = datetime.now().strftime("%H:%M:%S")
+    
+    # Numero sequentiel RCP-YYYY-NNN
+    year = datetime.now().strftime("%Y")
+    seq_row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM recus WHERE numero LIKE %s" if IS_PG else
+                          "SELECT COUNT(*) as cnt FROM recus WHERE numero LIKE ?", (f"RCP-{year}-%",))
+    seq_num = (seq_row["cnt"] if seq_row else 0) + 1
+    recu_num = f"RCP-{year}-{seq_num:03d}"
+    
+    total_usd_all = 0
+    total_cdf_all = 0
+    
+    for item in items:
+        pid = item.get("produit_id")
+        qte = item.get("quantite", 1)
+        prix_usd = item.get("prix_usd", 0)
+        
+        stock_row = db_fetchone(conn, "SELECT stock, prix_cdf FROM produits WHERE id=%s" if IS_PG else "SELECT stock, prix_cdf FROM produits WHERE id=?", (pid,))
+        if not stock_row or stock_row["stock"] < qte:
+            conn.close()
+            return jsonify({"ok": False, "msg": f"Stock insuffisant pour le produit {pid}"})
+        
+        prix_cdf = stock_row["prix_cdf"]
+        total_usd = prix_usd * qte
+        total_cdf = prix_cdf * qte
+        total_usd_all += total_usd
+        total_cdf_all += total_cdf
+        
+        db_insert(conn, "INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                  (now_date, now_heure, pid, qte, prix_usd, prix_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, is_honneur, tid_sale, session["login"]))
+        
+        db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
+    
+    # Signature SHA256
+    cle_secrete = app.secret_key
+    contenu = f"{recu_num}-{total_usd_all}-{total_cdf_all}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
+    signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
+    
+    db_insert(conn, "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+              (recu_num, client_nom, client_tel, total_usd_all, total_cdf_all, is_honneur, now_date, now_heure, tid_sale, signature, session["login"]))
+    
+    if is_honneur:
+        db_insert(conn, "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (%s,%s,%s,%s,%s,0,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (?,?,?,?,?,0,?,?,?,?)",
+                  (tid_sale, client_nom, client_tel, total_usd_all, total_cdf_all, now_date, now_heure, recu_num, session["login"]))
+    
+    if client_tel:
+        cl = db_fetchone(conn, "SELECT id FROM clients WHERE telephone=%s" if IS_PG else "SELECT id FROM clients WHERE telephone=?", (client_tel,))
+        if cl:
+            db_execute(conn, "UPDATE clients SET nb_visites=nb_visites+1, total_usd=total_usd+%s, total_cdf=total_cdf+%s, nom=%s WHERE id=%s" if IS_PG else
+                       "UPDATE clients SET nb_visites=nb_visites+1, total_usd=total_usd+?, total_cdf=total_cdf+?, nom=? WHERE id=?",
+                       (total_usd_all, total_cdf_all, client_nom, cl["id"]))
+        else:
+            db_insert(conn, "INSERT INTO clients (nom, telephone, tenant_id, nb_visites, total_usd, total_cdf) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                      "INSERT INTO clients (nom, telephone, tenant_id, nb_visites, total_usd, total_cdf) VALUES (?,?,?,?,?,?)",
+                      (client_nom, client_tel, tid_sale, 1, total_usd_all, total_cdf_all))
+    
+    db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+              (session["user_id"], session["login"], tid_sale, "vente", f"{len(items)} produits = ${total_usd_all:.2f}", now))
+    
+    conn.commit()
+    
+    recu_row = db_fetchone(conn, "SELECT id FROM recus WHERE numero=%s" if IS_PG else "SELECT id FROM recus WHERE numero=?", (recu_num,))
+    conn.close()
+    
+    return jsonify({"ok": True, "recu_id": recu_row["id"] if recu_row else 0, "recu_num": recu_num})
 
 @app.route("/rapports")
 @login_required

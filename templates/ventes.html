@@ -17,12 +17,48 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
-<button class="btn btn-green" onclick="document.getElementById('modalVente').style.display='flex'" style="margin-bottom:12px">+ Nouvelle vente</button>
+<div class="card" style="padding:20px;margin-bottom:16px">
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:16px">🛒 Panier</h2>
+{% if is_admin %}
+<div class="form-group"><label>Tenant</label>
+<select id="cart_tenant">
+{% for t in all_tenants %}<option value="{{t.id}}" {% if etid == t.id %}selected{% endif %}>{{t.nom}}</option>{% endfor %}
+</select></div>
+{% endif %}
+<div class="form-group"><label>Produit</label>
+<select id="cart_produit">
+{% for p in prods %}<option value="{{p.id}}" data-prix="{{p.prix_usd}}" data-nom="{{p.nom}}">{{p.nom}} (stock: {{p.stock}} - ${{ "%.2f"|format(p.prix_usd) }})</option>{% endfor %}
+</select></div>
+<div style="display:flex;gap:10px">
+<div class="form-group" style="flex:1"><label>Quantite</label><input type="number" id="cart_qte" min="1" value="1"></div>
+<button type="button" class="btn btn-green" onclick="addToCart()" style="margin-top:22px;padding:10px 20px">+ Ajouter</button>
+</div>
+
+<div id="cart_items" style="margin:16px 0"></div>
+
+<div style="background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.15);padding:16px;border-radius:14px;text-align:center;margin:12px 0">
+<span style="color:var(--txt2);font-size:12px;font-weight:500">Total panier : </span>
+<span id="cart_total" style="color:var(--accent);font-size:26px;font-weight:800">$0.00</span>
+</div>
+
+<div class="form-group"><label>Client Nom</label><input type="text" id="cart_client_nom" placeholder="Nom du client"></div>
+<div class="form-group"><label>Client Telephone</label><input type="text" id="cart_client_tel" placeholder="+243..."></div>
+<div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(244,114,182,0.05);border:1px solid rgba(244,114,182,0.15);border-radius:12px">
+<input type="checkbox" id="cart_honneur" onchange="toggleCartHonneur()" style="width:18px;height:18px;accent-color:var(--pink)">
+<label for="cart_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
+</div>
+<div class="form-group" id="cart_honneur_prix" style="display:none"><label>Prix custom (USD)</label><input type="number" id="cart_prix_custom" step="0.01"></div>
+
+<div style="display:flex;gap:10px;margin-top:16px">
+<button type="button" class="btn btn-green" onclick="validateSale()" style="flex:1;padding:14px">✅ Valider la vente</button>
+<button type="button" class="btn btn-gold" onclick="clearCart()" style="flex:1;padding:14px">🗑️ Vider le panier</button>
+</div>
+</div>
 
 <div class="card" style="padding:0;overflow:hidden">
 <div class="table-scroll">
 <table>
-<tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Client</th><th>Resp.</th></tr>
+<tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Client</th><th>Resp.</th><th>Recu</th></tr>
 {% for v in ventes_list %}
 <tr>
 <td style="font-size:11px;color:var(--txt2)">{{v.datetime[:16] if v.datetime else ''}}</td>
@@ -31,62 +67,77 @@
 <td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(v.total_usd) }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{v.client_nom or '-'}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{v.vendeur_login}}</td>
+<td><a href="/recu/print/{{v.recu_id}}" style="color:var(--accent);font-size:11px">🖨️</a></td>
 </tr>
 {% endfor %}
-{% if not ventes_list %}<tr><td colspan="6" class="empty">Aucune vente</td></tr>{% endif %}
+{% if not ventes_list %}<tr><td colspan="7" class="empty">Aucune vente</td></tr>{% endif %}
 </table>
-</div></div>
-
-<div id="modalVente" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center">
-<div class="card" style="width:90%;max-width:420px;max-height:90vh;overflow-y:auto;border-radius:20px;padding:28px">
-<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:20px">💰 Nouvelle vente</h2>
-<form method="POST">
-{% if is_admin %}
-<div class="form-group"><label>Tenant</label>
-<select name="tenant_id">
-{% for t in all_tenants %}<option value="{{t.id}}" {% if etid == t.id %}selected{% endif %}>{{t.nom}}</option>{% endfor %}
-</select></div>
-{% endif %}
-<div class="form-group"><label>Produit</label>
-<select name="produit_id" id="vente_produit" onchange="updatePrix()">
-{% for p in prods %}<option value="{{p.id}}" data-prix="{{p.prix_usd}}">{{p.nom}} (stock: {{p.stock}} - ${{ "%.2f"|format(p.prix_usd) }})</option>{% endfor %}
-</select></div>
-<div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required value="1" id="vente_qte" oninput="updateTotal()"></div>
-<div class="form-group"><label>Client Nom</label><input type="text" name="client_nom" placeholder="Nom du client"></div>
-<div class="form-group"><label>Client Telephone</label><input type="text" name="client_tel" placeholder="+243..."></div>
-<div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(244,114,182,0.05);border:1px solid rgba(244,114,182,0.15);border-radius:12px">
-<input type="checkbox" name="honneur" id="vente_honneur" onchange="toggleHonneur()" style="width:18px;height:18px;accent-color:var(--pink)">
-<label for="vente_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
-</div>
-<div class="form-group" id="honneur_prix" style="display:none"><label>Prix custom (USD)</label><input type="number" name="prix_custom" step="0.01" id="vente_prix_custom" oninput="updateTotal()"></div>
-<div style="background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.15);padding:16px;border-radius:14px;text-align:center;margin:12px 0">
-<span style="color:var(--txt2);font-size:12px;font-weight:500">Total : </span>
-<span id="vente_total" style="color:var(--accent);font-size:26px;font-weight:800">$0.00</span>
-</div>
-<div style="display:flex;gap:10px;margin-top:16px">
-<button type="submit" class="btn btn-green" style="flex:1;padding:14px">Valider</button>
-<button type="button" class="btn btn-gold" onclick="this.closest('#modalVente').style.display='none'" style="flex:1;padding:14px">Annuler</button>
-</div>
-</form>
 </div></div>
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
+
 <script>
-function updatePrix(){updateTotal()}
-function updateTotal(){
-var sel=document.getElementById('vente_produit');
-var qte=parseInt(document.getElementById('vente_qte').value)||0;
-var opt=sel.options[sel.selectedIndex];
-if(document.getElementById('vente_honneur').checked){
-var px=parseFloat(document.getElementById('vente_prix_custom').value)||0;
-document.getElementById('vente_total').textContent='$'+(px*qte).toFixed(2);
-}else{
-var prix=parseFloat(opt.dataset.prix)||0;
-document.getElementById('vente_total').textContent='$'+(prix*qte).toFixed(2);
-}}
-function toggleHonneur(){
-var h=document.getElementById('vente_honneur').checked;
-document.getElementById('honneur_prix').style.display=h?'block':'none';
-updateTotal()}
+var cart = [];
+function addToCart(){
+  var sel = document.getElementById('cart_produit');
+  var opt = sel.options[sel.selectedIndex];
+  var pid = parseInt(sel.value);
+  var nom = opt.dataset.nom;
+  var prix = parseFloat(opt.dataset.prix)||0;
+  var qte = parseInt(document.getElementById('cart_qte').value)||1;
+  var isH = document.getElementById('cart_honneur').checked;
+  var pxCust = isH ? (parseFloat(document.getElementById('cart_prix_custom').value)||0) : 0;
+  var finalPrix = (isH && pxCust > 0) ? pxCust : prix;
+  cart.push({pid:pid, nom:nom, prix:finalPrix, qte:qte});
+  renderCart();
+}
+function removeFromCart(idx){
+  cart.splice(idx, 1);
+  renderCart();
+}
+function renderCart(){
+  var html = '<table style="width:100%;font-size:12px"><tr><th style="text-align:left">Produit</th><th>Qte</th><th>Prix</th><th>Total</th><th></th></tr>';
+  var total = 0;
+  for(var i=0;i<cart.length;i++){
+    var t = cart[i].prix * cart[i].qte;
+    total += t;
+    html += '<tr><td style="text-align:left">'+cart[i].nom+'</td><td>'+cart[i].qte+'</td><td>$'+cart[i].prix.toFixed(2)+'</td><td>$'+t.toFixed(2)+'</td><td><button onclick="removeFromCart('+i+')" style="color:var(--red);border:none;cursor:pointer;background:none">✕</button></td></tr>';
+  }
+  html += '</table>';
+  document.getElementById('cart_items').innerHTML = cart.length ? html : '<p style="color:var(--txt2);font-size:12px;text-align:center">Panier vide</p>';
+  document.getElementById('cart_total').textContent = '$'+total.toFixed(2);
+}
+function toggleCartHonneur(){
+  var h = document.getElementById('cart_honneur').checked;
+  document.getElementById('cart_honneur_prix').style.display = h ? 'block' : 'none';
+}
+function clearCart(){
+  cart = [];
+  renderCart();
+}
+function validateSale(){
+  if(cart.length === 0){alert('Le panier est vide'); return;}
+  var tenantSel = document.getElementById('cart_tenant');
+  var tenantId = tenantSel ? tenantSel.value : '';
+  var clientNom = document.getElementById('cart_client_nom').value;
+  var clientTel = document.getElementById('cart_client_tel').value;
+  var honneur = document.getElementById('cart_honneur').checked ? 1 : 0;
+  var items = [];
+  for(var i=0;i<cart.length;i++){
+    items.push({produit_id:cart[i].pid, quantite:cart[i].qte, prix_usd:cart[i].prix});
+  }
+  fetch('/ventes/validate', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({tenant_id:tenantId, client_nom:clientNom, client_tel:clientTel, honneur:honneur, items:items})
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.ok){
+      window.location.href = '/recu/print/'+d.recu_id;
+    } else {
+      alert(d.msg || 'Erreur');
+    }
+  }).catch(function(e){alert('Erreur reseau');});
+}
+renderCart();
 </script>
 {% endblock %}
