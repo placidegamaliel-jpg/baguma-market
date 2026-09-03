@@ -1521,7 +1521,10 @@ def admin_cleanup():
     return html
 
 @app.route("/recu/verifier/<numero>")
-def verifier_recu(numero):
+@app.route("/recu/verifier")
+def verifier_recu(numero=None):
+    if not numero:
+        numero = request.args.get("numero", "")
     conn = get_db()
     r = db_fetchone(conn, "SELECT * FROM recus WHERE numero=%s" if IS_PG else "SELECT * FROM recus WHERE numero=?", (numero,))
     conn.close()

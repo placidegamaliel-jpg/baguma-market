@@ -58,7 +58,7 @@
   <div class="card" style="text-align:center;padding:2rem">
     <div style="font-size:4rem;margin-bottom:1rem">🔎</div>
     <h2 style="margin-bottom:1rem">Verifier un recu</h2>
-    <form method="GET" style="display:flex;gap:.5rem">
+    <form method="GET" style="display:flex;gap:.5rem" onsubmit="event.preventDefault();window.location.href='/recu/verifier/'+this.numero.value">
       <input type="text" name="numero" placeholder="Numero (ex: RCP-2026-001)" required
              style="flex:1;padding:1rem;border-radius:12px;border:1px solid var(--glass-border);background:var(--card-solid);color:var(--txt);font-size:1rem">
       <button type="submit" class="btn btn-green" style="padding:1rem 2rem">Verifier</button>
