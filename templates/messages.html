@@ -18,7 +18,7 @@
     {% if is_admin %}
       {% for v in vendeurs %}
       <div class="card contact-item" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer;transition:all .2s" 
-           onclick="selectContact('{{ v.login }}', 'vendeur', this)">
+           onclick="selectContact('{{ v.login }}', this)">
         <div style="display:flex;align-items:center;gap:.7rem">
           <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">
             {{ v.login[0]|upper }}
@@ -38,7 +38,7 @@
       {% endif %}
     {% else %}
       <div class="card contact-item" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer;transition:all .2s"
-           onclick="selectContact('', 'admin', this)">
+           onclick="selectContact('admin', this)">
         <div style="display:flex;align-items:center;gap:.7rem">
           <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--danger),var(--orange));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">A</div>
           <div style="overflow:hidden">
@@ -63,20 +63,6 @@
     </div>
 
     <div id="chat-messages" style="flex:1;overflow-y:auto;max-height:50vh;padding-right:.5rem">
-      {% for m in messages %}
-      <div style="margin-bottom:1rem;max-width:80%;{% if m.sender_login == login %}margin-left:auto;text-align:right{% endif %}">
-        <div style="display:inline-block;padding:.8rem 1rem;border-radius:16px;
-          {% if m.sender_login == login %}background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff{% else %}background:var(--card-solid);border:1px solid var(--glass-border){% endif %};
-          text-align:left;{% if m.sender_login == login %}border-bottom-right-radius:4px{% else %}border-bottom-left-radius:4px{% endif %}">
-          <div style="font-size:.65rem;opacity:.7;margin-bottom:.3rem">
-            {{ m.sender_login }} • {{ m.created_at[:16] }}
-          </div>
-          <div style="font-size:.9rem;line-height:1.4">{{ m.message }}</div>
-        </div>
-      </div>
-      {% endfor %}
-      
-      {% if not messages %}
       <div id="empty-chat" style="text-align:center;padding:4rem 2rem">
         <div style="font-size:4rem;margin-bottom:1rem">💬</div>
         <h3 style="font-size:1.1rem;margin-bottom:.5rem;color:var(--txt)">Commencer la conversation</h3>
@@ -85,12 +71,11 @@
         </p>
         <div style="margin-top:1.5rem;font-size:2rem">➡️</div>
       </div>
-      {% endif %}
     </div>
 
     <form method="POST" id="chat-form" style="display:flex;gap:.5rem;margin-top:1rem;align-items:center">
       <input type="hidden" id="receiver_login" name="receiver_login" value="">
-      <input type="hidden" id="receiver_role" name="receiver_role" value="">
+      <input type="hidden" id="receiver_role" name="receiver_role" value="{{ 'admin' if not is_admin else '' }}">
       <div style="flex:1;position:relative">
         <input type="text" id="msg-input" name="message" placeholder="✍️ Envoyer un message..." required
                style="width:100%;padding:1rem 1.2rem;border-radius:14px;border:1px solid var(--glass-border);background:var(--card-solid);color:var(--txt);font-size:.9rem;outline:none;transition:all .2s"
@@ -104,9 +89,11 @@
 </div>
 
 <script>
-function selectContact(login, role, el) {
+var currentContact = '';
+
+function selectContact(login, el) {
+  currentContact = login;
   document.getElementById('receiver_login').value = login;
-  document.getElementById('receiver_role').value = role;
   document.getElementById('msg-input').focus();
   
   document.querySelectorAll('.contact-item').forEach(function(c) {
@@ -116,10 +103,51 @@ function selectContact(login, role, el) {
   el.style.background = 'rgba(0,212,170,0.1)';
   el.style.borderColor = 'var(--accent)';
   
-  var header = document.getElementById('chat-header');
-  header.style.display = 'block';
-  document.getElementById('chat-name').textContent = login || 'Admin';
-  document.getElementById('chat-avatar').textContent = (login || 'A')[0].toUpperCase();
+  document.getElementById('chat-header').style.display = 'block';
+  document.getElementById('chat-name').textContent = login;
+  document.getElementById('chat-avatar').textContent = login[0].toUpperCase();
+  
+  loadMessages(login);
+}
+
+function loadMessages(contact) {
+  fetch('/messages/api?contact=' + encodeURIComponent(contact))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var div = document.getElementById('chat-messages');
+      var empty = document.getElementById('empty-chat');
+      
+      if (data.messages.length === 0) {
+        div.innerHTML = '';
+        div.appendChild(createEmptyState());
+        return;
+      }
+      
+      var html = '';
+      data.messages.forEach(function(m) {
+        var isMe = m.sender_login === data.login;
+        var align = isMe ? 'margin-left:auto;text-align:right' : '';
+        var bg = isMe ? 'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff' : 'background:var(--card-solid);border:1px solid var(--glass-border)';
+        var radius = isMe ? 'border-bottom-right-radius:4px' : 'border-bottom-left-radius:4px';
+        html += '<div style="margin-bottom:1rem;max-width:80%;' + align + '">';
+        html += '<div style="display:inline-block;padding:.8rem 1rem;border-radius:16px;' + bg + ';text-align:left;' + radius + '">';
+        html += '<div style="font-size:.65rem;opacity:.7;margin-bottom:.3rem">' + m.sender_login + ' • ' + m.created_at + '</div>';
+        html += '<div style="font-size:.9rem;line-height:1.4">' + m.message + '</div>';
+        html += '</div></div>';
+      });
+      div.innerHTML = html;
+      div.scrollTop = div.scrollHeight;
+    });
+}
+
+function createEmptyState() {
+  var div = document.createElement('div');
+  div.style.cssText = 'text-align:center;padding:4rem 2rem';
+  div.innerHTML = '<div style="font-size:4rem;margin-bottom:1rem">💬</div>' +
+    '<h3 style="font-size:1.1rem;margin-bottom:.5rem;color:var(--txt)">Envoyer le premier message</h3>' +
+    '<p style="opacity:.5;font-size:.85rem">Ecrivez ci-dessous et cliquez sur Envoyer</p>' +
+    '<div style="margin-top:1.5rem;font-size:2rem">✍️</div>';
+  return div;
 }
 
 var chatDiv = document.getElementById('chat-messages');

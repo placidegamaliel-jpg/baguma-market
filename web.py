@@ -1284,5 +1284,37 @@ def mark_read(msg_id):
     conn.close()
     return redirect(url_for("messages"))
 
+@app.route("/messages/api")
+@login_required
+def messages_api():
+    conn = get_db()
+    login_user = session["login"]
+    role_user = session["role"]
+    contact = request.args.get("contact", "")
+    
+    if role_user == "admin":
+        if contact:
+            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
+                               "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
+                               (login_user, contact, contact, login_user))
+        else:
+            msgs = db_fetchall(conn, "SELECT * FROM messages ORDER BY created_at ASC LIMIT 200" if IS_PG else
+                               "SELECT * FROM messages ORDER BY created_at ASC LIMIT 200")
+    else:
+        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_role='admin') OR (sender_login='admin' AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
+                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_role='admin') OR (sender_login='admin' AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
+                           (login_user, login_user))
+    conn.close()
+    
+    result = []
+    for m in msgs:
+        result.append({
+            "id": m["id"],
+            "sender_login": m["sender_login"],
+            "message": m["message"],
+            "created_at": m["created_at"][:16] if m["created_at"] else ""
+        })
+    return {"messages": result, "login": login_user}
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
