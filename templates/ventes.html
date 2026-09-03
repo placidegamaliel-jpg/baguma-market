@@ -44,9 +44,7 @@
 {% if is_admin %}
 <div class="form-group"><label>Tenant</label>
 <select name="tenant_id">
-<option value="{{session.tenant_id}}">Mon tenant</option>
-<option value="1">Chaussure Bukavu</option>
-<option value="2">Chaussure Goma</option>
+{% for t in all_tenants %}<option value="{{t.id}}" {% if etid == t.id %}selected{% endif %}>{{t.nom}}</option>{% endfor %}
 </select></div>
 {% endif %}
 <div class="form-group"><label>Produit</label>

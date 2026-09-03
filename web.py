@@ -618,8 +618,10 @@ def ventes():
             FROM ventes v JOIN produits p ON v.produit_id=p.id ORDER BY v.date DESC, v.heure DESC LIMIT 50""")
 
     taux = get_taux(conn, etid or session["tenant_id"])
+    all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id") if is_admin() else []
     conn.close()
-    return render_template("ventes.html", prods=prods, ventes_list=ventes_list, is_admin=is_admin(), taux=taux)
+    return render_template("ventes.html", prods=prods, ventes_list=ventes_list, is_admin=is_admin(), taux=taux,
+                           all_tenants=all_tenants, etid=etid)
 
 @app.route("/rapports")
 @login_required
