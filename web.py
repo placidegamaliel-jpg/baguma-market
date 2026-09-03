@@ -36,8 +36,7 @@ def init_pg_schema():
                 pass
         for tbl in [
             "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL)",
-            "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)",
-            "CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
         ]:
             try:
                 conn.execute(tbl)
@@ -78,7 +77,6 @@ CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT 
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL);
 """
 
 init_pg_schema()
@@ -1237,118 +1235,6 @@ def rapport_detail(rapport_id):
         return redirect(url_for("dashboard"))
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
                            login=session["login"], role=session["role"])
-
-@app.route("/messages", methods=["GET", "POST"])
-@login_required
-def messages():
-    conn = get_db()
-    if IS_PG:
-        try:
-            conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
-            conn.commit()
-        except Exception:
-            pass
-    login_user = session["login"]
-    role_user = session["role"]
-    tid = session["tenant_id"]
-    is_adm = is_admin()
-
-    if request.method == "POST":
-        msg = request.form.get("message", "").strip()
-        receiver_login = request.form.get("receiver_login", "")
-        receiver_role = request.form.get("receiver_role", "")
-        if msg and receiver_login:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if IS_PG:
-                db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (%s,%s,%s,%s,%s,%s,0,%s) RETURNING id",
-                          (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
-            else:
-                db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (?,?,?,?,?,?,0,?)",
-                          (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
-            conn.commit()
-        conn.close()
-        return redirect(url_for("messages"))
-
-    vendeurs = []
-    if is_adm:
-        vendeurs = db_fetchall(conn, "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'" if IS_PG else
-                               "SELECT DISTINCT login, tenant_id FROM utilisateurs WHERE role='vendeur'")
-    conn.close()
-    return render_template("messages.html", vendeurs=vendeurs,
-                           is_admin=is_adm, login=login_user, role=role_user)
-
-@app.route("/messages/api")
-@login_required
-def messages_api():
-    conn = get_db()
-    if IS_PG:
-        try:
-            conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
-            conn.commit()
-        except Exception:
-            pass
-    login_user = session["login"]
-    role_user = session["role"]
-    contact = request.args.get("contact", "").strip()
-    
-    if not contact:
-        return {"messages": [], "login": login_user}
-    
-    if IS_PG:
-        if role_user == "admin":
-            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_role=%s) ORDER BY created_at ASC LIMIT 200",
-                               (login_user, contact, contact, 'admin'))
-        else:
-            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_role=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200",
-                               (login_user, 'admin', contact, login_user))
-    else:
-        if role_user == "admin":
-            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_role=?) ORDER BY created_at ASC LIMIT 200",
-                               (login_user, contact, contact, 'admin'))
-        else:
-            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=? AND receiver_role=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
-                               (login_user, 'admin', contact, login_user))
-    conn.close()
-    
-    result = []
-    for m in msgs:
-        result.append({
-            "id": m["id"],
-            "sender_login": m["sender_login"],
-            "message": m["message"],
-            "created_at": m["created_at"][:16] if m["created_at"] else ""
-        })
-    return {"messages": result, "login": login_user}
-
-@app.route("/messages/debug")
-@login_required
-def messages_debug():
-    if not is_admin():
-        return "Admin only"
-    try:
-        conn = get_db()
-        if IS_PG:
-            cur = conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
-            conn.commit()
-        cur = conn.execute("SELECT COUNT(*) FROM messages")
-        count = cur.fetchone()[0]
-        cur = conn.execute("SELECT * FROM messages ORDER BY id DESC LIMIT 10")
-        rows = cur.fetchall()
-        cur2 = conn.execute("SELECT id, login, role, tenant_id FROM utilisateurs")
-        users = cur2.fetchall()
-        conn.close()
-        html = f"<h1>Debug Messages</h1><p>Total: {count}</p>"
-        html += "<h2>Derniers messages</h2><ul>"
-        for r in rows:
-            html += f"<li>id={r[0]} sender={r[1]} role={r[2]} recv={r[3]} recv_role={r[4]} tenant={r[5]} msg={str(r[6])[:50] if r[6] else ''} date={r[8] if len(r)>8 else ''}</li>"
-        html += "</ul><h2>Users</h2><ul>"
-        for u in users:
-            html += f"<li>id={u[0]} login={u[1]} role={u[2]} tenant={u[3]}</li>"
-        html += "</ul>"
-        return html
-    except Exception as e:
-        return f"<h1>Erreur</h1><pre>{str(e)}</pre>"
-    return html
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
