@@ -34,18 +34,18 @@
 {% endif %}
 
 <div class="stats">
-<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></a>
-<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Ventes</div><div class="value green" id="stat-ventes">{{nb_ventes}}</div></a>
-<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Clients</div><div class="value" id="stat-clients">{{nb_clients}}</div></a>
+<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">👟</div><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></a>
+<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">💰</div><div class="label">Ventes</div><div class="value green" id="stat-ventes">{{nb_ventes}}</div></a>
+<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">👥</div><div class="label">Clients</div><div class="value" id="stat-clients">{{nb_clients}}</div></a>
 </div>
 <div class="stats">
-<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">CA Total</div><div class="value green" id="stat-ca">${{ "%.2f"|format(ca_total) }}</div></a>
-<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></a>
-<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></a>
+<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">📈</div><div class="label">CA Total</div><div class="value green" id="stat-ca">${{ "%.2f"|format(ca_total) }}</div></a>
+<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">📦</div><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></a>
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">💳</div><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></a>
 </div>
 <div class="stats">
-<a href="/dettes" class="stat" style="grid-column:span 2;text-decoration:none;cursor:pointer"><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></a>
-<div class="stat"><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
+<a href="/dettes" class="stat" style="grid-column:span 2;text-decoration:none;cursor:pointer"><div class="icon">⚠️</div><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></a>
+<div class="stat"><div class="icon">👤</div><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
 </div>
 
 {% if session.role == 'vendeur' and session.tenant_id != 0 %}

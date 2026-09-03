@@ -4,44 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recu {{recu.numero}} - Baguma Market</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#f5f5f5;display:flex;justify-content:center;padding:20px}
-.receipt{width:100%;max-width:400px;background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
-.header{text-align:center;border-bottom:2px dashed #e0e0e0;padding-bottom:16px;margin-bottom:16px}
-.logo{font-size:36px;margin-bottom:8px}
-.shop-name{font-size:20px;font-weight:800;color:#1a1a1a;letter-spacing:-0.5px}
-.shop-city{font-size:13px;color:#666;margin-top:2px}
-.date-time{font-size:11px;color:#999;margin-top:8px}
-.recu-num{text-align:center;font-size:16px;font-weight:700;color:#00b894;margin:12px 0;padding:8px;background:rgba(0,184,148,0.08);border-radius:8px}
-.section{margin:12px 0}
-.section-title{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.info-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:#333}
-.info-row .label{color:#888}
-.info-row .value{font-weight:600}
-.divider{border:none;border-top:1px dashed #e0e0e0;margin:12px 0}
-table{width:100%;border-collapse:collapse;margin:8px 0}
-th{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;text-align:left;padding:4px 0;border-bottom:1px solid #eee}
-td{font-size:12px;padding:6px 0;border-bottom:1px solid #f5f5f5;color:#333}
-td:last-child{text-align:right;font-weight:600}
-.totals{background:#f9f9f9;border-radius:8px;padding:12px;margin-top:8px}
-.total-row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
-.total-row.grand{font-size:18px;font-weight:800;color:#00b894;border-top:2px solid #00b894;padding-top:8px;margin-top:4px}
-.security{text-align:center;margin-top:16px;padding:12px;background:rgba(0,184,148,0.05);border-radius:8px;border:1px solid rgba(0,184,148,0.1)}
-.security .label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px}
-.security .code{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:#00b894;margin:4px 0;letter-spacing:2px}
-.security .auth{font-size:10px;color:#666}
-.footer{text-align:center;margin-top:16px;padding-top:12px;border-top:2px dashed #e0e0e0}
-.footer .thanks{font-size:14px;font-weight:700;color:#333;margin-bottom:4px}
-.footer .contact{font-size:10px;color:#999}
-.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+body{font-family:'Inter',system-ui,sans-serif;background:#f0f0f0;display:flex;justify-content:center;padding:16px;min-height:100vh}
+.receipt{width:100%;max-width:380px;background:#fff;padding:28px;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+
+.header{text-align:center;border-bottom:3px dashed #e0e0e0;padding-bottom:20px;margin-bottom:20px}
+.logo{font-size:42px;margin-bottom:10px}
+.shop-name{font-size:22px;font-weight:900;color:#1a1a1a;letter-spacing:-0.8px}
+.shop-city{font-size:14px;color:#666;margin-top:3px;font-weight:500}
+.date-time{font-size:12px;color:#999;margin-top:10px;font-weight:500}
+.recu-num{text-align:center;font-size:18px;font-weight:800;color:#00b894;margin:16px 0;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;border:2px solid rgba(0,184,148,0.15)}
+
+.section{margin:16px 0}
+.section-title{font-size:11px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px}
+.info-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#333}
+.info-row .label{color:#888;font-weight:500}
+.info-row .value{font-weight:700}
+
+.divider{border:none;border-top:2px dashed #e0e0e0;margin:16px 0}
+
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th{font-size:11px;font-weight:800;color:#999;text-transform:uppercase;text-align:left;padding:8px 4px;border-bottom:2px solid #eee;letter-spacing:0.5px}
+td{font-size:13px;padding:10px 4px;border-bottom:1px solid #f0f0f0;color:#333}
+td:last-child{text-align:right;font-weight:700}
+
+.totals{background:#f8f9fa;border-radius:12px;padding:16px;margin-top:12px}
+.total-row{display:flex;justify-content:space-between;font-size:15px;padding:5px 0}
+.total-row.grand{font-size:20px;font-weight:900;color:#00b894;border-top:3px solid #00b894;padding-top:10px;margin-top:6px}
+
+.security{text-align:center;margin-top:20px;padding:16px;background:rgba(0,184,148,0.05);border-radius:12px;border:2px solid rgba(0,184,148,0.12)}
+.security .label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+.security .code{font-family:'Courier New',monospace;font-size:16px;font-weight:800;color:#00b894;margin:6px 0;letter-spacing:3px}
+.security .auth{font-size:11px;color:#666;font-weight:500}
+
+.footer{text-align:center;margin-top:20px;padding-top:16px;border-top:3px dashed #e0e0e0}
+.footer .thanks{font-size:16px;font-weight:800;color:#333;margin-bottom:6px}
+.footer .contact{font-size:11px;color:#999;font-weight:500}
+
+.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:800}
 .badge-honneur{background:rgba(244,114,182,0.1);color:#f472b6}
 .badge-cash{background:rgba(0,184,148,0.1);color:#00b894}
+.badge-dette{background:rgba(249,115,22,0.1);color:#f97316}
+
+.qr-section{text-align:center;margin-top:20px;padding:16px;background:#f8f9fa;border-radius:12px}
+.qr-section .label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700}
+.qr-section img{width:130px;height:130px;border-radius:10px;border:2px solid #eee}
+.qr-section .url{font-size:9px;color:#999;margin-top:8px;font-family:monospace;word-break:break-all}
+
 @media print{
   body{background:#fff;padding:0}
-  .receipt{box-shadow:none;border:1px solid #eee;max-width:100%}
-  .no-print{display:none}
+  .receipt{box-shadow:none;border:none;max-width:100%;padding:20px}
+  .no-print{display:none!important}
 }
 </style>
 </head>
@@ -76,10 +91,10 @@ td:last-child{text-align:right;font-weight:600}
       <tr><th style="text-align:left">Produit</th><th>Qte</th><th>Prix</th><th>Total</th></tr>
       {% for v in ventes %}
       <tr>
-        <td style="text-align:left">{{v.produit_nom}}</td>
-        <td>{{v.quantite}}</td>
-        <td>{{ "%.2f"|format(v.prix_unit_usd) }}</td>
-        <td>{{ "%.2f"|format(v.total_usd) }}</td>
+        <td style="text-align:left;font-weight:600">{{v.produit_nom}}</td>
+        <td style="text-align:center">{{v.quantite}}</td>
+        <td style="text-align:right">{{ "%.2f"|format(v.prix_unit_usd) }}</td>
+        <td style="text-align:right;font-weight:700">{{ "%.2f"|format(v.total_usd) }}</td>
       </tr>
       {% endfor %}
     </table>
@@ -94,13 +109,13 @@ td:last-child{text-align:right;font-weight:600}
   <div class="security">
     <div class="label">Code de securite</div>
     <div class="code">{{recu.signature}}</div>
-    <div class="auth">Authentifie par Baguma Market</div>
+    <div class="auth">Authentifie par Admin</div>
   </div>
 
-  <div style="text-align:center;margin-top:16px;padding:16px;background:#f9f9f9;border-radius:12px">
-    <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Scannez pour verifier votre recu</div>
-    <img id="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" style="width:120px;height:120px;border-radius:8px;border:2px solid #eee" alt="QR Code">
-    <div style="font-size:10px;color:#666;margin-top:6px;font-family:monospace">{{url_for('verifier_recu', numero=recu.numero, _external=True)}}</div>
+  <div class="qr-section">
+    <div class="label">Scannez pour verifier</div>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" alt="QR Code">
+    <div class="url">{{url_for('verifier_recu', numero=recu.numero, _external=True)}}</div>
   </div>
 
   <div class="footer">
@@ -108,11 +123,11 @@ td:last-child{text-align:right;font-weight:600}
     <div class="contact">Tel : +243 97 000 0000 | {{tenant_nom}}</div>
   </div>
 
-  <div class="no-print" style="text-align:center;margin-top:20px">
-    <a href="/recu/pdf/{{recu.id}}" style="padding:14px 28px;background:#4facfe;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;margin:6px;box-shadow:0 4px 15px rgba(79,172,254,0.3)">📥 Telecharger le recu (PDF)</a>
+  <div class="no-print" style="text-align:center;margin-top:24px">
+    <a href="/recu/pdf/{{recu.id}}" style="padding:16px 32px;background:linear-gradient(135deg,#50b4fe,#3b82f6);color:#fff;border:none;border-radius:14px;font-weight:800;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;margin:6px;box-shadow:0 6px 20px rgba(80,180,254,0.35)">📥 Telecharger PDF</a>
     <br>
-    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF ci-dessus pour imprimer')}" style="padding:12px 24px;background:#00b894;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;margin:8px 4px">🖨️ Imprimer (PC)</button>
-    <br><a href="/recus" style="color:#666;font-size:12px;margin-top:8px;display:inline-block">Retour aux recus</a>
+    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF ci-dessus pour imprimer')}" style="padding:14px 28px;background:linear-gradient(135deg,#00e6b8,#00ccaa);color:#000;border:none;border-radius:12px;font-weight:800;cursor:pointer;font-size:14px;margin:10px 4px;box-shadow:0 4px 15px rgba(0,230,184,0.3)">🖨️ Imprimer</button>
+    <br><a href="/recus" style="color:#888;font-size:12px;margin-top:10px;display:inline-block;font-weight:600">Retour aux recus</a>
   </div>
 </div>
 </body>
