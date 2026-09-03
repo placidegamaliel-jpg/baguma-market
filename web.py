@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory
 import os
+import hashlib
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder="static")
@@ -28,7 +29,10 @@ def init_pg_schema():
             "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS total_usd REAL DEFAULT 0",
             "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS total_cdf REAL DEFAULT 0",
             "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_ventes INTEGER DEFAULT 0",
-            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_clients INTEGER DEFAULT 0"
+            "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_clients INTEGER DEFAULT 0",
+            "ALTER TABLE recus ADD COLUMN IF NOT EXISTS signature TEXT DEFAULT ''",
+            "ALTER TABLE recus ADD COLUMN IF NOT EXISTS vendeur_login TEXT DEFAULT ''",
+            "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0"
         ]:
             try:
                 conn.execute(alter)
@@ -546,16 +550,27 @@ def ventes():
         total_usd = prix_usd * qte
         total_cdf = prix_cdf * qte
 
-        recu_num = f"N{datetime.now().strftime('%Y%m%d%H%M%S')}"
         now_date = datetime.now().strftime("%Y-%m-%d")
         now_heure = datetime.now().strftime("%H:%M:%S")
+
+        # Numero sequentiel RCP-YYYY-NNN
+        year = datetime.now().strftime("%Y")
+        seq_row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM recus WHERE numero LIKE %s" if IS_PG else
+                              "SELECT COUNT(*) as cnt FROM recus WHERE numero LIKE ?", (f"RCP-{year}-%",))
+        seq_num = (seq_row["cnt"] if seq_row else 0) + 1
+        recu_num = f"RCP-{year}-{seq_num:03d}"
+
+        # Signature SHA256
+        cle_secrete = app.secret_key
+        contenu = f"{recu_num}-{total_usd}-{total_cdf}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
+        signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
 
         db_insert(conn, "INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                   (now_date, now_heure, pid, qte, prix_usd, prix_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, is_honneur, tid_sale, session["login"]))
-        db_insert(conn, "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-                  "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id) VALUES (?,?,?,?,?,?,?,?,?)",
-                  (recu_num, client_nom, client_tel, total_usd, total_cdf, is_honneur, now_date, now_heure, tid_sale))
+        db_insert(conn, "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                  (recu_num, client_nom, client_tel, total_usd, total_cdf, is_honneur, now_date, now_heure, tid_sale, signature, session["login"]))
         db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
 
         if is_honneur:
@@ -674,6 +689,10 @@ def recu_edit(rid):
                        "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=?", (rid,))
     if not recu:
         conn.close()
+        return redirect(url_for("recus"))
+    if recu["verrouille"]:
+        conn.close()
+        flash("Ce recu est verrouille apres le rapport de fin de journee", "error")
         return redirect(url_for("recus"))
     if request.method == "POST":
         data = request.form
@@ -1191,6 +1210,10 @@ def fin_journee():
                   "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,?,0,?,?)",
                   (f"Rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f} | /rapport/{rapport_id}", now, vendeur_login))
 
+        # Verrouiller les recus du vendeur pour aujourd'hui
+        db_execute(conn, "UPDATE recus SET verrouille=1 WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else
+                   "UPDATE recus SET verrouille=1 WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
+
         db_execute(conn, "DELETE FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -1265,6 +1288,21 @@ def admin_cleanup():
         html += f"<li>{k}: {v} lignes supprimees</li>"
     html += "</ul><p>Ventes et clients remis a zero.</p><a href='/dashboard'>Retour</a>"
     return html
+
+@app.route("/recu/verifier/<numero>")
+def verifier_recu(numero):
+    conn = get_db()
+    r = db_fetchone(conn, "SELECT * FROM recus WHERE numero=%s" if IS_PG else "SELECT * FROM recus WHERE numero=?", (numero,))
+    conn.close()
+    if not r:
+        return render_template("verifier_recu.html", valide=False, recu=None, numero=numero)
+    
+    cle_secrete = app.secret_key
+    contenu = f"{r['numero']}-{r['total_usd']}-{r['total_cdf']}-{r['client_nom'] or ''}-{r['client_tel'] or ''}-{r['date']}-{r['heure']}-{r['tenant_id']}"
+    signature_calculee = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
+    valide = signature_calculee == (r['signature'] or '')
+    
+    return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

@@ -16,7 +16,19 @@
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 <div class="card" style="border-radius:20px;padding:28px">
 <h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:8px">✏️ Modifier Recu #{{recu.numero}}</h2>
-<p style="color:var(--txt2);font-size:12px;margin-bottom:20px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
+<p style="color:var(--txt2);font-size:12px;margin-bottom:6px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
+{% if recu.signature %}
+<p style="font-size:11px;margin-bottom:20px">
+  Signature: <code style="background:rgba(0,212,170,0.1);padding:2px 8px;border-radius:6px;color:var(--accent);font-size:10px">{{recu.signature}}</code>
+  {% if recu.verrouille %}<span style="color:var(--red);font-weight:700;margin-left:8px">🔒 Verrouille</span>{% endif %}
+</p>
+{% endif %}
+{% if recu.verrouille %}
+<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
+  <p style="color:var(--red);font-weight:700;font-size:13px">🔒 Ce recu est verrouille</p>
+  <p style="color:var(--txt2);font-size:11px">Envoye lors du rapport de fin de journee. Modification impossible.</p>
+</div>
+{% else %}
 <form method="POST">
 <div class="form-group">
 <label>Client Nom</label>
@@ -39,6 +51,7 @@
 <a href="/recus" class="btn btn-gold" style="flex:1;padding:14px;text-align:center">Annuler</a>
 </div>
 </form>
+{% endif %}
 </div>
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>

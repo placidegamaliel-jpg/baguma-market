@@ -19,7 +19,7 @@
 
 <div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
-<tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th>{% if is_admin %}<th>Actions</th>{% endif %}</tr>
+<tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th><th>Signature</th><th>Etat</th>{% if is_admin %}<th>Actions</th>{% endif %}</tr>
 {% for r in recus_list %}
 <tr>
 <td style="font-size:11px;color:var(--accent);font-weight:600">{{r.numero}}</td>
@@ -27,10 +27,12 @@
 <td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
 <td>{{'⭐' if r.est_honneur else '-'}}</td>
-{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️ Modifier</a></td>{% endif %}
+<td style="font-size:10px;font-family:monospace;color:var(--txt2)">{{r.signature[:8] if r.signature else '-'}}</td>
+<td>{% if r.verrouille %}<span style="color:var(--red);font-size:11px">🔒</span>{% endif %}</td>
+{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a> <a href="/recu/verifier/{{r.numero}}" class="btn btn-blue btn-sm" style="padding:4px 10px;font-size:11px">🔍</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not recus_list %}<tr><td colspan="{% if is_admin %}6{% else %}5{% endif %}" class="empty">Aucun recu</td></tr>{% endif %}
+{% if not recus_list %}<tr><td colspan="{% if is_admin %}8{% else %}5{% endif %}" class="empty">Aucun recu</td></tr>{% endif %}
 </table></div></div>
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
