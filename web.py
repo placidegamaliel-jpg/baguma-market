@@ -528,7 +528,11 @@ def ventes():
             conn.close()
             flash("Veuillez selectionner un produit et une quantite", "error")
             return redirect(url_for("ventes"))
-        tid_sale = int(data.get("tenant_id") or etid or session["tenant_id"]) if is_admin() else session["tenant_id"]
+        tid_sale_raw = data.get("tenant_id") or str(etid or session["tenant_id"])
+        try:
+            tid_sale = int(tid_sale_raw)
+        except (ValueError, TypeError):
+            tid_sale = session["tenant_id"]
         client_nom = data.get("client_nom", "")
         client_tel = data.get("client_tel", "")
         is_honneur = 1 if data.get("honneur") else 0
@@ -599,8 +603,16 @@ def ventes():
                   "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
                   (session["user_id"], session["login"], tid_sale, "vente", f"{qte}x {pid} = ${total_usd:.2f}", now))
         conn.commit()
+        
+        # Recuperer le recu cree
+        recu_row = db_fetchone(conn, "SELECT id FROM recus WHERE numero=%s" if IS_PG else "SELECT id FROM recus WHERE numero=?", (recu_num,))
         conn.close()
+        
         flash(f"Vente enregistree : {qte}x produit = ${total_usd:.2f}", "success")
+        
+        # Rediriger vers le recu pour impression
+        if recu_row:
+            return redirect(url_for("recu_print", rid=recu_row["id"]))
         return redirect(url_for("ventes"))
 
     if etid is not None:
