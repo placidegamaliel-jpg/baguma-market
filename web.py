@@ -30,6 +30,14 @@ def init_pg_schema():
                 conn.execute(alter)
             except Exception:
                 pass
+        for tbl in [
+            "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
+        ]:
+            try:
+                conn.execute(tbl)
+            except Exception:
+                pass
         cur = conn.execute("SELECT COUNT(*) FROM tenants")
         if cur.fetchone()[0] == 0:
             conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
