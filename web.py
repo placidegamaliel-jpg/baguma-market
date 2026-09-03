@@ -1253,9 +1253,12 @@ def messages():
         receiver_role = request.form.get("receiver_role", "")
         if msg and receiver_login:
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (%s,%s,%s,%s,%s,%s,0,%s) RETURNING id" if IS_PG else
-                      "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (?,?,?,?,?,?,0,?)",
-                      (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
+            if IS_PG:
+                db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (%s,%s,%s,%s,%s,%s,0,%s) RETURNING id",
+                          (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
+            else:
+                db_insert(conn, "INSERT INTO messages (sender_login, sender_role, receiver_login, receiver_role, tenant_id, message, is_read, created_at) VALUES (?,?,?,?,?,?,0,?)",
+                          (login_user, role_user, receiver_login, receiver_role, tid, msg, now))
             conn.commit()
         conn.close()
         return redirect(url_for("messages"))
@@ -1279,14 +1282,20 @@ def messages_api():
     if not contact:
         return {"messages": [], "login": login_user}
     
-    if role_user == "admin":
-        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
-                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
-                           (login_user, contact, contact, login_user))
+    if IS_PG:
+        if role_user == "admin":
+            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_role=%s) ORDER BY created_at ASC LIMIT 200",
+                               (login_user, contact, contact, 'admin'))
+        else:
+            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_role=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200",
+                               (login_user, 'admin', contact, login_user))
     else:
-        msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=%s AND receiver_login=%s) OR (sender_login=%s AND receiver_login=%s) ORDER BY created_at ASC LIMIT 200" if IS_PG else
-                           "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
-                           (login_user, 'admin', 'admin', login_user))
+        if role_user == "admin":
+            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=? AND receiver_login=?) OR (sender_login=? AND receiver_role=?) ORDER BY created_at ASC LIMIT 200",
+                               (login_user, contact, contact, 'admin'))
+        else:
+            msgs = db_fetchall(conn, "SELECT * FROM messages WHERE (sender_login=? AND receiver_role=?) OR (sender_login=? AND receiver_login=?) ORDER BY created_at ASC LIMIT 200",
+                               (login_user, 'admin', contact, login_user))
     conn.close()
     
     result = []
@@ -1298,6 +1307,29 @@ def messages_api():
             "created_at": m["created_at"][:16] if m["created_at"] else ""
         })
     return {"messages": result, "login": login_user}
+
+@app.route("/messages/debug")
+@login_required
+def messages_debug():
+    if not is_admin():
+        return "Admin only"
+    conn = get_db()
+    cur = conn.execute("SELECT COUNT(*) FROM messages")
+    count = cur.fetchone()[0]
+    cur = conn.execute("SELECT * FROM messages ORDER BY id DESC LIMIT 10")
+    rows = cur.fetchall()
+    cur2 = conn.execute("SELECT * FROM utilisateurs")
+    users = cur2.fetchall()
+    conn.close()
+    html = f"<h1>Debug Messages</h1><p>Total: {count}</p>"
+    html += "<h2>Derniers messages</h2><ul>"
+    for r in rows:
+        html += f"<li>id={r[0]} sender={r[1]} role={r[2]} recv={r[3]} recv_role={r[4]} msg={r[6][:50] if r[6] else ''}</li>"
+    html += "</ul><h2>Users</h2><ul>"
+    for u in users:
+        html += f"<li>id={u[0]} login={u[1]} role={u[3]} tenant={u[2]}</li>"
+    html += "</ul>"
+    return html
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
