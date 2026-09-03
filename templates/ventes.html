@@ -48,6 +48,10 @@
 <label for="cart_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
 </div>
 <div class="form-group" id="cart_honneur_prix" style="display:none"><label>Prix custom (USD)</label><input type="number" id="cart_prix_custom" step="0.01"></div>
+<div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,165,0,0.05);border:1px solid rgba(255,165,0,0.15);border-radius:12px">
+<input type="checkbox" id="cart_dette" onchange="toggleCartDette()" style="width:18px;height:18px;accent-color:orange">
+<label for="cart_dette" style="color:orange;font-size:13px;font-weight:500">💳 Vente a credit (dette)</label>
+</div>
 
 <div style="display:flex;gap:10px;margin-top:16px">
 <button type="button" class="btn btn-green" onclick="validateSale()" style="flex:1;padding:14px">✅ Valider la vente</button>
@@ -111,6 +115,7 @@ function toggleCartHonneur(){
   var h = document.getElementById('cart_honneur').checked;
   document.getElementById('cart_honneur_prix').style.display = h ? 'block' : 'none';
 }
+function toggleCartDette(){}
 function clearCart(){
   cart = [];
   renderCart();
@@ -122,6 +127,7 @@ function validateSale(){
   var clientNom = document.getElementById('cart_client_nom').value;
   var clientTel = document.getElementById('cart_client_tel').value;
   var honneur = document.getElementById('cart_honneur').checked ? 1 : 0;
+  var dette = document.getElementById('cart_dette').checked ? 1 : 0;
   var items = [];
   for(var i=0;i<cart.length;i++){
     items.push({produit_id:cart[i].pid, quantite:cart[i].qte, prix_usd:cart[i].prix});
@@ -129,7 +135,7 @@ function validateSale(){
   fetch('/ventes/validate', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({tenant_id:tenantId, client_nom:clientNom, client_tel:clientTel, honneur:honneur, items:items})
+    body: JSON.stringify({tenant_id:tenantId, client_nom:clientNom, client_tel:clientTel, honneur:honneur, dette:dette, items:items})
   }).then(function(r){return r.json()}).then(function(d){
     if(d.ok){
       window.location.href = '/recu/print/'+d.recu_id;

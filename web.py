@@ -646,6 +646,7 @@ def ventes_validate():
     client_nom = data.get("client_nom", "")
     client_tel = data.get("client_tel", "")
     is_honneur = data.get("honneur", 0)
+    is_dette = data.get("dette", 0)
     
     conn = get_db()
     etid = get_effective_tid()
@@ -700,7 +701,7 @@ def ventes_validate():
               "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
               (recu_num, client_nom, client_tel, total_usd_all, total_cdf_all, is_honneur, now_date, now_heure, tid_sale, signature, session["login"]))
     
-    if is_honneur:
+    if is_honneur or is_dette:
         db_insert(conn, "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (%s,%s,%s,%s,%s,0,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (?,?,?,?,?,0,?,?,?,?)",
                   (tid_sale, client_nom, client_tel, total_usd_all, total_cdf_all, now_date, now_heure, recu_num, session["login"]))
