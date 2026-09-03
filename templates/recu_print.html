@@ -73,21 +73,21 @@ td:last-child{text-align:right;font-weight:600}
   <div class="section">
     <div class="section-title">Details de la transaction</div>
     <table>
-      <tr><th>Produit</th><th>Qte</th><th>Prix</th><th>Total</th></tr>
+      <tr><th style="text-align:left">Produit</th><th>Qte</th><th>Prix</th><th>Total</th></tr>
       {% for v in ventes %}
       <tr>
-        <td>{{v.produit_nom}}</td>
+        <td style="text-align:left">{{v.produit_nom}}</td>
         <td>{{v.quantite}}</td>
-        <td>${{ "%.2f"|format(v.prix_unit_usd) }}</td>
-        <td>${{ "%.2f"|format(v.total_usd) }}</td>
+        <td>{{ "%.2f"|format(v.prix_unit_usd) }}</td>
+        <td>{{ "%.2f"|format(v.total_usd) }}</td>
       </tr>
       {% endfor %}
     </table>
   </div>
 
   <div class="totals">
-    <div class="total-row"><span>Total USD</span><span>${{ "%.2f"|format(recu.total_usd) }}</span></div>
-    <div class="total-row"><span>Total CDF</span><span>{{recu.total_cdf|int}} CDF</span></div>
+    <div class="total-row"><span>TOTAL USD</span><span>{{ "%.2f"|format(recu.total_usd) }}</span></div>
+    <div class="total-row"><span>TOTAL CDF</span><span>{{recu.total_cdf|int}}</span></div>
     <div class="total-row"><span>Paiement</span><span><span class="badge badge-cash">Cash</span></span></div>
   </div>
 

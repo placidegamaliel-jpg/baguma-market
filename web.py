@@ -769,58 +769,73 @@ def recu_pdf(rid):
     
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 16)
+    pdf.set_font("Helvetica", "B", 14)
     
     # En-tete
-    pdf.cell(0, 10, "BAGUMA MARKET", ln=True, align="C")
-    pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 8, tenant_nom, ln=True, align="C")
-    pdf.cell(0, 8, f"Date : {recu['date']} a {recu['heure']}", ln=True, align="C")
-    
-    pdf.ln(5)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 10, f"Recu N {recu['numero']}", ln=True, align="C")
+    pdf.cell(0, 8, "BAGUMA MARKET", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, f"{tenant_nom}", ln=True, align="C")
+    pdf.cell(0, 6, f"Date : {recu['date']} a {recu['heure']}", ln=True, align="C")
+    pdf.cell(0, 6, f"Recu N : {recu['numero']}", ln=True, align="C")
     
     pdf.ln(3)
     pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 7, f"Vendeur : {recu['vendeur_login'] or 'N/A'}", ln=True)
-    pdf.cell(0, 7, f"Client : {recu['client_nom'] or 'Client occasionnel'}", ln=True)
+    pdf.cell(0, 6, f"Vendeur : {recu['vendeur_login'] or 'N/A'}", ln=True)
+    pdf.cell(0, 6, f"Client : {recu['client_nom'] or 'Client occasionnel'}", ln=True)
     if recu['client_tel']:
-        pdf.cell(0, 7, f"Telephone : {recu['client_tel']}", ln=True)
+        pdf.cell(0, 6, f"Telephone : {recu['client_tel']}", ln=True)
     if recu['est_honneur']:
-        pdf.cell(0, 7, "Type : Client d'honneur", ln=True)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(0, 6, "Type : Client d'honneur", ln=True)
     
-    pdf.ln(5)
+    # Separateur
+    pdf.ln(3)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
+    
+    # Tableau des produits
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(80, 8, "Produit", 1, align="C")
-    pdf.cell(25, 8, "Qte", 1, align="C")
-    pdf.cell(35, 8, "Prix USD", 1, align="C")
-    pdf.cell(35, 8, "Total USD", 1, align="C")
+    pdf.cell(80, 7, "Produit", 1, align="L")
+    pdf.cell(20, 7, "Qte", 1, align="C")
+    pdf.cell(40, 7, "Prix", 1, align="C")
+    pdf.cell(40, 7, "Total", 1, align="C")
     pdf.ln()
     
     pdf.set_font("Helvetica", "", 10)
     for v in ventes_list:
-        pdf.cell(80, 7, str(v['produit_nom'])[:30], 1)
-        pdf.cell(25, 7, str(v['quantite']), 1, align="C")
-        pdf.cell(35, 7, f"${v['prix_unit_usd']:.2f}", 1, align="C")
-        pdf.cell(35, 7, f"${v['total_usd']:.2f}", 1, align="C")
+        pdf.cell(80, 7, str(v['produit_nom'])[:35], 1, align="L")
+        pdf.cell(20, 7, str(v['quantite']), 1, align="C")
+        pdf.cell(40, 7, f"{v['prix_unit_usd']:,.2f}", 1, align="C")
+        pdf.cell(40, 7, f"{v['total_usd']:,.2f}", 1, align="C")
         pdf.ln()
     
-    pdf.ln(5)
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 8, f"TOTAL USD : ${recu['total_usd']:.2f}", ln=True, align="C")
-    pdf.cell(0, 8, f"TOTAL CDF : {recu['total_cdf']:.0f} CDF", ln=True, align="C")
+    # Separateur
+    pdf.ln(2)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
     
-    pdf.ln(5)
-    pdf.set_font("Helvetica", "", 9)
+    # Totaux
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 7, f"TOTAL USD : {recu['total_usd']:,.2f}", ln=True, align="C")
+    pdf.cell(0, 7, f"TOTAL CDF : {recu['total_cdf']:,.0f}", ln=True, align="C")
+    pdf.cell(0, 7, "Paiement : Cash", ln=True, align="C")
+    
+    # Separateur
+    pdf.ln(2)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
+    
+    # Code securite
+    pdf.set_font("Helvetica", "", 10)
     pdf.cell(0, 7, f"Code securite : {recu['signature']}", ln=True, align="C")
-    pdf.cell(0, 7, "Authentifie par Baguma Market", ln=True, align="C")
+    pdf.cell(0, 7, "Authentifie par Admin", ln=True, align="C")
     
     pdf.ln(5)
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(0, 8, "Merci pour votre confiance !", ln=True, align="C")
+    pdf.cell(0, 7, "Merci pour votre confiance !", ln=True, align="C")
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 7, f"Baguma Market | {tenant_nom}", ln=True, align="C")
+    pdf.cell(0, 6, f"Baguma Market | {tenant_nom}", ln=True, align="C")
     
     pdf_path = f"/tmp/recu_{recu['numero']}.pdf"
     pdf.output(pdf_path)
