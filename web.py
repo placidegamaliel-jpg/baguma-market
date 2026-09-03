@@ -1313,22 +1313,29 @@ def messages_api():
 def messages_debug():
     if not is_admin():
         return "Admin only"
-    conn = get_db()
-    cur = conn.execute("SELECT COUNT(*) FROM messages")
-    count = cur.fetchone()[0]
-    cur = conn.execute("SELECT * FROM messages ORDER BY id DESC LIMIT 10")
-    rows = cur.fetchall()
-    cur2 = conn.execute("SELECT * FROM utilisateurs")
-    users = cur2.fetchall()
-    conn.close()
-    html = f"<h1>Debug Messages</h1><p>Total: {count}</p>"
-    html += "<h2>Derniers messages</h2><ul>"
-    for r in rows:
-        html += f"<li>id={r[0]} sender={r[1]} role={r[2]} recv={r[3]} recv_role={r[4]} msg={r[6][:50] if r[6] else ''}</li>"
-    html += "</ul><h2>Users</h2><ul>"
-    for u in users:
-        html += f"<li>id={u[0]} login={u[1]} role={u[3]} tenant={u[2]}</li>"
-    html += "</ul>"
+    try:
+        conn = get_db()
+        if IS_PG:
+            cur = conn.execute("CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, sender_login TEXT NOT NULL, sender_role TEXT NOT NULL, receiver_login TEXT DEFAULT '', receiver_role TEXT DEFAULT '', tenant_id INTEGER DEFAULT 0, message TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at TEXT NOT NULL)")
+            conn.commit()
+        cur = conn.execute("SELECT COUNT(*) FROM messages")
+        count = cur.fetchone()[0]
+        cur = conn.execute("SELECT * FROM messages ORDER BY id DESC LIMIT 10")
+        rows = cur.fetchall()
+        cur2 = conn.execute("SELECT id, login, role, tenant_id FROM utilisateurs")
+        users = cur2.fetchall()
+        conn.close()
+        html = f"<h1>Debug Messages</h1><p>Total: {count}</p>"
+        html += "<h2>Derniers messages</h2><ul>"
+        for r in rows:
+            html += f"<li>id={r[0]} sender={r[1]} role={r[2]} recv={r[3]} recv_role={r[4]} tenant={r[5]} msg={str(r[6])[:50] if r[6] else ''} date={r[8] if len(r)>8 else ''}</li>"
+        html += "</ul><h2>Users</h2><ul>"
+        for u in users:
+            html += f"<li>id={u[0]} login={u[1]} role={u[2]} tenant={u[3]}</li>"
+        html += "</ul>"
+        return html
+    except Exception as e:
+        return f"<h1>Erreur</h1><pre>{str(e)}</pre>"
     return html
 
 if __name__ == "__main__":
