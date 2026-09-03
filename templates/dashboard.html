@@ -35,11 +35,11 @@
 
 <div class="stats">
 <a href="/produits" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></a>
-<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Ventes</div><div class="value green">{{nb_ventes}}</div></a>
-<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Clients</div><div class="value">{{nb_clients}}</div></a>
+<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Ventes</div><div class="value green" id="stat-ventes">{{nb_ventes}}</div></a>
+<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Clients</div><div class="value" id="stat-clients">{{nb_clients}}</div></a>
 </div>
 <div class="stats">
-<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">CA Total</div><div class="value green">${{ "%.2f"|format(ca_total) }}</div></a>
+<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">CA Total</div><div class="value green" id="stat-ca">${{ "%.2f"|format(ca_total) }}</div></a>
 <a href="/stock" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></a>
 <a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer"><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></a>
 </div>
@@ -53,7 +53,7 @@
 <div id="rapport-box" class="card" style="border:1px solid rgba(0,212,170,0.3);background:linear-gradient(135deg,rgba(0,212,170,0.1),rgba(79,172,254,0.05));margin-bottom:16px;padding:20px">
 <div style="text-align:center;margin-bottom:12px">
 <div style="font-size:16px;font-weight:700;color:var(--accent)">✅ Rapport envoye avec succes</div>
-<div style="font-size:12px;color:var(--txt2);margin-top:4px">Disponible pendant <span id="countdown">5:00</span></div>
+<div style="font-size:12px;color:var(--txt2);margin-top:4px">Disponible pendant <span id="countdown">0:05</span></div>
 </div>
 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
 <div style="background:rgba(0,212,170,0.1);padding:10px 16px;border-radius:10px;text-align:center">
@@ -75,9 +75,15 @@
 var box=document.getElementById('rapport-box');
 if(!box)return;
 var cd=document.getElementById('countdown');
-var total=300;
+var total=5;
 function tick(){
-if(total<=0){box.style.transition='opacity 0.5s';box.style.opacity='0';setTimeout(function(){box.remove()},500);return}
+if(total<=0){
+box.style.transition='opacity 0.5s';box.style.opacity='0';
+setTimeout(function(){box.remove()},500);
+var v=document.getElementById('stat-ventes');if(v)v.textContent='0';
+var c=document.getElementById('stat-clients');if(c)c.textContent='0';
+var ca=document.getElementById('stat-ca');if(ca)ca.textContent='$0.00';
+return}
 var m=Math.floor(total/60);var s=total%60;
 cd.textContent=m+':'+(s<10?'0':'')+s;
 total--;

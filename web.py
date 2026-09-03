@@ -1156,7 +1156,7 @@ def fin_journee():
         vendeur_id = session["user_id"]
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         today = datetime.now().strftime("%Y-%m-%d")
-        expire = (datetime.now() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        expire = (datetime.now() + timedelta(seconds=5)).strftime("%Y-%m-%d %H:%M:%S")
         t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (tid,))
         tenant_nom = t["nom"] if t else "Inconnu"
 
