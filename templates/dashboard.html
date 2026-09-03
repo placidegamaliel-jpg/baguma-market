@@ -50,12 +50,44 @@
 
 {% if session.role == 'vendeur' and session.tenant_id != 0 %}
 {% if rapport_envoye %}
-<div class="card" style="border:1px solid rgba(0,212,170,0.3);background:linear-gradient(135deg,rgba(0,212,170,0.1),rgba(79,172,254,0.05));margin-bottom:16px;padding:16px;text-align:center">
-<div style="font-size:14px;font-weight:600;color:var(--accent)">✅ Rapport envoye avec succes</div>
-<div style="font-size:12px;color:var(--txt2);margin-top:4px">Le rapport sera automatiquement supprime dans 5 minutes</div>
+<div id="rapport-box" class="card" style="border:1px solid rgba(0,212,170,0.3);background:linear-gradient(135deg,rgba(0,212,170,0.1),rgba(79,172,254,0.05));margin-bottom:16px;padding:20px">
+<div style="text-align:center;margin-bottom:12px">
+<div style="font-size:16px;font-weight:700;color:var(--accent)">✅ Rapport envoye avec succes</div>
+<div style="font-size:12px;color:var(--txt2);margin-top:4px">Disponible pendant <span id="countdown">5:00</span></div>
 </div>
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+<div style="background:rgba(0,212,170,0.1);padding:10px 16px;border-radius:10px;text-align:center">
+<div style="font-size:11px;color:var(--txt2)">Ventes</div>
+<div style="font-size:18px;font-weight:700;color:var(--accent)">{{rapport.nb_ventes}}</div>
+</div>
+<div style="background:rgba(79,172,254,0.1);padding:10px 16px;border-radius:10px;text-align:center">
+<div style="font-size:11px;color:var(--txt2)">Clients</div>
+<div style="font-size:18px;font-weight:700;color:var(--blue)">{{rapport.nb_clients}}</div>
+</div>
+<div style="background:rgba(240,192,64,0.1);padding:10px 16px;border-radius:10px;text-align:center">
+<div style="font-size:11px;color:var(--txt2)">Total USD</div>
+<div style="font-size:18px;font-weight:700;color:var(--gold)">${{ "%.2f"|format(rapport.total_usd) }}</div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+var box=document.getElementById('rapport-box');
+if(!box)return;
+var cd=document.getElementById('countdown');
+var total=300;
+function tick(){
+if(total<=0){box.style.transition='opacity 0.5s';box.style.opacity='0';setTimeout(function(){box.remove()},500);return}
+var m=Math.floor(total/60);var s=total%60;
+cd.textContent=m+':'+(s<10?'0':'')+s;
+total--;
+setTimeout(tick,1000);
+}
+tick();
+})();
+</script>
 {% else %}
-<form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ?')">
+<form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ? Les ventes du jour seront reinitialisees.')">
 <button type="submit" class="btn btn-green" style="width:100%;padding:16px;font-size:15px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px">
 <span style="font-size:20px">📋</span> Fin de journee
 </button>

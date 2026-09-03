@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT N
 CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL);
 """
 
 init_pg_schema()
@@ -291,16 +292,19 @@ def dashboard():
     conn.commit()
 
     rapport_envoye = False
+    rapport = None
     if session.get("role") == "vendeur" and session.get("tenant_id", 0) != 0:
-        r = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
-                        "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
-        rapport_envoye = r is not None
+        r = db_fetchone(conn, "SELECT * FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                        "SELECT * FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
+        if r:
+            rapport_envoye = True
+            rapport = r
 
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes,
-                           all_tenants=all_tenants, rapport_envoye=rapport_envoye)
+                           all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport)
 
 @app.route("/produits")
 @login_required
@@ -1129,18 +1133,37 @@ def fin_journee():
     vendeur_login = session["login"]
     vendeur_id = session["user_id"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    today = datetime.now().strftime("%Y-%m-%d")
     expire = (datetime.now() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (tid,))
     tenant_nom = t["nom"] if t else "Inconnu"
-    db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at) VALUES (%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
-              "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at) VALUES (?,?,?,?,?)",
-              (tid, vendeur_login, vendeur_id, now, expire))
+
+    stats = db_fetchone(conn, "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else
+                        "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
+    total_usd = stats["total_usd"] if stats else 0
+    total_cdf = stats["total_cdf"] if stats else 0
+    nb_ventes = stats["nb_ventes"] if stats else 0
+
+    clients = db_fetchone(conn, "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND client_nom!=''" if IS_PG else
+                          "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''", (vendeur_login, today, tid))
+    nb_clients = clients["nb"] if clients else 0
+
+    db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+              "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (?,?,?,?,?,?,?,?)",
+              (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today))
+
+    db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+              "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (?,?,?,?,?,?,?,?,?)",
+              (tid, vendeur_login, vendeur_id, now, expire, total_usd, total_cdf, nb_ventes, nb_clients))
+
     db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,%s,0,%s,%s)" if IS_PG else
               "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,?,0,?,?)",
-              (f"Fin de rapport dans le tenant {tenant_nom} - {vendeur_login}", now, vendeur_login))
+              (f"Fin de rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f}", now, vendeur_login))
+
+    db_execute(conn, "DELETE FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
-              (vendeur_id, vendeur_login, tid, "fin_journee", f"Rapport envoye - {tenant_nom}", now))
+              (vendeur_id, vendeur_login, tid, "fin_journee", f"${total_usd:.2f} | {nb_ventes} ventes | {nb_clients} clients", now))
     conn.commit()
     conn.close()
     flash("Rapport envoye avec succes", "success")
