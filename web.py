@@ -728,6 +728,24 @@ def recu_edit(rid):
     conn.close()
     return render_template("recu_edit.html", recu=recu, is_admin=is_admin())
 
+@app.route("/recu/print/<int:rid>")
+@login_required
+def recu_print(rid):
+    conn = get_db()
+    recu = db_fetchone(conn, "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=%s" if IS_PG else
+                       "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=?", (rid,))
+    if not recu:
+        conn.close()
+        flash("Recu introuvable", "error")
+        return redirect(url_for("recus"))
+    
+    ventes = db_fetchall(conn, "SELECT v.*, p.nom as produit_nom FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.recu_num=%s" if IS_PG else
+                         "SELECT v.*, p.nom as produit_nom FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.recu_num=?", (recu["numero"],))
+    conn.close()
+    
+    return render_template("recu_print.html", recu=recu, ventes=ventes,
+                           tenant_nom=recu["tenant_nom"] or "Baguma Market", is_admin=is_admin())
+
 @app.route("/logs")
 @login_required
 def logs():

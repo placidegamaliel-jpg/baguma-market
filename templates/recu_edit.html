@@ -52,6 +52,11 @@
 </div>
 </form>
 {% endif %}
+{% if recu.id %}
+<div style="margin-top:12px">
+<a href="/recu/print/{{recu.id}}" class="btn btn-green" style="width:100%;padding:14px;text-align:center">🖨️ Imprimer le recu</a>
+</div>
+{% endif %}
 </div>
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>

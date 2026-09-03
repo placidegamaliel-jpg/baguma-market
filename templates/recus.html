@@ -29,7 +29,7 @@
 <td>{{'⭐' if r.est_honneur else '-'}}</td>
 <td style="font-size:10px;font-family:monospace;color:var(--txt2)">{{r.signature[:8] if r.signature else '-'}}</td>
 <td>{% if r.verrouille %}<span style="color:var(--red);font-size:11px">🔒</span>{% endif %}</td>
-{% if is_admin %}<td><a href="/recus/edit/{{r.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a> <a href="/recu/verifier/{{r.numero}}" class="btn btn-blue btn-sm" style="padding:4px 10px;font-size:11px">🔍</a></td>{% endif %}
+{% if is_admin %}<td><a href="/recu/print/{{r.id}}" class="btn btn-green btn-sm" style="padding:4px 10px;font-size:11px">🖨️</a> <a href="/recus/edit/{{r.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a> <a href="/recu/verifier/{{r.numero}}" class="btn btn-blue btn-sm" style="padding:4px 10px;font-size:11px">🔍</a></td>{% endif %}
 </tr>
 {% endfor %}
 {% if not recus_list %}<tr><td colspan="{% if is_admin %}8{% else %}5{% endif %}" class="empty">Aucun recu</td></tr>{% endif %}
