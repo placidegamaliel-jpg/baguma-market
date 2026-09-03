@@ -1143,7 +1143,7 @@ def fin_journee():
             "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
         ]:
             try:
-                db_execute(conn, tbl)
+                conn.execute(tbl)
             except Exception:
                 pass
         conn.commit()
