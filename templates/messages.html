@@ -2,8 +2,8 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 style="font-size:1.6rem">Messagerie</h1>
-    <p style="opacity:.7;font-size:.85rem">Communication admin - vendeur</p>
+    <h1 style="font-size:1.6rem">💬 Messagerie</h1>
+    <p style="opacity:.7;font-size:.85rem">Discussion entre vendeur et admin</p>
   </div>
   <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Retour</a>
 </div>
@@ -12,33 +12,38 @@
   
   <div class="card" style="padding:1rem">
     <h3 style="font-size:1rem;margin-bottom:1rem">
-      {% if is_admin %}Vendeurs{% else %}Admin{% endif %}
+      {% if is_admin %}👨‍💼 Vendeurs{% else %}👤 Admin{% endif %}
     </h3>
 
     {% if is_admin %}
       {% for v in vendeurs %}
-      <div class="card" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer" 
-           onclick="document.getElementById('receiver_login').value='{{ v.login }}';document.getElementById('receiver_role').value='vendeur';document.getElementById('receiver_name').textContent='{{ v.login }}'">
+      <div class="card contact-item" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer;transition:all .2s" 
+           onclick="selectContact('{{ v.login }}', 'vendeur', this)">
         <div style="display:flex;align-items:center;gap:.7rem">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">
             {{ v.login[0]|upper }}
           </div>
-          <div>
-            <div style="font-weight:600;font-size:.9rem">{{ v.login }}</div>
+          <div style="overflow:hidden">
+            <div style="font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.login }}</div>
+            <div style="font-size:.7rem;color:var(--txt2)">💬 Cliquer pour discuter</div>
           </div>
         </div>
       </div>
       {% endfor %}
       {% if not vendeurs %}
-      <p style="opacity:.5;font-size:.85rem;text-align:center;padding:2rem 0">Aucun vendeur</p>
+      <div style="text-align:center;padding:2rem 0">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">📭</div>
+        <p style="opacity:.5;font-size:.85rem">Aucun vendeur</p>
+      </div>
       {% endif %}
     {% else %}
-      <div class="card" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer"
-           onclick="document.getElementById('receiver_login').value='';document.getElementById('receiver_role').value='admin';document.getElementById('receiver_name').textContent='Admin'">
+      <div class="card contact-item" style="padding:.7rem;margin-bottom:.5rem;cursor:pointer;transition:all .2s"
+           onclick="selectContact('', 'admin', this)">
         <div style="display:flex;align-items:center;gap:.7rem">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--danger);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem">A</div>
-          <div>
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--danger),var(--orange));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">A</div>
+          <div style="overflow:hidden">
             <div style="font-weight:600;font-size:.9rem">Admin</div>
+            <div style="font-size:.7rem;color:var(--txt2)">💬 Cliquer pour discuter</div>
           </div>
         </div>
       </div>
@@ -46,31 +51,78 @@
   </div>
 
   <div class="card" style="padding:1.5rem;display:flex;flex-direction:column">
-    <div style="flex:1;overflow-y:auto;max-height:55vh;padding-right:.5rem">
+    
+    <div id="chat-header" style="padding-bottom:1rem;border-bottom:1px solid var(--glass-border);margin-bottom:1rem;display:none">
+      <div style="display:flex;align-items:center;gap:.7rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem" id="chat-avatar">?</div>
+        <div>
+          <div style="font-weight:600;font-size:.95rem" id="chat-name">Selectionnez un contact</div>
+          <div style="font-size:.7rem;color:var(--accent)">● En ligne</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-messages" style="flex:1;overflow-y:auto;max-height:50vh;padding-right:.5rem">
       {% for m in messages %}
       <div style="margin-bottom:1rem;max-width:80%;{% if m.sender_login == login %}margin-left:auto;text-align:right{% endif %}">
         <div style="display:inline-block;padding:.8rem 1rem;border-radius:16px;
-          {% if m.sender_login == login %}background:var(--accent);color:#fff{% else %}background:var(--card-bg);border:1px solid var(--border){% endif %};
-          text-align:left;border-bottom-right-radius:4px">
-          <div style="font-size:.7rem;opacity:.7;margin-bottom:.3rem">
+          {% if m.sender_login == login %}background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff{% else %}background:var(--card-solid);border:1px solid var(--glass-border){% endif %};
+          text-align:left;{% if m.sender_login == login %}border-bottom-right-radius:4px{% else %}border-bottom-left-radius:4px{% endif %}">
+          <div style="font-size:.65rem;opacity:.7;margin-bottom:.3rem">
             {{ m.sender_login }} • {{ m.created_at[:16] }}
           </div>
-          <div style="font-size:.9rem">{{ m.message }}</div>
+          <div style="font-size:.9rem;line-height:1.4">{{ m.message }}</div>
         </div>
       </div>
       {% endfor %}
+      
       {% if not messages %}
-      <p style="opacity:.5;text-align:center;padding:3rem 0">Aucun message</p>
+      <div id="empty-chat" style="text-align:center;padding:4rem 2rem">
+        <div style="font-size:4rem;margin-bottom:1rem">💬</div>
+        <h3 style="font-size:1.1rem;margin-bottom:.5rem;color:var(--txt)">Commencer la conversation</h3>
+        <p style="opacity:.5;font-size:.85rem;max-width:300px;margin:0 auto">
+          {% if is_admin %}Selectionnez un vendeur et envoyez-lui un message{% else %}Cliquez sur Admin pour lui envoyer un message{% endif %}
+        </p>
+        <div style="margin-top:1.5rem;font-size:2rem">➡️</div>
+      </div>
       {% endif %}
     </div>
 
-    <form method="POST" style="display:flex;gap:.5rem;margin-top:1rem">
+    <form method="POST" id="chat-form" style="display:flex;gap:.5rem;margin-top:1rem;align-items:center">
       <input type="hidden" id="receiver_login" name="receiver_login" value="">
       <input type="hidden" id="receiver_role" name="receiver_role" value="">
-      <input type="text" name="message" placeholder="Ecrire un message..." required
-             style="flex:1;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.9rem">
-      <button type="submit" class="btn btn-primary" style="padding:.8rem 1.5rem;border-radius:12px">Envoyer</button>
+      <div style="flex:1;position:relative">
+        <input type="text" id="msg-input" name="message" placeholder="✍️ Envoyer un message..." required
+               style="width:100%;padding:1rem 1.2rem;border-radius:14px;border:1px solid var(--glass-border);background:var(--card-solid);color:var(--txt);font-size:.9rem;outline:none;transition:all .2s"
+               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--glass-border)'">
+      </div>
+      <button type="submit" class="btn btn-green" style="padding:.9rem 1.8rem;border-radius:14px;font-size:.9rem;display:flex;align-items:center;gap:.5rem">
+        Envoyer <span style="font-size:1.1rem">➡️</span>
+      </button>
     </form>
   </div>
 </div>
+
+<script>
+function selectContact(login, role, el) {
+  document.getElementById('receiver_login').value = login;
+  document.getElementById('receiver_role').value = role;
+  document.getElementById('msg-input').focus();
+  
+  document.querySelectorAll('.contact-item').forEach(function(c) {
+    c.style.background = '';
+    c.style.borderColor = 'var(--glass-border)';
+  });
+  el.style.background = 'rgba(0,212,170,0.1)';
+  el.style.borderColor = 'var(--accent)';
+  
+  var header = document.getElementById('chat-header');
+  header.style.display = 'block';
+  document.getElementById('chat-name').textContent = login || 'Admin';
+  document.getElementById('chat-avatar').textContent = (login || 'A')[0].toUpperCase();
+}
+
+var chatDiv = document.getElementById('chat-messages');
+if (chatDiv) chatDiv.scrollTop = chatDiv.scrollHeight;
+</script>
 {% endblock %}
