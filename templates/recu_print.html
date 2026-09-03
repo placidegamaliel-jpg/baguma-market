@@ -109,8 +109,9 @@ td:last-child{text-align:right;font-weight:600}
   </div>
 
   <div class="no-print" style="text-align:center;margin-top:20px">
-    <button onclick="window.print()" style="padding:12px 24px;background:#00b894;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;margin:4px">🖨️ Imprimer</button>
-    <a href="/recu/pdf/{{recu.id}}" style="padding:12px 24px;background:#4facfe;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block;margin:4px">📥 Telecharger PDF</a>
+    <a href="/recu/pdf/{{recu.id}}" style="padding:14px 28px;background:#4facfe;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;margin:6px;box-shadow:0 4px 15px rgba(79,172,254,0.3)">📥 Telecharger le recu (PDF)</a>
+    <br>
+    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF ci-dessus pour imprimer')}" style="padding:12px 24px;background:#00b894;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;margin:8px 4px">🖨️ Imprimer (PC)</button>
     <br><a href="/recus" style="color:#666;font-size:12px;margin-top:8px;display:inline-block">Retour aux recus</a>
   </div>
 </div>
