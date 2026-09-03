@@ -286,11 +286,21 @@ def dashboard():
 
     all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
 
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    db_execute(conn, "DELETE FROM rapports_temp WHERE expire_at<%s" if IS_PG else "DELETE FROM rapports_temp WHERE expire_at<?", (now,))
+    conn.commit()
+
+    rapport_envoye = False
+    if session.get("role") == "vendeur" and session.get("tenant_id", 0) != 0:
+        r = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                        "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
+        rapport_envoye = r is not None
+
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
                            ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes,
-                           all_tenants=all_tenants)
+                           all_tenants=all_tenants, rapport_envoye=rapport_envoye)
 
 @app.route("/produits")
 @login_required
