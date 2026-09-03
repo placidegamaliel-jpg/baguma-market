@@ -27,10 +27,16 @@
 </div>
 <div class="form-group">
 <p style="color:var(--txt2);font-size:12px;margin-bottom:8px;font-weight:600">Ville</p>
-<select name="ville" style="border-radius:12px">
-<option value="">-- Choisir votre ville --</option>
-{% for t in tenants %}<option value="{{t.nom}}">📍 {{t.nom}}</option>{% endfor %}
-</select>
+<input type="hidden" name="ville" id="ville_input" value="">
+<div style="display:flex;gap:10px">
+  <button type="button" class="ville-btn" onclick="selectVille('Chaussure Bukavu', this)" style="flex:1;padding:14px;border-radius:12px;border:2px solid var(--glass-border);background:var(--glass);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px">
+    📍 Bukavu
+  </button>
+  <button type="button" class="ville-btn" onclick="selectVille('Chaussure Goma', this)" style="flex:1;padding:14px;border-radius:12px;border:2px solid var(--glass-border);background:var(--glass);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px">
+    📍 Goma
+  </button>
+</div>
+<p id="ville_selected" style="color:var(--accent);font-size:12px;margin-top:8px;font-weight:600;min-height:18px"></p>
 </div>
 <button type="submit" class="btn btn-green" style="width:100%;margin-top:8px;padding:16px;font-size:15px;border-radius:12px">Connexion</button>
 </form>
@@ -46,6 +52,12 @@ function toggleCode(){
   var btn=document.getElementById('eyeBtn');
   if(inp.type==='password'){inp.type='text';btn.textContent='🙈'}
   else{inp.type='password';btn.textContent='👁'}
+}
+function selectVille(nom, btn){
+  document.getElementById('ville_input').value=nom;
+  document.getElementById('ville_selected').textContent='✅ '+nom+' selectionne';
+  document.querySelectorAll('.ville-btn').forEach(function(b){b.style.borderColor='var(--glass-border)';b.style.background='var(--glass)';b.style.color='var(--txt)'});
+  btn.style.borderColor='var(--accent)';btn.style.background='rgba(0,212,170,0.15)';btn.style.color='var(--accent)';
 }
 var flash=document.getElementById('flash-msg');
 if(flash){setTimeout(function(){flash.style.transition='opacity 0.5s';flash.style.opacity='0';setTimeout(function(){flash.remove()},500)},5000)}
