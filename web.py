@@ -750,6 +750,84 @@ def recu_print(rid):
     return render_template("recu_print.html", recu=recu, ventes=ventes,
                            tenant_nom=recu["tenant_nom"] or "Baguma Market", is_admin=is_admin())
 
+@app.route("/recu/pdf/<int:rid>")
+@login_required
+def recu_pdf(rid):
+    from fpdf import FPDF
+    conn = get_db()
+    recu = db_fetchone(conn, "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=%s" if IS_PG else
+                       "SELECT r.*, t.nom as tenant_nom FROM recus r LEFT JOIN tenants t ON r.tenant_id=t.id WHERE r.id=?", (rid,))
+    if not recu:
+        conn.close()
+        return "Recu introuvable", 404
+    
+    ventes_list = db_fetchall(conn, "SELECT v.*, p.nom as produit_nom FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.recu_num=%s" if IS_PG else
+                              "SELECT v.*, p.nom as produit_nom FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.recu_num=?", (recu["numero"],))
+    conn.close()
+    
+    tenant_nom = recu["tenant_nom"] or "Baguma Market"
+    
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    
+    # En-tete
+    pdf.cell(0, 10, "BAGUMA MARKET", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 11)
+    pdf.cell(0, 8, tenant_nom, ln=True, align="C")
+    pdf.cell(0, 8, f"Date : {recu['date']} a {recu['heure']}", ln=True, align="C")
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.cell(0, 10, f"Recu N {recu['numero']}", ln=True, align="C")
+    
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 7, f"Vendeur : {recu['vendeur_login'] or 'N/A'}", ln=True)
+    pdf.cell(0, 7, f"Client : {recu['client_nom'] or 'Client occasionnel'}", ln=True)
+    if recu['client_tel']:
+        pdf.cell(0, 7, f"Telephone : {recu['client_tel']}", ln=True)
+    if recu['est_honneur']:
+        pdf.cell(0, 7, "Type : Client d'honneur", ln=True)
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(80, 8, "Produit", 1, align="C")
+    pdf.cell(25, 8, "Qte", 1, align="C")
+    pdf.cell(35, 8, "Prix USD", 1, align="C")
+    pdf.cell(35, 8, "Total USD", 1, align="C")
+    pdf.ln()
+    
+    pdf.set_font("Helvetica", "", 10)
+    for v in ventes_list:
+        pdf.cell(80, 7, str(v['produit_nom'])[:30], 1)
+        pdf.cell(25, 7, str(v['quantite']), 1, align="C")
+        pdf.cell(35, 7, f"${v['prix_unit_usd']:.2f}", 1, align="C")
+        pdf.cell(35, 7, f"${v['total_usd']:.2f}", 1, align="C")
+        pdf.ln()
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 8, f"TOTAL USD : ${recu['total_usd']:.2f}", ln=True, align="C")
+    pdf.cell(0, 8, f"TOTAL CDF : {recu['total_cdf']:.0f} CDF", ln=True, align="C")
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(0, 7, f"Code securite : {recu['signature']}", ln=True, align="C")
+    pdf.cell(0, 7, "Authentifie par Baguma Market", ln=True, align="C")
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(0, 8, "Merci pour votre confiance !", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(0, 7, f"Baguma Market | {tenant_nom}", ln=True, align="C")
+    
+    pdf_path = f"/tmp/recu_{recu['numero']}.pdf"
+    pdf.output(pdf_path)
+    
+    return send_from_directory("/tmp", f"recu_{recu['numero']}.pdf", as_attachment=True,
+                               download_name=f"Recu_{recu['numero']}.pdf")
+
 @app.route("/logs")
 @login_required
 def logs():

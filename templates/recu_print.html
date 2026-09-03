@@ -109,7 +109,8 @@ td:last-child{text-align:right;font-weight:600}
   </div>
 
   <div class="no-print" style="text-align:center;margin-top:20px">
-    <button onclick="window.print()" style="padding:12px 24px;background:#00b894;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px">🖨️ Imprimer le recu</button>
+    <button onclick="window.print()" style="padding:12px 24px;background:#00b894;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;margin:4px">🖨️ Imprimer</button>
+    <a href="/recu/pdf/{{recu.id}}" style="padding:12px 24px;background:#4facfe;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block;margin:4px">📥 Telecharger PDF</a>
     <br><a href="/recus" style="color:#666;font-size:12px;margin-top:8px;display:inline-block">Retour aux recus</a>
   </div>
 </div>
