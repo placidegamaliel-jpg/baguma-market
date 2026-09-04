@@ -14,7 +14,7 @@
 <div style="display:flex;flex-direction:column;gap:16px">
 <div style="display:flex;align-items:center;gap:14px">
 <div style="width:40px;height:40px;background:rgba(0,230,184,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">💰</div>
-<div><p style="color:#fff;font-size:13px;font-weight:600">Ventesrapides</p><p style="color:#7878a0;font-size:11px">Panier multi-produits</p></div>
+<div><p style="color:#fff;font-size:13px;font-weight:600">Ventes rapides</p><p style="color:#7878a0;font-size:11px">Panier multi-produits</p></div>
 </div>
 <div style="display:flex;align-items:center;gap:14px">
 <div style="width:40px;height:40px;background:rgba(80,180,254,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🧾</div>
@@ -22,7 +22,7 @@
 </div>
 <div style="display:flex;align-items:center;gap:14px">
 <div style="width:40px;height:40px;background:rgba(168,85,247,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">📊</div>
-<div><p style="color:#fff;font-size:13px;font-weight:600">Rapportsdetailles</p><p style="color:#7878a0;font-size:11px">Suivi en temps reel</p></div>
+<div><p style="color:#fff;font-size:13px;font-weight:600">Rapports detailles</p><p style="color:#7878a0;font-size:11px">Suivi en temps reel</p></div>
 </div>
 </div>
 </div>
@@ -34,12 +34,12 @@
 </div>
 
 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--bg)">
-<div style="width:100%;max-width:400px">
+<div style="width:100%;max-width:420px">
 
 <div style="text-align:center;margin-bottom:36px">
-<div style="width:56px;height:56px;background:linear-gradient(135deg,#00e6b8,#50b4fe);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;box-shadow:0 8px 30px rgba(0,230,184,0.25)">👟</div>
-<h1 style="color:var(--txt);font-size:24px;font-weight:800;letter-spacing:-0.5px">Connexion</h1>
-<p style="color:var(--txt2);font-size:13px;margin-top:4px">Acces a votre espace</p>
+<div style="width:60px;height:60px;background:linear-gradient(135deg,#00e6b8,#50b4fe);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;box-shadow:0 10px 35px rgba(0,230,184,0.3)">👟</div>
+<h1 style="color:var(--txt);font-size:26px;font-weight:900;letter-spacing:-0.8px">Baguma Market</h1>
+<p style="color:var(--txt2);font-size:13px;margin-top:6px;font-weight:500">Connectez-vous a votre espace</p>
 </div>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -48,37 +48,47 @@
 {% endfor %}
 {% endwith %}
 
+<div class="card" style="padding:28px;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,0.3)">
 <form method="POST">
 <div class="form-group">
 <label style="font-size:12px;color:var(--txt2);font-weight:600;margin-bottom:8px;display:block">Email ou Telephone</label>
-<input type="text" name="login" placeholder="exemple@gmail.com" required autofocus style="border-radius:14px;padding:16px;font-size:14px">
+<div style="position:relative">
+<input type="text" name="login" placeholder="exemple@gmail.com" required autofocus style="width:100%;padding:16px 16px 16px 44px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:14px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;transition:all .3s">
+<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:0.5">👤</span>
+</div>
 </div>
 
 <div class="form-group">
 <label style="font-size:12px;color:var(--txt2);font-weight:600;margin-bottom:8px;display:block">Code secret</label>
 <div style="position:relative">
-<input type="password" name="code" id="code" placeholder="••••••" required style="padding-right:52px;border-radius:14px;padding:16px;font-size:14px;letter-spacing:4px">
+<input type="password" name="code" id="code" placeholder="••••••" required style="width:100%;padding:16px 52px 16px 44px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:14px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;letter-spacing:4px;transition:all .3s">
+<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:0.5">🔒</span>
 <button type="button" onclick="toggleCode()" id="eyeBtn" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--glass);border:1px solid var(--glass-border);color:var(--txt2);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s">👁</button>
 </div>
 </div>
 
 <div class="form-group">
-<label style="font-size:12px;color:var(--txt2);font-weight:600;margin-bottom:8px;display:block">Ville <span style="color:var(--txt3);font-weight:400">(optionnel pour l'admin)</span></label>
-<select name="ville" id="ville_select" style="width:100%;padding:16px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);border-radius:14px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237878a0%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>');background-repeat:no-repeat;background-position:right 16px center">
-<option value="" style="background:#1a1a2e;color:#f0f0f8">-- Choisir la ville --</option>
+<label style="font-size:12px;color:var(--txt2);font-weight:600;margin-bottom:8px;display:block"><span style="margin-right:4px">🏙️</span>Ville <span style="color:var(--txt3);font-weight:400;font-size:11px">(optionnel pour l'admin)</span></label>
+<select name="ville" id="ville_select" style="width:100%;padding:16px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:14px;color:var(--txt);font-size:14px;font-family:inherit;outline:none;cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237878a0%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>');background-repeat:no-repeat;background-position:right 16px center;transition:all .3s">
+<option value="" style="background:#1a1a2e;color:#f0f0f8">-- Selectionnez votre ville --</option>
 <option value="Chaussure Bukavu" style="background:#1a1a2e;color:#f0f0f8">📍 Bukavu</option>
 <option value="Chaussure Goma" style="background:#1a1a2e;color:#f0f0f8">📍 Goma</option>
 </select>
 </div>
 
-<button type="submit" class="btn btn-green" style="width:100%;margin-top:12px;padding:18px;font-size:15px;border-radius:14px;font-weight:700;letter-spacing:-0.3px">
+<button type="submit" class="btn btn-green" style="width:100%;margin-top:8px;padding:18px;font-size:15px;border-radius:14px;font-weight:700;letter-spacing:-0.3px;box-shadow:0 6px 20px rgba(0,230,184,0.3)">
 Se connecter →
 </button>
 </form>
 
-<div style="margin-top:32px;text-align:center">
-<p style="color:var(--txt3);font-size:11px">Baguma Market © 2026 - Tous droits reserves</p>
-<p style="color:var(--txt3);font-size:10px;margin-top:4px">Support: +243 97 000 0000</p>
+<div style="text-align:center;margin-top:16px">
+<a href="#" style="color:var(--txt2);font-size:12px;font-weight:500;transition:color .2s">Mot de passe oublie ?</a>
+</div>
+</div>
+
+<div style="margin-top:28px;text-align:center">
+<p style="color:var(--txt3);font-size:11px">Developpe par <b style="color:var(--txt2)">Placide</b> - Baguma Market 2026</p>
+<p style="color:var(--txt3);font-size:10px;margin-top:4px">Version 2.1.0</p>
 </div>
 </div>
 </div>
