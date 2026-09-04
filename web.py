@@ -1502,7 +1502,7 @@ def admin_cleanup():
         return "Admin only"
     conn = get_db()
     deleted = {}
-    for tbl in ["ventes", "clients", "produits", "dettes", "recus", "rapports", "rapports_temp", "stock", "notifications"]:
+    for tbl in ["ventes", "clients", "produits", "dettes", "recus", "rapports", "rapports_temp", "stock", "notifications", "logs", "settings", "notif_settings", "tenant_prices", "utilisateurs", "tenants", "corbeille"]:
         try:
             cur = conn.execute(f"SELECT COUNT(*) FROM {tbl}")
             count = cur.fetchone()[0]
@@ -1512,10 +1512,10 @@ def admin_cleanup():
             deleted[tbl] = "table not found"
     conn.commit()
     conn.close()
-    html = "<h1>Donnees effacees</h1><ul>"
+    html = "<h1>TOUTES les donnees effacees</h1><ul>"
     for k, v in deleted.items():
         html += f"<li>{k}: {v} lignes supprimees</li>"
-    html += "</ul><p>Toutes les donnees ont ete supprimees.</p><a href='/dashboard'>Retour</a>"
+    html += "</ul><p>L'application est maintenant vide. <a href='/'>Retour a la connexion</a></p>"
     return html
 
 @app.route("/recu/verifier/<numero>")
