@@ -202,19 +202,14 @@ def login():
             t_row = db_fetchone(conn, "SELECT id, nom FROM tenants WHERE LOWER(nom)=%s AND actif=1" if IS_PG else
                                 "SELECT id, nom FROM tenants WHERE LOWER(nom)=? AND actif=1", (ville,))
             ville_tid = t_row["id"] if t_row else None
+            
             if user_tid == 0 and user_role == "admin":
-                if ville_tid is not None:
-                    session["tenant_slug"] = ville
+                pass
             elif ville_tid is not None and user_tid == ville_tid:
                 session["tenant_slug"] = ville
-            elif user_tid == 0 and user_role == "admin":
-                pass
             else:
                 conn.close()
-                if not ville:
-                    flash("Veuillez selectionner votre ville", "error")
-                else:
-                    flash("Compte non autorise pour cette ville", "error")
+                flash("Veuillez selectionner votre ville", "error")
                 return redirect(url_for("login"))
             session["user_id"] = row["id"]
             session["login"] = row["login"]
