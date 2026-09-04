@@ -167,8 +167,43 @@ tick();
 </div>
 
 <div class="footer" style="display:flex;justify-content:space-between;align-items:center;padding:20px;border-top:1px solid var(--glass-border)">
+<div style="display:flex;align-items:center;gap:12px">
 <p style="color:var(--txt3);font-size:11px">Baguma Market v2.1.0</p>
+<button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border:none;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">📲 Installer l'app</button>
+<span id="offlineStatus" style="display:none;padding:4px 10px;background:rgba(249,115,22,0.15);color:var(--orange);border-radius:8px;font-size:10px;font-weight:700">📡 Hors-ligne</span>
+</div>
 <p style="color:var(--txt3);font-size:11px">© 2026 Gamaliel Placide</p>
 </div>
 </div>
+
+<script>
+var deferredPrompt;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBtn').style.display = 'inline-block';
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(choice) {
+    if (choice.outcome === 'accepted') {
+      document.getElementById('installBtn').style.display = 'none';
+    }
+    deferredPrompt = null;
+  });
+}
+window.addEventListener('online', function() {
+  document.getElementById('offlineStatus').style.display = 'none';
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (reg.sync) reg.sync.register('sync-sales');
+    });
+  }
+});
+window.addEventListener('offline', function() {
+  document.getElementById('offlineStatus').style.display = 'inline-block';
+});
+if (!navigator.onLine) document.getElementById('offlineStatus').style.display = 'inline-block';
+</script>
 {% endblock %}
