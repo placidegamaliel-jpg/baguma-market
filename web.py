@@ -1527,14 +1527,14 @@ def verifier_recu(numero=None):
     r = db_fetchone(conn, "SELECT * FROM recus WHERE numero=%s" if IS_PG else "SELECT * FROM recus WHERE numero=?", (numero,))
     conn.close()
     if not r:
-        return render_template("verifier_recu.html", valide=False, recu=None, numero=numero)
+        return render_template("verifier_recu.html", valide=False, recu=None, numero=numero, is_admin=is_admin())
     
     cle_secrete = app.secret_key
     contenu = f"{r['numero']}-{r['total_usd']}-{r['total_cdf']}-{r['client_nom'] or ''}-{r['client_tel'] or ''}-{r['date']}-{r['heure']}-{r['tenant_id']}"
     signature_calculee = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
     valide = signature_calculee == (r['signature'] or '')
     
-    return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero)
+    return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero, is_admin=is_admin())
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

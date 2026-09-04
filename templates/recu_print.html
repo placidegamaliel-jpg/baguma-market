@@ -103,7 +103,7 @@ td:last-child{text-align:right;font-weight:700}
   <div class="totals">
     <div class="total-row grand"><span>TOTAL CDF</span><span>{{recu.total_cdf|int}}</span></div>
     <div class="total-row"><span>TOTAL USD</span><span>{{ "%.2f"|format(recu.total_usd) }}</span></div>
-    <div class="total-row"><span>Paiement</span><span><span class="badge badge-cash">Cash</span></span></div>
+    <div class="total-row"><span>Paiement</span><span>{% if recu.est_honneur %}<span class="badge badge-dette">Credit</span>{% else %}<span class="badge badge-cash">Cash</span>{% endif %}</span></div>
   </div>
 
   <div class="security">
