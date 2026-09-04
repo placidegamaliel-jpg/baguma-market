@@ -1502,7 +1502,7 @@ def admin_cleanup():
         return "Admin only"
     conn = get_db()
     deleted = {}
-    for tbl in ["ventes", "clients"]:
+    for tbl in ["ventes", "clients", "produits", "dettes", "recus", "rapports", "rapports_temp", "stock", "notifications"]:
         try:
             cur = conn.execute(f"SELECT COUNT(*) FROM {tbl}")
             count = cur.fetchone()[0]
@@ -1515,7 +1515,7 @@ def admin_cleanup():
     html = "<h1>Donnees effacees</h1><ul>"
     for k, v in deleted.items():
         html += f"<li>{k}: {v} lignes supprimees</li>"
-    html += "</ul><p>Ventes et clients remis a zero.</p><a href='/dashboard'>Retour</a>"
+    html += "</ul><p>Toutes les donnees ont ete supprimees.</p><a href='/dashboard'>Retour</a>"
     return html
 
 @app.route("/recu/verifier/<numero>")
