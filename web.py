@@ -34,7 +34,8 @@ def init_pg_schema():
             "ALTER TABLE rapports_temp ADD COLUMN IF NOT EXISTS nb_clients INTEGER DEFAULT 0",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS signature TEXT DEFAULT ''",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS vendeur_login TEXT DEFAULT ''",
-            "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0"
+            "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0",
+            "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''"
         ]:
             try:
                 conn.execute(alter)
@@ -77,7 +78,7 @@ CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, login T
 CREATE TABLE IF NOT EXISTS tenant_prices (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, produit_id INTEGER NOT NULL, prix_usd REAL, prix_cdf REAL, UNIQUE(tenant_id, produit_id));
 CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, tenant_id INTEGER DEFAULT 0, user_id INTEGER DEFAULT NULL, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, responsable TEXT DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS notif_settings (tenant_id INTEGER PRIMARY KEY, alertes_actives INTEGER DEFAULT 1, notif_ventes INTEGER DEFAULT 1, notif_stock INTEGER DEFAULT 1, notif_prix INTEGER DEFAULT 1, notif_connexion INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, couleur TEXT DEFAULT '', user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
@@ -390,7 +391,7 @@ def stock():
                           "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='sortie'", (tid2,))
         sorties = row["s"]
 
-        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, s.code_produit, s.marque,
+        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, s.code_produit, s.marque, s.couleur,
                        SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
                        SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
                        SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
@@ -399,8 +400,8 @@ def stock():
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
                 FROM stock s JOIN produits p ON s.product_id=p.id
                 WHERE s.tenant_id=%s
-                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, p.nom
-                ORDER BY p.nom""" if IS_PG else """SELECT p.nom as produit_nom, s.code_produit, s.marque,
+                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, s.couleur, p.nom
+                ORDER BY p.nom""" if IS_PG else """SELECT p.nom as produit_nom, s.code_produit, s.marque, s.couleur,
                        SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
                        SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
                        SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
@@ -409,12 +410,12 @@ def stock():
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
                 FROM stock s JOIN produits p ON s.product_id=p.id
                 WHERE s.tenant_id=?
-                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, p.nom
+                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, s.couleur, p.nom
                 ORDER BY p.nom""", (tid2,))
 
-        historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.quantite, u.login
+        historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
-                WHERE s.tenant_id=%s ORDER BY s.date_mouvement DESC LIMIT 30""" if IS_PG else """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.quantite, u.login
+                WHERE s.tenant_id=%s ORDER BY s.date_mouvement DESC LIMIT 30""" if IS_PG else """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
                 WHERE s.tenant_id=? ORDER BY s.date_mouvement DESC LIMIT 30""", (tid2,))
 
@@ -450,15 +451,16 @@ def stock_entree():
         return redirect(url_for("stock"))
     marque = data.get("marque", "")
     code = data.get("code", "")
+    couleur = data.get("couleur", "")
     try:
         resp_id = int(data.get("responsable_id", session["user_id"]))
     except ValueError:
         resp_id = session["user_id"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?)",
-              (tid, pid, "entree", qte, marque, code, resp_id, now))
+    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
+              (tid, pid, "entree", qte, marque, code, couleur, resp_id, now))
     db_execute(conn, "UPDATE produits SET stock=stock+%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock+? WHERE id=?", (qte, pid))
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -482,6 +484,7 @@ def stock_sortie():
         flash("Donnees invalides", "error")
         return redirect(url_for("stock"))
     code = data.get("code", "")
+    couleur = data.get("couleur", "")
     try:
         resp_id = int(data.get("responsable_id", session["user_id"]))
     except ValueError:
@@ -495,9 +498,9 @@ def stock_sortie():
         flash(f"Stock insuffisant ! Disponible : {stock_actuel}", "error")
         return redirect(url_for("stock"))
 
-    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?)",
-              (tid, pid, "sortie", qte, "", code, resp_id, now))
+    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
+              (tid, pid, "sortie", qte, "", code, couleur, resp_id, now))
     db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",

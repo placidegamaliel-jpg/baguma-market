@@ -48,11 +48,12 @@
 <h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--accent){% else %}var(--blue){% endif %};margin:14px 0 8px;font-weight:600">📊 Stock par produit</h3>
 <div class="table-scroll">
 <table>
-<tr><th>Produit</th><th>Code</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Restant</th><th>Resp.</th></tr>
+<tr><th>Produit</th><th>Code</th><th>Couleur</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Restant</th><th>Resp.</th></tr>
 {% for s in t.stock_produits %}
 <tr>
 <td style="font-weight:500">{{s.produit_nom}}</td>
 <td style="color:var(--txt2);font-size:11px">{{s.code_produit or '-'}}</td>
+<td style="font-weight:500">{{s.couleur or '-'}}</td>
 <td style="color:var(--txt2)">{{s.marque or '-'}}</td>
 <td class="tag-entree" style="font-weight:600">{{s.total_entrees}}</td>
 <td class="tag-sortie" style="font-weight:600">{{s.total_sorties}}</td>
@@ -66,12 +67,13 @@
 <h3 style="font-size:13px;color:var(--txt2);margin:16px 0 8px;font-weight:600">📝 Historique</h3>
 <div class="table-scroll">
 <table>
-<tr><th>Date</th><th>Type</th><th>Produit</th><th>Code</th><th>Qte</th><th>Resp.</th></tr>
+<tr><th>Date</th><th>Type</th><th>Produit</th><th>Couleur</th><th>Code</th><th>Qte</th><th>Resp.</th></tr>
 {% for h in t.historique %}
 <tr style="border-left:3px solid {% if h.mouvement=='entree' %}var(--accent){% else %}var(--red){% endif %}">
 <td style="font-size:11px;color:var(--txt2)">{{h.date_mouvement[:16]}}</td>
 <td><span class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:600;padding:4px 10px;border-radius:8px;display:inline-block;min-width:60px;text-align:center;font-size:11px">{% if h.mouvement=='entree' %}📥 ENTREE{% else %}📤 SORTIE{% endif %}</span></td>
 <td style="font-weight:500">{{h.nom}}</td>
+<td style="font-weight:500">{{h.couleur or '-'}}</td>
 <td style="color:var(--txt2)">{{h.code_produit or '-'}}</td>
 <td style="font-weight:700;color:{% if h.mouvement=='entree' %}var(--accent){% else %}var(--red){% endif %}">{{'+' if h.mouvement=='entree' else '-'}}{{h.quantite}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{h.login}}</td>
@@ -94,6 +96,7 @@
 <div class="form-group"><label>Produit</label>
 <select name="produit_id">{% for p in prods %}<option value="{{p.id}}">{{p.nom}}</option>{% endfor %}</select></div>
 <div class="form-group"><label>Marque</label><input type="text" name="marque" placeholder="Nike, Adidas..."></div>
+<div class="form-group"><label>Couleur</label><input type="text" name="couleur" placeholder="Noir, Blanc, Rose..."></div>
 <div class="form-group"><label>Code</label><input type="text" name="code" placeholder="Code SKU"></div>
 <div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required placeholder="Nombre de paires"></div>
 <div class="form-group"><label>Responsable</label>
@@ -115,6 +118,7 @@
 </select></div>
 <div class="form-group"><label>Produit</label>
 <select name="produit_id">{% for p in prods %}<option value="{{p.id}}">{{p.nom}} (stock: {{p.stock}})</option>{% endfor %}</select></div>
+<div class="form-group"><label>Couleur</label><input type="text" name="couleur" placeholder="Noir, Blanc, Rose..."></div>
 <div class="form-group"><label>Code</label><input type="text" name="code" placeholder="Code SKU"></div>
 <div class="form-group"><label>Quantite</label><input type="number" name="quantite" min="1" required placeholder="Nombre de paires"></div>
 <div class="form-group"><label>Responsable</label>
