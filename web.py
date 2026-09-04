@@ -207,6 +207,8 @@ def login():
                     session["tenant_slug"] = ville
             elif ville_tid is not None and user_tid == ville_tid:
                 session["tenant_slug"] = ville
+            elif user_tid == 0 and user_role == "admin":
+                pass
             else:
                 conn.close()
                 if not ville:
