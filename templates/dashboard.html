@@ -3,7 +3,10 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu{% else %}👑 Admin{% endif %}</h1>
+<div style="display:flex;align-items:center;gap:8px">
+<button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
+</div>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard" class="active">📊 Dashboard</a>

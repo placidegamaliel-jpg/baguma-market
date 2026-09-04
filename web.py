@@ -187,6 +187,10 @@ def inject_tenant():
         "unread_notifs": unread,
     }
 
+@app.route("/home")
+def home():
+    return render_template("home.html")
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
