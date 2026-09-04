@@ -68,12 +68,12 @@
 <table>
 <tr><th>Date</th><th>Type</th><th>Produit</th><th>Code</th><th>Qte</th><th>Resp.</th></tr>
 {% for h in t.historique %}
-<tr>
+<tr style="border-left:3px solid {% if h.mouvement=='entree' %}var(--accent){% else %}var(--red){% endif %}">
 <td style="font-size:11px;color:var(--txt2)">{{h.date_mouvement[:16]}}</td>
-<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:600">{{h.mouvement|upper}}</td>
+<td><span class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:600;padding:4px 10px;border-radius:8px;display:inline-block;min-width:60px;text-align:center;font-size:11px">{% if h.mouvement=='entree' %}📥 ENTREE{% else %}📤 SORTIE{% endif %}</span></td>
 <td style="font-weight:500">{{h.nom}}</td>
 <td style="color:var(--txt2)">{{h.code_produit or '-'}}</td>
-<td class="{{'tag-entree' if h.mouvement=='entree' else 'tag-sortie'}}" style="font-weight:700">{{'+' if h.mouvement=='entree' else '-'}}{{h.quantite}}</td>
+<td style="font-weight:700;color:{% if h.mouvement=='entree' %}var(--accent){% else %}var(--red){% endif %}">{{'+' if h.mouvement=='entree' else '-'}}{{h.quantite}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{h.login}}</td>
 </tr>
 {% endfor %}
