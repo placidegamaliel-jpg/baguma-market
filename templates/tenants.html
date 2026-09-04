@@ -2,10 +2,26 @@
 {% block body %}
 <div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🏢 Tenants</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a><a href="/produits">👟 Produits</a><a href="/stock">📦 Stock</a>
-<a href="/ventes">💰 Ventes</a><a href="/rapports">📈 Rapports</a><a href="/recus">🧾 Recus</a><a href="/clients">👥 Clients</a><a href="/dettes">💳 Dettes</a>
-<a href="/tenants" class="active">🏢 Tenants</a><a href="/utilisateurs">👮 Users</a><a href="/logs">📝 Logs</a><a href="/corbeille">🗑️ Corbeille</a>
-<a href="/notifications">🔔 Notifications</a><a href="/settings">⚙️ Parametres</a>
+<a href="/dashboard">📊 Dashboard</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
+<a href="/ventes">💰 Ventes</a>
+<a href="/recus">🧾 Recus</a>
+<a href="/rapports">📈 Rapports</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
+<a href="/produits">👟 Produits</a>
+<a href="/stock">📦 Stock</a>
+<a href="/clients">👥 Clients</a>
+<a href="/dettes">💳 Dettes</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
+<a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications</a>
+{% if is_admin %}
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
+<a href="/tenants" class="active">🏢 Tenants</a>
+<a href="/utilisateurs">👮 Users</a>
+<a href="/logs">📝 Logs</a>
+<a href="/corbeille">🗑️ Corbeille</a>
+{% endif %}
 </nav>
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
