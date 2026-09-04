@@ -3,7 +3,7 @@
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu{% else %}👑 Admin{% endif %}</h1>
-<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Logout ✕</a>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
 </div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard" class="active">📊 Dashboard</a>
@@ -19,54 +19,91 @@
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
 {% if is_admin %}
-<div class="card" style="border:1px solid rgba(0,212,170,0.2);background:linear-gradient(135deg,rgba(0,212,170,0.05),rgba(79,172,254,0.03))">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-<span style="font-size:20px">🔄</span>
-<span style="color:var(--txt);font-size:14px;font-weight:600">Acces rapide</span>
+<div class="card" style="border:1px solid rgba(0,230,184,0.2);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04))">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">🔄</div>
+<span style="color:var(--txt);font-size:15px;font-weight:700">Changer de vue</span>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<a href="/switch/admin" style="background:{% if not session.view_tenant %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if not session.view_tenant %}#000{% else %}var(--txt){% endif %};padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid {% if not session.view_tenant %}transparent{% else %}var(--glass-border){% endif %};transition:all .2s">👑 Tous</a>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<a href="/switch/admin" style="background:{% if not session.view_tenant %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if not session.view_tenant %}#000{% else %}var(--txt){% endif %};padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;border:1px solid {% if not session.view_tenant %}transparent{% else %}var(--glass-border){% endif %};transition:all .3s">👑 Tous</a>
 {% for t in all_tenants %}
-<a href="/switch/{{t.nom|lower}}" style="background:{% if session.view_tenant == t.id %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if session.view_tenant == t.id %}#000{% else %}var(--txt){% endif %};padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid {% if session.view_tenant == t.id %}transparent{% else %}var(--glass-border){% endif %};transition:all .2s">📍 {{t.nom}}</a>
+<a href="/switch/{{t.nom|lower}}" style="background:{% if session.view_tenant == t.id %}linear-gradient(135deg,var(--accent),var(--blue)){% else %}var(--glass){% endif %};color:{% if session.view_tenant == t.id %}#000{% else %}var(--txt){% endif %};padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;border:1px solid {% if session.view_tenant == t.id %}transparent{% else %}var(--glass-border){% endif %};transition:all .3s">📍 {{t.nom}}</a>
 {% endfor %}
 </div>
 </div>
 {% endif %}
 
-<div class="stats">
-<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">👟</div><div class="label">Produits</div><div class="value gold">{{nb_produits}}</div></a>
-<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">💰</div><div class="label">Ventes</div><div class="value green" id="stat-ventes">{{nb_ventes}}</div></a>
-<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">👥</div><div class="label">Clients</div><div class="value" id="stat-clients">{{nb_clients}}</div></a>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👟</div>
+<div class="label">Produits</div>
+<div class="value gold">{{nb_produits}}</div>
+</a>
+<a href="/ventes" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(0,230,184,0.15),rgba(0,230,184,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">💰</div>
+<div class="label">Ventes</div>
+<div class="value green" id="stat-ventes">{{nb_ventes}}</div>
+</a>
+<a href="/clients" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(80,180,254,0.15),rgba(80,180,254,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👥</div>
+<div class="label">Clients</div>
+<div class="value" id="stat-clients">{{nb_clients}}</div>
+</a>
 </div>
-<div class="stats">
-<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">📈</div><div class="label">CA Total</div><div class="value green" id="stat-ca">${{ "%.2f"|format(ca_total) }}</div></a>
-<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">📦</div><div class="label">Stock Faible</div><div class="value red">{{low_stock}}</div></a>
-<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer"><div class="icon">💳</div><div class="label">Dettes</div><div class="value pink">{{nb_dettes}}</div></a>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+<a href="/rapports" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(0,230,184,0.15),rgba(0,230,184,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">📈</div>
+<div class="label">CA Total</div>
+<div class="value green" id="stat-ca">${{ "%.2f"|format(ca_total) }}</div>
+</a>
+<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">📦</div>
+<div class="label">Stock Faible</div>
+<div class="value red">{{low_stock}}</div>
+</a>
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(244,114,182,0.15),rgba(244,114,182,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">💳</div>
+<div class="label">Dettes</div>
+<div class="value pink">{{nb_dettes}}</div>
+</a>
 </div>
-<div class="stats">
-<a href="/dettes" class="stat" style="grid-column:span 2;text-decoration:none;cursor:pointer"><div class="icon">⚠️</div><div class="label">Total Dettes Impayees</div><div class="value pink">${{ "%.2f"|format(total_dettes) }}</div></a>
-<div class="stat"><div class="icon">👤</div><div class="label">Role</div><div class="value gold" style="font-size:14px">{{session.role}}</div></div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer;text-align:left;padding:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+<div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">⚠️</div>
+<div class="label">Dettes Impayees</div>
+</div>
+<div class="value red" style="font-size:28px">${{ "%.2f"|format(total_dettes) }}</div>
+</a>
+<div class="stat" style="text-align:center">
+<div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 8px">👤</div>
+<div class="label">Role</div>
+<div style="font-size:14px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:4px">{{session.role}}</div>
+</div>
 </div>
 
 {% if session.role == 'vendeur' and session.tenant_id != 0 %}
 {% if rapport_envoye %}
-<div id="rapport-box" class="card" style="border:1px solid rgba(0,212,170,0.3);background:linear-gradient(135deg,rgba(0,212,170,0.1),rgba(79,172,254,0.05));margin-bottom:16px;padding:20px">
-<div style="text-align:center;margin-bottom:12px">
-<div style="font-size:16px;font-weight:700;color:var(--accent)">✅ Rapport envoye avec succes</div>
-<div style="font-size:12px;color:var(--txt2);margin-top:4px">Disponible pendant <span id="countdown">0:05</span></div>
+<div id="rapport-box" class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.08),rgba(80,180,254,0.04));padding:24px">
+<div style="text-align:center;margin-bottom:16px">
+<div style="width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">✅</div>
+<div style="font-size:18px;font-weight:800;color:var(--accent)">Rapport envoye!</div>
+<div style="font-size:12px;color:var(--txt2);margin-top:6px">Disponible pendant <span id="countdown" style="font-weight:700;color:var(--accent)">0:05</span></div>
 </div>
-<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-<div style="background:rgba(0,212,170,0.1);padding:10px 16px;border-radius:10px;text-align:center">
-<div style="font-size:11px;color:var(--txt2)">Ventes</div>
-<div style="font-size:18px;font-weight:700;color:var(--accent)">{{rapport.nb_ventes}}</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+<div style="background:rgba(0,230,184,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(0,230,184,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Ventes</div>
+<div style="font-size:22px;font-weight:800;color:var(--accent)">{{rapport.nb_ventes}}</div>
 </div>
-<div style="background:rgba(79,172,254,0.1);padding:10px 16px;border-radius:10px;text-align:center">
-<div style="font-size:11px;color:var(--txt2)">Clients</div>
-<div style="font-size:18px;font-weight:700;color:var(--blue)">{{rapport.nb_clients}}</div>
+<div style="background:rgba(80,180,254,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(80,180,254,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Clients</div>
+<div style="font-size:22px;font-weight:800;color:var(--blue)">{{rapport.nb_clients}}</div>
 </div>
-<div style="background:rgba(240,192,64,0.1);padding:10px 16px;border-radius:10px;text-align:center">
-<div style="font-size:11px;color:var(--txt2)">Total USD</div>
-<div style="font-size:18px;font-weight:700;color:var(--gold)">${{ "%.2f"|format(rapport.total_usd) }}</div>
+<div style="background:rgba(245,197,66,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(245,197,66,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total USD</div>
+<div style="font-size:22px;font-weight:800;color:var(--gold)">${{ "%.2f"|format(rapport.total_usd) }}</div>
 </div>
 </div>
 </div>
@@ -93,23 +130,27 @@ tick();
 })();
 </script>
 {% else %}
-<form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ? Les ventes du jour seront reinitialisees.')">
-<button type="submit" class="btn btn-green" style="width:100%;padding:16px;font-size:15px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px">
-<span style="font-size:20px">📋</span> Fin de journee
+<form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ?')">
+<button type="submit" class="btn btn-green" style="width:100%;padding:18px;font-size:15px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:12px">
+<div style="width:36px;height:36px;background:rgba(0,0,0,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">📋</div>
+<span style="font-weight:700">Fin de journee</span>
 </button>
 </form>
 {% endif %}
 {% endif %}
 
-<div class="card">
-<div class="card-header">📋 Ventes recentes</div>
+<div class="card" style="padding:0;overflow:hidden">
+<div style="padding:18px 20px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px">
+<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">📋</div>
+<span style="font-size:15px;font-weight:700">Ventes recentes</span>
+</div>
 <div class="table-scroll">
 <table>
 <tr><th>Date</th><th>Produit</th><th>Qte</th><th>Total</th><th>Vendeur</th></tr>
 {% for r in recent %}
 <tr>
 <td style="font-size:11px;color:var(--txt2)">{{r.datetime}}</td>
-<td style="font-weight:500">{{r.nom}}</td>
+<td style="font-weight:600">{{r.nom}}</td>
 <td>{{r.quantite}}</td>
 <td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
 <td style="color:var(--txt2)">{{r.vendeur_login}}</td>
@@ -122,6 +163,9 @@ tick();
 </div>
 </div>
 
-<div class="footer">Baguma Market &copy; 2026</div>
+<div class="footer" style="display:flex;justify-content:space-between;align-items:center;padding:20px;border-top:1px solid var(--glass-border)">
+<p style="color:var(--txt3);font-size:11px">Baguma Market v2.1.0</p>
+<p style="color:var(--txt3);font-size:11px">© 2026 Gamaliel Placide</p>
+</div>
 </div>
 {% endblock %}
