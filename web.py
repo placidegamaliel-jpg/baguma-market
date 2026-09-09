@@ -189,7 +189,6 @@ def inject_tenant():
             else:
                 row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
             unread = row["cnt"] if row else 0
-            mode_dg = get_mode_dg(conn, etid or 0)
             conn.close()
         except Exception:
             unread = 0
@@ -278,7 +277,6 @@ def switch_tenant(tenant_slug):
 def dashboard():
     conn = get_db()
     etid = get_effective_tid()
-    mode_dg = session.get("dg_mode", False)
 
     if etid is not None:
         cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
@@ -342,11 +340,11 @@ def dashboard():
         pass
 
     conn.close()
-    return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, mode_dg),
-                           ca_total=dg(ca_total, mode_dg), nb_clients=nb_clients, low_stock=low_stock,
-                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, mode_dg),
+    return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, session.get("dg_mode", False)),
+                           ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
+                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
-                           unread_notifs=unread_notifs, mode_dg=mode_dg)
+                           unread_notifs=unread_notifs)
 
 @app.route("/produits")
 @login_required
@@ -1496,16 +1494,15 @@ def settings():
     taux = get_taux(conn, etid)
     conn.close()
     return render_template("settings.html", taux=taux, is_admin=is_admin(),
-                           login=session["login"], role=session["role"], mode_dg=session.get("dg_mode", False))
+                           login=session["login"], role=session["role"])
 
-@app.route("/settings/mode-dg", methods=["POST"])
+@app.route("/toggle-dg", methods=["GET", "POST"])
 @login_required
 def toggle_mode_dg():
-    if not is_admin():
-        return jsonify({"error": "admin only"}), 403
     current = session.get("dg_mode", False)
     session["dg_mode"] = not current
-    return jsonify({"dg_mode": session["dg_mode"]})
+    session.modified = True
+    return redirect(url_for("dashboard"))
 
 @app.route("/rapport/<int:rapport_id>")
 @login_required

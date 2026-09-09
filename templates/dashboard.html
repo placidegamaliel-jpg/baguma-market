@@ -2,8 +2,11 @@
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1 id="dg-trigger" onclick="dgClick()" style="cursor:pointer">{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma Market{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu Market{% else %}👑 Admin{% endif %}</h1>
+<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma Market{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu Market{% else %}👑 Admin{% endif %}</h1>
 <div style="display:flex;align-items:center;gap:8px">
+{% if is_admin %}
+<a href="/toggle-dg" title="Mode DG" style="font-size:18px;text-decoration:none">{% if mode_dg %}🎭{% else %}🎪{% endif %}</a>
+{% endif %}
 <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
 </div>
@@ -226,19 +229,5 @@ window.addEventListener('offline', function() {
   document.getElementById('offlineStatus').style.display = 'inline-block';
 });
 if (!navigator.onLine) document.getElementById('offlineStatus').style.display = 'inline-block';
-var dgCount=0;var dgTimer=null;
-function dgClick(){
-  dgCount++;
-  if(dgTimer)clearTimeout(dgTimer);
-  dgTimer=setTimeout(function(){dgCount=0},2000);
-  if(dgCount>=3){
-    dgCount=0;
-    fetch('/settings/mode-dg',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
-      if(d.dg_mode){alert('Mode DG active - Les valeurs affichees sont a 60%')}
-      else{alert('Mode DG desactive - Valeurs normales')}
-      location.reload();
-    });
-  }
-}
 </script>
 {% endblock %}
