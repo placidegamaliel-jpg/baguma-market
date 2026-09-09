@@ -153,6 +153,16 @@ def get_taux(conn, tenant_id):
                       "SELECT value FROM settings WHERE tenant_id=? AND key='taux_cdf'", (tenant_id,))
     return float(row["value"]) if row and row["value"] else 2800.0
 
+def get_mode_dg(conn, tenant_id):
+    row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=%s AND key='mode_dg'" if IS_PG else
+                      "SELECT value FROM settings WHERE tenant_id=? AND key='mode_dg'", (tenant_id,))
+    return row["value"] == "1" if row and row["value"] else False
+
+def dg(val, mode_dg):
+    if mode_dg:
+        return round(val * 0.6, 2)
+    return val
+
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 
 @app.errorhandler(404)
@@ -168,6 +178,7 @@ def inject_tenant():
     slug = session.get("tenant_slug")
     tid = session.get("tenant_id", 0)
     unread = 0
+    mode_dg = False
     if "user_id" in session:
         try:
             conn = get_db()
@@ -178,6 +189,7 @@ def inject_tenant():
             else:
                 row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
             unread = row["cnt"] if row else 0
+            mode_dg = get_mode_dg(conn, etid or 0)
             conn.close()
         except Exception:
             unread = 0
@@ -186,6 +198,7 @@ def inject_tenant():
         "tenant_name": TENANT_NAMES.get(tid, "Admin Global"),
         "is_global_admin": tid == 0 and session.get("role") == "admin",
         "unread_notifs": unread,
+        "mode_dg": mode_dg,
     }
 
 @app.route("/", methods=["GET", "POST"])
@@ -265,6 +278,7 @@ def switch_tenant(tenant_slug):
 def dashboard():
     conn = get_db()
     etid = get_effective_tid()
+    mode_dg = get_mode_dg(conn, etid or 0)
 
     if etid is not None:
         cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
@@ -328,11 +342,11 @@ def dashboard():
         pass
 
     conn.close()
-    return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=nb_ventes,
-                           ca_total=ca_total, nb_clients=nb_clients, low_stock=low_stock,
-                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=total_dettes,
+    return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, mode_dg),
+                           ca_total=dg(ca_total, mode_dg), nb_clients=nb_clients, low_stock=low_stock,
+                           recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, mode_dg),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
-                           unread_notifs=unread_notifs)
+                           unread_notifs=unread_notifs, mode_dg=mode_dg)
 
 @app.route("/produits")
 @login_required
@@ -1480,9 +1494,29 @@ def settings():
         return redirect(url_for("settings"))
 
     taux = get_taux(conn, etid)
+    mode_dg_val = get_mode_dg(conn, etid)
     conn.close()
     return render_template("settings.html", taux=taux, is_admin=is_admin(),
-                           login=session["login"], role=session["role"])
+                           login=session["login"], role=session["role"], mode_dg=mode_dg_val)
+
+@app.route("/settings/mode-dg", methods=["POST"])
+@login_required
+def toggle_mode_dg():
+    if not is_admin():
+        flash("Seul l'admin peut activer le Mode DG", "error")
+        return redirect(url_for("settings"))
+    conn = get_db()
+    etid = get_effective_tid() or session["tenant_id"]
+    current = get_mode_dg(conn, etid)
+    new_val = "0" if current else "1"
+    if IS_PG:
+        db_execute(conn, "INSERT INTO settings (tenant_id, key, value) VALUES (%s, 'mode_dg', %s) ON CONFLICT (tenant_id, key) DO UPDATE SET value=EXCLUDED.value", (etid, new_val))
+    else:
+        db_execute(conn, "INSERT OR REPLACE INTO settings (tenant_id, key, value) VALUES (?, 'mode_dg', ?)", (etid, new_val))
+    conn.commit()
+    conn.close()
+    flash(f"Mode DG {'active' if new_val=='1'} {'desactive' if new_val=='0'}", "success")
+    return redirect(url_for("settings"))
 
 @app.route("/rapport/<int:rapport_id>")
 @login_required

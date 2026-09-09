@@ -35,6 +35,13 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
+{% if mode_dg %}
+<div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+<span style="font-size:20px">🎭</span>
+<div><p style="color:var(--danger);font-size:13px;font-weight:700">Mode DG actif</p><p style="color:var(--txt2);font-size:11px">Les valeurs affichees sont a 60%</p></div>
+</div>
+{% endif %}
+
 {% if is_admin %}
 <div class="card" style="border:1px solid rgba(0,230,184,0.2);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04))">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
