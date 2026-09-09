@@ -198,7 +198,7 @@ def inject_tenant():
         "tenant_name": TENANT_NAMES.get(tid, "Admin Global"),
         "is_global_admin": tid == 0 and session.get("role") == "admin",
         "unread_notifs": unread,
-        "mode_dg": mode_dg,
+        "mode_dg": session.get("dg_mode", False),
     }
 
 @app.route("/", methods=["GET", "POST"])
@@ -278,7 +278,7 @@ def switch_tenant(tenant_slug):
 def dashboard():
     conn = get_db()
     etid = get_effective_tid()
-    mode_dg = get_mode_dg(conn, etid or 0)
+    mode_dg = session.get("dg_mode", False)
 
     if etid is not None:
         cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
@@ -1494,29 +1494,18 @@ def settings():
         return redirect(url_for("settings"))
 
     taux = get_taux(conn, etid)
-    mode_dg_val = get_mode_dg(conn, etid)
     conn.close()
     return render_template("settings.html", taux=taux, is_admin=is_admin(),
-                           login=session["login"], role=session["role"], mode_dg=mode_dg_val)
+                           login=session["login"], role=session["role"], mode_dg=session.get("dg_mode", False))
 
 @app.route("/settings/mode-dg", methods=["POST"])
 @login_required
 def toggle_mode_dg():
     if not is_admin():
-        flash("Seul l'admin peut activer le Mode DG", "error")
-        return redirect(url_for("settings"))
-    conn = get_db()
-    etid = get_effective_tid() or session["tenant_id"]
-    current = get_mode_dg(conn, etid)
-    new_val = "0" if current else "1"
-    if IS_PG:
-        db_execute(conn, "INSERT INTO settings (tenant_id, key, value) VALUES (%s, 'mode_dg', %s) ON CONFLICT (tenant_id, key) DO UPDATE SET value=EXCLUDED.value", (etid, new_val))
-    else:
-        db_execute(conn, "INSERT OR REPLACE INTO settings (tenant_id, key, value) VALUES (?, 'mode_dg', ?)", (etid, new_val))
-    conn.commit()
-    conn.close()
-    flash(f"Mode DG {'active' if new_val=='1'} {'desactive' if new_val=='0'}", "success")
-    return redirect(url_for("settings"))
+        return jsonify({"error": "admin only"}), 403
+    current = session.get("dg_mode", False)
+    session["dg_mode"] = not current
+    return jsonify({"dg_mode": session["dg_mode"]})
 
 @app.route("/rapport/<int:rapport_id>")
 @login_required

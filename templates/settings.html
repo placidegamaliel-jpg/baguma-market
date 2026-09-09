@@ -94,28 +94,6 @@
 <p><b style="color:var(--accent)">v1.0.0</b> - Version initiale - Produits, Ventes, Rapports</p>
 </div></div>
 
-<div class="card" style="border-radius:20px;padding:24px">
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-<div style="width:48px;height:48px;background:linear-gradient(135deg,var(--danger),#dc2626);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">🎭</div>
-<div>
-<p style="font-size:15px;font-weight:600">Mode DG</p>
-<p style="font-size:11px;color:var(--txt2)">Affiche 60% des valeurs reelles</p>
-</div>
-</div>
-<div style="display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:13px;color:var(--txt2)">
-{% if mode_dg %}<span style="color:var(--danger);font-weight:700">ACTIF</span> — Les ventes, stocks et dettes affichent 60%{% else %}Desactive — Valeurs normales (100%){% endif %}
-</div>
-{% if is_admin %}
-<form method="POST" action="/settings/mode-dg">
-<button type="submit" class="btn {% if mode_dg %}btn-red{% else %}btn-gold{% endif %} btn-sm">
-{% if mode_dg %}🔴 Desactiver{% else %}🟡 Activer 60%{% endif %}
-</button>
-</form>
-{% endif %}
-</div>
-</div>
-
 <div>
 <h3 style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:10px">📞 Support</h3>
 <div style="font-size:13px;color:var(--txt2);line-height:2.2">
