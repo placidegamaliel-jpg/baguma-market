@@ -356,12 +356,49 @@ def dashboard():
     except Exception:
         pass
 
+    import json as _json
+    recent_rapports = []
+    try:
+        if is_admin():
+            rr = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
+                FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""" if IS_PG else
+                """SELECT r.*, t.nom as tenant_nom
+                FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""")
+        elif etid is not None:
+            rr = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
+                FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+                WHERE r.tenant_id=%s
+                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""" if IS_PG else
+                """SELECT r.*, t.nom as tenant_nom
+                FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+                WHERE r.tenant_id=?
+                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""", (etid,))
+        else:
+            rr = []
+        for r in rr:
+            ventes = []
+            if r["ventes_json"]:
+                try:
+                    ventes = _json.loads(r["ventes_json"])
+                except Exception:
+                    pass
+            recent_rapports.append({
+                "id": r["id"], "date": r["date_rapport"], "tenant_nom": r["tenant_nom"],
+                "vendeur_login": r["vendeur_login"], "total_usd": r["total_usd"],
+                "total_cdf": r["total_cdf"], "nb_ventes": r["nb_ventes"],
+                "ventes": ventes
+            })
+    except Exception:
+        pass
+
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, session.get("dg_mode", False)),
                            ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
-                           unread_notifs=unread_notifs)
+                           unread_notifs=unread_notifs, recent_rapports=recent_rapports)
 
 @app.route("/produits")
 @login_required
