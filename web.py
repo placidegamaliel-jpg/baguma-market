@@ -869,9 +869,22 @@ def rapports():
         day_data["vendeurs"] = ", ".join(sorted(day_data["vendeurs"]))
         day_groups[d].append(day_data)
 
+    tenant_rapports = {}
+    if is_admin():
+        for key, day_data in days.items():
+            tnom = day_data["tenant_nom"] or "Inconnu"
+            if tnom not in tenant_rapports:
+                tenant_rapports[tnom] = {}
+            d = day_data["date"]
+            if d not in tenant_rapports[tnom]:
+                tenant_rapports[tnom][d] = []
+            tenant_rapports[tnom][d].append(day_data)
+        for tnom in tenant_rapports:
+            tenant_rapports[tnom] = dict(sorted(tenant_rapports[tnom].items(), reverse=True))
+
     sorted_days = sorted(day_groups.keys(), reverse=True)
     conn.close()
-    return render_template("rapports.html", day_groups=day_groups, sorted_days=sorted_days, is_admin=is_admin())
+    return render_template("rapports.html", day_groups=day_groups, sorted_days=sorted_days, is_admin=is_admin(), tenant_rapports=tenant_rapports)
 
 @app.route("/clients")
 @login_required
