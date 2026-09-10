@@ -128,9 +128,12 @@ def db_fetchall(conn, sql, params=()):
 def db_insert(conn, sql, params=()):
     cur = conn.execute(sql, params)
     try:
-        return cur.fetchone()[0]
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        return cur.lastrowid
     except Exception:
-        return None
+        return cur.lastrowid
 
 def login_required(f):
     from functools import wraps
@@ -1382,10 +1385,11 @@ def notifications():
     conn = get_db()
     etid = get_effective_tid()
     if etid is not None:
-        notifs = db_fetchall(conn, "SELECT * FROM notifications WHERE tenant_id=%s ORDER BY rapport_id DESC NULLS LAST, created_at DESC LIMIT 50" if IS_PG else
+        notifs = db_fetchall(conn, "SELECT * FROM notifications WHERE tenant_id=%s ORDER BY CASE WHEN rapport_id IS NOT NULL THEN 0 ELSE 1 END, created_at DESC LIMIT 50" if IS_PG else
                              "SELECT * FROM notifications WHERE tenant_id=? ORDER BY rapport_id DESC, created_at DESC LIMIT 50", (etid,))
     else:
-        notifs = db_fetchall(conn, "SELECT * FROM notifications ORDER BY rapport_id DESC NULLS LAST, created_at DESC LIMIT 50")
+        notifs = db_fetchall(conn, "SELECT * FROM notifications ORDER BY CASE WHEN rapport_id IS NOT NULL THEN 0 ELSE 1 END, created_at DESC LIMIT 50" if IS_PG else
+                             "SELECT * FROM notifications ORDER BY rapport_id DESC, created_at DESC LIMIT 50")
     row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0" + (" AND tenant_id=%s" if IS_PG else " AND tenant_id=?") if etid is not None else
                       "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0",
                       (etid,) if etid is not None else ())
