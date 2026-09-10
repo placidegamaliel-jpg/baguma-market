@@ -1,6 +1,7 @@
 ﻿{% extends "base.html" %}
 {% block body %}
-<div class="topbar"><button class="menu-btn" onclick="toggleNav()">☰</button><h1>🗑️ Corbeille</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button><h1 class="brand">🗑️ Corbeille</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Accueil</a>
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>

@@ -2,7 +2,7 @@
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 GOMA{% elif session.tenant_slug == 'bukavu' %}📍 BUKAVU{% elif is_admin and not session.view_tenant %}📍 BAGUMA BUSINESS{% else %}📍 {{session.tenant_slug|upper}}{% endif %}</h1>
+<h1 class="brand">{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 GOMA{% elif session.tenant_slug == 'bukavu' %}📍 BUKAVU{% elif is_admin and not session.view_tenant %}📍 BAGUMA BUSINESS{% else %}📍 {{session.tenant_slug|upper}}{% endif %}</h1>
 <div style="display:flex;align-items:center;gap:8px">
 <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
