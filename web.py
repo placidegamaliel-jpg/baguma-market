@@ -36,7 +36,9 @@ def init_pg_schema():
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS vendeur_login TEXT DEFAULT ''",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0",
             "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''",
-            "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rapport_id INTEGER DEFAULT NULL"
+            "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rapport_id INTEGER DEFAULT NULL",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS ventes_json TEXT DEFAULT ''",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS clients_json TEXT DEFAULT ''"
         ]:
             try:
                 conn.execute(alter)
@@ -84,7 +86,7 @@ CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, valu
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '');
 """
 
 init_pg_schema()
@@ -1452,9 +1454,23 @@ def fin_journee():
                               "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''", (vendeur_login, today, tid))
         nb_clients = clients["nb"] if clients else 0
 
-        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
-                  "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport) VALUES (?,?,?,?,?,?,?,?)",
-                  (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today))
+        import json as _json
+        ventes_detail = db_fetchall(conn, """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, p.nom as produit_nom
+            FROM ventes v JOIN produits p ON v.produit_id=p.id
+            WHERE v.vendeur_login=%s AND v.date=%s AND v.tenant_id=%s""" if IS_PG else
+            """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, p.nom as produit_nom
+            FROM ventes v JOIN produits p ON v.produit_id=p.id
+            WHERE v.vendeur_login=? AND v.date=? AND v.tenant_id=?""", (vendeur_login, today, tid))
+        clients_detail = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone
+            FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND client_nom!=''""" if IS_PG else
+            """SELECT DISTINCT client_nom as nom, client_tel as telephone
+            FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''""", (vendeur_login, today, tid))
+        ventes_json = _json.dumps([dict(v) for v in ventes_detail], default=str)
+        clients_json = _json.dumps([dict(c) for c in clients_detail], default=str)
+
+        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                  "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                  (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json))
         rapport_id = rapport_r[0] if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
@@ -1565,21 +1581,28 @@ def rapport_print(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
+    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+        conn.close()
+        flash("Acces refuse", "error")
+        return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
-    ventes_list = db_fetchall(conn, """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
-        FROM ventes v JOIN produits p ON v.produit_id=p.id
-        WHERE v.tenant_id=%s AND v.date=%s AND v.vendeur_login=%s""" if IS_PG else
-        """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
-        FROM ventes v JOIN produits p ON v.produit_id=p.id
-        WHERE v.tenant_id=? AND v.date=? AND v.vendeur_login=?""",
-        (r["tenant_id"], r["date_rapport"], r["vendeur_login"]))
-    clients_list = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone
-        FROM ventes WHERE tenant_id=%s AND date=%s AND client_nom!=''""" if IS_PG else
-        """SELECT DISTINCT client_nom as nom, client_tel as telephone
-        FROM ventes WHERE tenant_id=? AND date=? AND client_nom!=''""",
-        (r["tenant_id"], r["date_rapport"]))
     conn.close()
+
+    import json as _json
+    ventes_list = []
+    clients_list = []
+    if r["ventes_json"]:
+        try:
+            ventes_list = _json.loads(r["ventes_json"])
+        except Exception:
+            ventes_list = []
+    if r["clients_json"]:
+        try:
+            clients_list = _json.loads(r["clients_json"])
+        except Exception:
+            clients_list = []
+
     return render_template("rapport_print.html", rapport=r, tenant_nom=tenant_nom,
                            ventes_list=ventes_list, clients_list=clients_list)
 
@@ -1593,16 +1616,21 @@ def rapport_pdf(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
+    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+        conn.close()
+        flash("Acces refuse", "error")
+        return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
-    ventes_list = db_fetchall(conn, """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
-        FROM ventes v JOIN produits p ON v.produit_id=p.id
-        WHERE v.tenant_id=%s AND v.date=%s AND v.vendeur_login=%s""" if IS_PG else
-        """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
-        FROM ventes v JOIN produits p ON v.produit_id=p.id
-        WHERE v.tenant_id=? AND v.date=? AND v.vendeur_login=?""",
-        (r["tenant_id"], r["date_rapport"], r["vendeur_login"]))
     conn.close()
+
+    import json as _json
+    ventes_list = []
+    if r["ventes_json"]:
+        try:
+            ventes_list = _json.loads(r["ventes_json"])
+        except Exception:
+            ventes_list = []
 
     pdf = FPDF()
     pdf.add_page()
@@ -1662,12 +1690,12 @@ def rapport_pdf(rapport_id):
         pdf.set_font("Helvetica", "", 9)
         total = 0
         for v in ventes_list:
-            pdf.cell(70, 6, v["nom"], border=1)
-            pdf.cell(25, 6, str(v["quantite"]), border=1, align="C")
-            pdf.cell(35, 6, f"${dg(v['prix_unit_usd'], session.get('dg_mode', False))}", border=1, align="C")
-            pdf.cell(35, 6, f"${dg(v['total_usd'], session.get('dg_mode', False))}", border=1, align="C")
+            pdf.cell(70, 6, v.get("produit_nom", v.get("nom", "?")), border=1)
+            pdf.cell(25, 6, str(v.get("quantite", 0)), border=1, align="C")
+            pdf.cell(35, 6, f"${dg(v.get('prix_unit_usd', 0), session.get('dg_mode', False))}", border=1, align="C")
+            pdf.cell(35, 6, f"${dg(v.get('total_usd', 0), session.get('dg_mode', False))}", border=1, align="C")
             pdf.ln()
-            total += v["total_usd"]
+            total += v.get("total_usd", 0)
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(240, 253, 244)
         pdf.cell(130, 7, "TOTAL", border=1, fill=True, align="R")
