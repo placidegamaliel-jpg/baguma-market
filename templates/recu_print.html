@@ -4,184 +4,190 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recu {{recu.numero}} - EST BAGUMA MARKET</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#f0f0f0;display:flex;justify-content:center;padding:12px;min-height:100vh}
-.receipt{width:100%;max-width:380px;background:#fff;padding:22px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,0.1)}
+body{font-family:'Inter',system-ui,sans-serif;background:#e8e8e8;display:flex;justify-content:center;padding:16px;min-height:100vh}
+.receipt{width:100%;max-width:360px;background:#fff;padding:24px 20px;position:relative;overflow:hidden}
+.receipt::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00b894,#0984e3,#6c5ce7)}
+.receipt::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#eee}
 
-.header{text-align:center;border-bottom:2px dashed #e0e0e0;padding-bottom:14px;margin-bottom:14px}
-.logo{font-size:36px;margin-bottom:6px}
-.shop-name{font-size:17px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#00b894,#0984e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase}
-.shop-city{font-size:12px;color:#666;margin-top:2px;font-weight:600}
-.date-time{font-size:11px;color:#999;margin-top:6px;font-weight:500}
-.recu-num{text-align:center;font-size:15px;font-weight:800;color:#00b894;margin:12px 0;padding:8px;background:rgba(0,184,148,0.06);border-radius:10px;border:1.5px solid rgba(0,184,148,0.12)}
+.header{text-align:center;padding-bottom:16px;margin-bottom:12px;position:relative}
+.logo{font-size:28px;margin-bottom:4px;display:block}
+.brand{font-family:'Playfair Display',serif;font-size:16px;font-weight:900;letter-spacing:4px;text-transform:uppercase;color:#1a1a2e;position:relative;display:inline-block}
+.brand::after{content:'';display:block;width:40px;height:2px;background:linear-gradient(90deg,#00b894,#0984e3);margin:6px auto 0}
+.city{font-size:9px;color:#999;letter-spacing:3px;text-transform:uppercase;margin-top:6px;font-weight:600}
+.date{font-size:9px;color:#bbb;margin-top:4px;font-weight:400;letter-spacing:0.5px}
+
+.receipt-id{text-align:center;margin:12px 0 14px;padding:8px;border:1.5px solid #f0f0f0;border-radius:2px;position:relative}
+.receipt-id span{font-size:9px;color:#999;letter-spacing:2px;text-transform:uppercase;font-weight:600}
+.receipt-id strong{display:block;font-family:'Courier New',monospace;font-size:14px;color:#1a1a2e;letter-spacing:3px;margin-top:2px;font-weight:700}
+
+.sep{border:none;height:1px;background:#f0f0f0;margin:12px 0}
+.sep-dash{border:none;border-top:1px dashed #e8e8e8;margin:10px 0}
 
 .section{margin:10px 0}
-.section-title{font-size:9px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
-.info-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:#333}
-.info-row .label{color:#888;font-weight:500}
-.info-row .value{font-weight:700}
+.section-label{font-size:7px;color:#bbb;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;margin-bottom:5px;position:relative;padding-left:10px}
+.section-label::before{content:'';position:absolute;left:0;top:1px;width:4px;height:4px;background:#00b894;border-radius:1px}
 
-.divider{border:none;border-top:1.5px dashed #e0e0e0;margin:12px 0}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0;font-size:10px;color:#444}
+.row .k{color:#999;font-weight:400;letter-spacing:0.3px}
+.row .v{font-weight:600;color:#222;text-align:right}
 
 table{width:100%;border-collapse:collapse;margin:6px 0}
-th{font-size:9px;font-weight:800;color:#999;text-transform:uppercase;text-align:left;padding:6px 3px;border-bottom:1.5px solid #eee;letter-spacing:0.5px}
-td{font-size:11px;padding:7px 3px;border-bottom:1px solid #f0f0f0;color:#333}
-td:last-child{text-align:right;font-weight:700}
+thead th{font-size:7px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;padding:4px 2px 6px;border-bottom:1px solid #eee;text-align:left}
+thead th:last-child,thead th:nth-child(3),thead th:nth-child(2){text-align:center}
+thead th:last-child{text-align:right}
+tbody td{font-size:10px;padding:6px 2px;color:#333;border-bottom:1px solid #f8f8f8}
+tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;font-size:9px;color:#888}
+tbody td:last-child{text-align:right;font-weight:700;color:#1a1a2e}
+tbody td:first-child{font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.totals{background:#f8f9fa;border-radius:10px;padding:12px;margin-top:10px}
-.total-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
-.total-row.grand{font-size:17px;font-weight:900;color:#00b894;border-top:2px solid #00b894;padding-top:8px;margin-top:4px}
+.totals{margin-top:12px;padding:10px 0;border-top:2px solid #1a1a2e}
+.totals .main{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.totals .main .label{font-size:9px;color:#999;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.totals .main .amount{font-size:18px;font-weight:900;color:#1a1a2e;letter-spacing:-0.5px}
+.totals .sub{display:flex;justify-content:space-between;font-size:9px;color:#999;margin-top:2px}
+.totals .type{display:inline-block;margin-top:4px;font-size:8px;padding:2px 8px;border-radius:2px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.type-cash{background:#f0faf6;color:#00b894}
+.type-credit{background:#fff5f0;color:#e17055}
 
-.security{text-align:center;margin-top:14px;padding:10px;background:rgba(0,184,148,0.04);border-radius:10px;border:1.5px solid rgba(0,184,148,0.1)}
-.security .label{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;font-weight:700}
-.security .code{font-family:'Courier New',monospace;font-size:13px;font-weight:800;color:#00b894;margin:4px 0;letter-spacing:2px}
-.security .auth{font-size:9px;color:#666;font-weight:500}
+.stamp{text-align:center;margin-top:16px;padding:10px;position:relative}
+.stamp::before{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:repeating-linear-gradient(90deg,#ddd 0,#ddd 4px,transparent 4px,transparent 8px)}
+.stamp-code{font-family:'Courier New',monospace;font-size:11px;color:#00b894;letter-spacing:3px;font-weight:700;margin:6px 0}
+.stamp-label{font-size:7px;color:#ccc;letter-spacing:2px;text-transform:uppercase;font-weight:600}
+.stamp-auth{font-size:7px;color:#ddd;margin-top:2px;letter-spacing:1px}
 
-.footer{text-align:center;margin-top:14px;padding-top:10px;border-top:2px dashed #e0e0e0}
-.footer .thanks{font-size:13px;font-weight:800;color:#333;margin-bottom:4px}
-.footer .contact{font-size:9px;color:#999;font-weight:500}
+.qr{text-align:center;margin-top:14px;padding:12px 0;border-top:1px dashed #f0f0f0}
+.qr img{width:80px;height:80px;border-radius:2px;border:1px solid #f0f0f0}
+.qr .hint{font-size:7px;color:#ccc;margin-top:6px;letter-spacing:1px;text-transform:uppercase}
+.qr .url{font-size:6px;color:#ddd;margin-top:3px;font-family:monospace}
 
-.badge{display:inline-block;padding:3px 10px;border-radius:14px;font-size:9px;font-weight:800}
-.badge-honneur{background:rgba(244,114,182,0.1);color:#f472b6}
-.badge-cash{background:rgba(0,184,148,0.1);color:#00b894}
-.badge-dette{background:rgba(249,115,22,0.1);color:#f97316}
+.footer{text-align:center;margin-top:14px;padding-top:10px;border-top:1px solid #f0f0f0}
+.footer .thanks{font-size:10px;font-weight:700;color:#1a1a2e;letter-spacing:1px}
+.footer .info{font-size:8px;color:#ccc;margin-top:3px;letter-spacing:0.5px}
+.footer .copy{font-size:7px;color:#ddd;margin-top:6px;letter-spacing:1px}
 
-.qr-section{text-align:center;margin-top:14px;padding:10px;background:#f8f9fa;border-radius:10px}
-.qr-section .label{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:700}
-.qr-section img{width:100px;height:100px;border-radius:8px;border:1.5px solid #eee}
-.qr-section .url{font-size:8px;color:#999;margin-top:6px;font-family:monospace;word-break:break-all}
+.actions{text-align:center;margin-top:20px}
+.actions a,.actions button{display:inline-block;padding:10px 20px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;border-radius:3px;cursor:pointer;text-decoration:none;margin:3px;transition:all .2s}
+.btn-pdf{background:#0984e3;color:#fff}
+.btn-print{background:#00b894;color:#fff}
+.btn-back{background:none;color:#ccc;font-size:9px;border:1px solid #eee;border-radius:2px}
+.actions .btn-back{margin-top:8px}
 
-.legal-compact{background:#f8f9fa;border-radius:8px;padding:8px 10px;margin:8px 0;border:1px solid #eee}
-.legal-compact .info-row{font-size:10px;padding:2px 0}
-
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:8px 0}
-.info-grid .info-row{font-size:10px;padding:2px 0}
+.badge{display:inline-block;font-size:8px;padding:2px 6px;border-radius:2px;font-weight:700;letter-spacing:0.5px}
+.badge-h{background:#fff5f0;color:#e17055}
 
 @media print{
   body{background:#fff;padding:0}
-  .receipt{box-shadow:none;border:none;max-width:100%;padding:16px}
-  .no-print{display:none!important}
+  .receipt{box-shadow:none;max-width:100%;padding:16px 14px}
+  .receipt::before{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .actions{display:none!important}
 }
 </style>
 </head>
 <body>
 <div class="receipt">
   <div class="header">
-    <div class="logo">👟</div>
-    <div class="shop-name">EST BAGUMA MARKET</div>
-    <div class="shop-city">{{tenant_nom}}</div>
-    <div class="date-time">{{recu.date}} a {{recu.heure}}</div>
+    <span class="logo">👟</span>
+    <div class="brand">EST BAGUMA MARKET</div>
+    <div class="city">{{tenant_nom}}</div>
+    <div class="date">{{recu.date}} &middot; {{recu.heure}}</div>
   </div>
 
-  <div class="recu-num">Recu N° {{recu.numero}}</div>
+  <div class="receipt-id">
+    <span>Recu No</span>
+    <strong>{{recu.numero}}</strong>
+  </div>
 
   {% set is_goma = 'Goma' in tenant_nom %}
 
-  {% if is_goma %}
   <div class="section">
-    <div class="section-title">Informations legales</div>
-    <div class="legal-compact">
-      <div class="info-row"><span class="label">RCCM</span><span class="value">GOMA/RCCM/24-00540</span></div>
-      <div class="info-row"><span class="label">Adresse</span><span class="value">BIRERE GALERIE TAKENGA</span></div>
-      <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
-      <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
-      <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Informations</div>
-    <div class="info-grid">
-      <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
-      <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Occasionnel'}}</span></div>
-    </div>
-    {% if recu.client_tel %}
-    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Telephone</span><span class="value">{{recu.client_tel}}</span></div>
-    {% endif %}
-    {% if recu.est_honneur %}
-    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Type</span><span class="value"><span class="badge badge-honneur">⭐ Client d'honneur</span></span></div>
+    {% if is_goma %}
+    <div class="section-label">Informations legales</div>
+    <div class="row"><span class="k">RCCM</span><span class="v">GOMA/RCCM/24-00540</span></div>
+    <div class="row"><span class="k">IDN</span><span class="v">22-G4701-N47626D</span></div>
+    <div class="row"><span class="k">N Impot</span><span class="v">A2155289W</span></div>
+    <div class="row"><span class="k">Adresse</span><span class="v">BIRERE GALERIE TAKENGA</span></div>
+    <div class="row"><span class="k">Tel</span><span class="v">+243 891624401</span></div>
+    {% else %}
+    <div class="section-label">Informations</div>
+    <div class="row"><span class="k">Vendeur</span><span class="v">{{recu.vendeur_login or 'N/A'}}</span></div>
+    <div class="row"><span class="k">Client</span><span class="v">{{recu.client_nom or 'Occasionnel'}}{% if recu.est_honneur %} <span class="badge badge-h">Honneur</span>{% endif %}</span></div>
+    {% if recu.client_tel %}<div class="row"><span class="k">Telephone</span><span class="v">{{recu.client_tel}}</span></div>{% endif %}
     {% endif %}
   </div>
 
-  {% else %}
+  <hr class="sep-dash">
 
   <div class="section">
-    <div class="info-grid">
-      <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
-      <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Occasionnel'}}</span></div>
-    </div>
-    {% if recu.client_tel %}
-    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Telephone</span><span class="value">{{recu.client_tel}}</span></div>
-    {% endif %}
-    {% if recu.est_honneur %}
-    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Type</span><span class="value"><span class="badge badge-honneur">⭐ Client d'honneur</span></span></div>
+    {% if is_goma %}
+    <div class="section-label">Informations</div>
+    <div class="row"><span class="k">Vendeur</span><span class="v">{{recu.vendeur_login or 'N/A'}}</span></div>
+    <div class="row"><span class="k">Client</span><span class="v">{{recu.client_nom or 'Occasionnel'}}{% if recu.est_honneur %} <span class="badge badge-h">Honneur</span>{% endif %}</span></div>
+    {% if recu.client_tel %}<div class="row"><span class="k">Telephone</span><span class="v">{{recu.client_tel}}</span></div>{% endif %}
+    {% else %}
+    <div class="section-label">Informations legales</div>
+    <div class="row"><span class="k">RCCM</span><span class="v">BKV/RCCM/24-00540</span></div>
+    <div class="row"><span class="k">IDN</span><span class="v">22-G4701-N47626D</span></div>
+    <div class="row"><span class="k">N Impot</span><span class="v">A2155289W</span></div>
+    <div class="row"><span class="k">Adresse</span><span class="v">MARCHE DE KADUTU</span></div>
+    <div class="row"><span class="k">Tel</span><span class="v">+243 891624401</span></div>
     {% endif %}
   </div>
 
-  <div class="section">
-    <div class="section-title">Informations legales</div>
-    <div class="legal-compact">
-      <div class="info-row"><span class="label">RCCM</span><span class="value">BKV/RCCM/24-00540</span></div>
-      <div class="info-row"><span class="label">Adresse</span><span class="value">MARCHE DE KADUTU</span></div>
-      <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
-      <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
-      <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
-    </div>
-  </div>
+  <hr class="sep">
 
-  {% endif %}
-
-  <hr class="divider">
-
-  <div class="section">
-    <div class="section-title">Details de la transaction</div>
-    <table>
-      <tr><th style="text-align:left">Produit</th><th>Qte</th><th>Prix</th><th>Total</th></tr>
+  <table>
+    <thead>
+      <tr><th style="text-align:left">Article</th><th>Qte</th><th>PU</th><th style="text-align:right">Total</th></tr>
+    </thead>
+    <tbody>
       {% for v in ventes %}
       <tr>
-        <td style="text-align:left;font-weight:600">{{v.produit_nom}}</td>
-        <td style="text-align:center">{{v.quantite}}</td>
-        <td style="text-align:right">{{ v.prix_unit_usd|dg }}</td>
-        <td style="text-align:right;font-weight:700">{{ v.total_usd|dg }}</td>
+        <td>{{v.produit_nom}}</td>
+        <td>{{v.quantite}}</td>
+        <td>{{ v.prix_unit_usd|dg }}</td>
+        <td>{{ v.total_usd|dg }}</td>
       </tr>
       {% endfor %}
-    </table>
-  </div>
+    </tbody>
+  </table>
 
   <div class="totals">
     {% if is_goma %}
-    <div class="total-row"><span>USD</span><span>{{ recu.total_usd|dg }} $</span></div>
-    <div class="total-row grand"><span>CDF</span><span>{{ recu.total_cdf|dg }} FC</span></div>
+    <div class="main"><span class="label">Total CDF</span><span class="amount">{{ recu.total_cdf|dg }} FC</span></div>
+    <div class="sub"><span>USD</span><span>{{ recu.total_usd|dg }} $</span></div>
     {% else %}
-    <div class="total-row grand"><span>USD</span><span>{{ recu.total_usd|dg }} $</span></div>
-    <div class="total-row"><span>CDF</span><span>{{ recu.total_cdf|dg }} FC</span></div>
+    <div class="main"><span class="label">Total USD</span><span class="amount">{{ recu.total_usd|dg }} $</span></div>
+    <div class="sub"><span>CDF</span><span>{{ recu.total_cdf|dg }} FC</span></div>
     {% endif %}
-    <div class="total-row" style="font-size:11px"><span>Paiement</span><span>{% if recu.est_honneur %}<span class="badge badge-dette">Credit</span>{% else %}<span class="badge badge-cash">Cash</span>{% endif %}</span></div>
+    <span class="type {% if recu.est_honneur %}type-credit{% else %}type-cash{% endif %}">{% if recu.est_honneur %}Credit{% else %}Cash{% endif %}</span>
   </div>
 
-  <div class="security">
-    <div class="label">Code de securite</div>
-    <div class="code">{{recu.signature}}</div>
-    <div class="auth">Authentifie par EST BAGUMA MARKET</div>
+  <div class="stamp">
+    <div class="stamp-label">Code d'authentification</div>
+    <div class="stamp-code">{{recu.signature}}</div>
+    <div class="stamp-auth">EST BAGUMA MARKET</div>
   </div>
 
-  <div class="qr-section">
-    <div class="label">Scannez pour verifier</div>
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" alt="QR Code">
+  <div class="qr">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" alt="QR">
+    <div class="hint">Scannez pour verifier</div>
     <div class="url">{{url_for('verifier_recu', numero=recu.numero, _external=True)}}</div>
   </div>
 
   <div class="footer">
-    <div class="thanks">Merci pour votre confiance !</div>
-    <div class="contact">+243 891624401 | {{tenant_nom}}</div>
+    <div class="thanks">Merci pour votre confiance</div>
+    <div class="info">+243 891624401 &middot; {{tenant_nom}}</div>
+    <div class="copy">EST BAGUMA MARKET &copy; 2026</div>
   </div>
 
-  <div class="no-print" style="text-align:center;margin-top:20px">
-    <a href="/recu/pdf/{{recu.id}}" style="padding:12px 24px;background:linear-gradient(135deg,#50b4fe,#3b82f6);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;margin:4px;box-shadow:0 4px 14px rgba(80,180,254,0.3)">📥 PDF</a>
-    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF')}" style="padding:12px 24px;background:linear-gradient(135deg,#00e6b8,#00ccaa);color:#000;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px;margin:4px;box-shadow:0 4px 12px rgba(0,230,184,0.3)">🖨️ Imprimer</button>
-    <br><a href="/recus" style="color:#888;font-size:11px;margin-top:8px;display:inline-block;font-weight:600">Retour aux recus</a>
+  <div class="actions">
+    <a href="/recu/pdf/{{recu.id}}" class="btn-pdf">PDF</a>
+    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF')}" class="btn-print">Imprimer</button>
+    <br>
+    <a href="/recus" class="btn-back">Retour</a>
   </div>
 </div>
 </body>
