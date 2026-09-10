@@ -210,8 +210,9 @@ def inject_tenant():
             else:
                 row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
             unread = row["cnt"] if row else 0
-            mode_dg = get_mode_dg(conn, etid or 0)
+            mode_dg = get_mode_dg(conn, 0)
             session["dg_mode"] = mode_dg
+            session.modified = True
             conn.close()
         except Exception:
             unread = 0
