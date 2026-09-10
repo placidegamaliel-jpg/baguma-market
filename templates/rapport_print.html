@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport {{ rapport.date_rapport }} - Baguma Market</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#fff;color:#1a1a2e;padding:20px;max-width:800px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #00e6b8;padding-bottom:16px;margin-bottom:24px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,#00e6b8,#50b4fe);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.logo-text h1{font-size:20px;font-weight:900;color:#0a1628;letter-spacing:-0.5px}
+.logo-text p{font-size:11px;color:#64748b;font-weight:500}
+.header-right{text-align:right;font-size:12px;color:#64748b}
+.header-right .date{font-size:16px;font-weight:700;color:#0a1628}
+.section{margin-bottom:24px}
+.section-title{font-size:14px;font-weight:800;color:#00e6b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #e2e8f0}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.info-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+.info-card .label{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
+.info-card .value{font-size:22px;font-weight:900;color:#0a1628;margin-top:4px}
+.info-card .value.accent{color:#00e6b8}
+.info-card .value.blue{color:#50b4fe}
+.info-card .value.gold{color:#f59e0b}
+.info-card .value.red{color:#ef4444}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-box{text-align:center;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #bbf7d0;border-radius:12px;padding:16px 8px}
+.stat-box .num{font-size:28px;font-weight:900;color:#16a34a}
+.stat-box .lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px}
+.stat-box.blue{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#93c5fd}
+.stat-box.blue .num{color:#2563eb}
+.stat-box.gold{background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fcd34d}
+.stat-box.gold .num{color:#d97706}
+.stat-box.red{background:linear-gradient(135deg,#fef2f2,#fee2e2);border-color:#fca5a5}
+.stat-box.red .num{color:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{background:#f1f5f9;color:#475569;padding:10px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;border-bottom:2px solid #e2e8f0}
+td{padding:10px 8px;border-bottom:1px solid #f1f5f9;color:#1a1a2e}
+tr:hover td{background:#f8fafc}
+.total-row{font-weight:700;background:#f0fdf4}
+.total-row td{border-top:2px solid #00e6b8;color:#16a34a;font-weight:800}
+.signature{margin-top:32px;padding-top:16px;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center}
+.signature-text{font-size:11px;color:#64748b}
+.signature-line{width:200px;border-bottom:1px solid #1a1a2e;margin-top:8px}
+.footer-print{text-align:center;margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8}
+.btn-bar{display:flex;gap:10px;margin-bottom:20px;print-display:none}
+.btn-print{padding:12px 24px;background:#00e6b8;color:#000;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-pdf{padding:12px 24px;background:#50b4fe;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-back{padding:12px 24px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+@media print{
+  .btn-bar{display:none!important}
+  body{padding:0}
+  .header{border-bottom-color:#000}
+  .section-title{color:#000;border-bottom-color:#000}
+  .info-card{border-color:#ccc}
+  .stat-box{border-color:#ccc}
+  th{background:#f0f0f0;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div class="btn-bar">
+<button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+<a href="/rapport/{{rapport.id}}/pdf" class="btn-pdf">📄 Telecharger PDF</a>
+<a href="/rapport/{{rapport.id}}" class="btn-back">← Retour</a>
+</div>
+
+<div class="header">
+<div class="logo">
+<div class="logo-icon">👟</div>
+<div class="logo-text">
+<h1>Baguma Market</h1>
+<p>Rapport officiel Admin</p>
+</div>
+</div>
+<div class="header-right">
+<div class="date">{{ rapport.date_rapport }}</div>
+<div>{{ tenant_nom }}</div>
+<div>Responsable: Admin Placide</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">📊 Resume de la journee</div>
+<div class="stats-row">
+<div class="stat-box">
+<div class="num">{{ rapport.nb_clients }}</div>
+<div class="lbl">Clients servis</div>
+</div>
+<div class="stat-box blue">
+<div class="num">{{ rapport.nb_ventes }}</div>
+<div class="lbl">Ventes realisees</div>
+</div>
+<div class="stat-box gold">
+<div class="num">${{ rapport.total_usd|dg }}</div>
+<div class="lbl">Total USD</div>
+</div>
+<div class="stat-box red">
+<div class="num">{{ rapport.total_cdf|dg }} CDF</div>
+<div class="lbl">Total CDF</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">💰 Details des ventes</div>
+<table>
+<tr><th>Produit</th><th>Quantite</th><th>Prix unit.</th><th>Total</th></tr>
+{% for v in ventes_list %}
+<tr>
+<td style="font-weight:600">{{ v.nom }}</td>
+<td>{{ v.quantite }}</td>
+<td>${{ v.prix_unit_usd|dg }}</td>
+<td style="font-weight:700;color:#16a34a">${{ v.total_usd|dg }}</td>
+</tr>
+{% endfor %}
+{% if not ventes_list %}
+<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px">Aucune vente detaillee disponible</td></tr>
+{% endif %}
+<tr class="total-row">
+<td colspan="3" style="text-align:right">TOTAL</td>
+<td>${{ rapport.total_usd|dg }}</td>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<div class="section-title">👥 Clients du jour</div>
+<div class="info-grid">
+<div class="info-card">
+<div class="label">Clients servis</div>
+<div class="value accent">{{ rapport.nb_clients }}</div>
+</div>
+<div class="info-card">
+<div class="label">Vendeur</div>
+<div class="value blue">{{ rapport.vendeur_login }}</div>
+</div>
+</div>
+{% if clients_list %}
+<table>
+<tr><th>Nom</th><th>Telephone</th></tr>
+{% for c in clients_list %}
+<tr><td style="font-weight:500">{{ c.nom }}</td><td>{{ c.telephone or '-' }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+</div>
+
+<div class="section">
+<div class="section-title">🧾 Recus generes</div>
+<div class="info-grid">
+<div class="info-card">
+<div class="label">Nombre de recus</div>
+<div class="value accent">{{ rapport.nb_ventes }}</div>
+</div>
+<div class="info-card">
+<div class="label">Montant total valide</div>
+<div class="value gold">${{ rapport.total_usd|dg }}</div>
+</div>
+</div>
+</div>
+
+<div class="signature">
+<div>
+<div class="signature-text">Signature numerique</div>
+<div style="font-size:10px;color:#94a3b8;margin-top:4px">Baguma Market - Rapport officiel Admin</div>
+</div>
+<div style="text-align:right">
+<div class="signature-text">Admin Placide</div>
+<div class="signature-line"></div>
+<div style="font-size:10px;color:#94a3b8;margin-top:4px">{{ rapport.date_rapport }}</div>
+</div>
+</div>
+
+<div class="footer-print">
+<p>Baguma Market &copy; 2026 — Rapport genere automatiquement</p>
+<p style="margin-top:4px">Developpe par Gamaliel Placide</p>
+</div>
+
+</body>
+</html>

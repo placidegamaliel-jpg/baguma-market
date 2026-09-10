@@ -1556,6 +1556,145 @@ def rapport_detail(rapport_id):
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
                            login=session["login"], role=session["role"], rapport_id=rapport_id)
 
+@app.route("/rapport/<int:rapport_id>/print")
+@login_required
+def rapport_print(rapport_id):
+    conn = get_db()
+    r = db_fetchone(conn, "SELECT * FROM rapports WHERE id=%s" if IS_PG else "SELECT * FROM rapports WHERE id=?", (rapport_id,))
+    if not r:
+        conn.close()
+        flash("Rapport introuvable", "error")
+        return redirect(url_for("dashboard"))
+    t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
+    tenant_nom = t["nom"] if t else "Admin Global"
+    ventes_list = db_fetchall(conn, """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
+        FROM ventes v JOIN produits p ON v.produit_id=p.id
+        WHERE v.tenant_id=%s AND v.date=%s AND v.vendeur_login=%s""" if IS_PG else
+        """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
+        FROM ventes v JOIN produits p ON v.produit_id=p.id
+        WHERE v.tenant_id=? AND v.date=? AND v.vendeur_login=?""",
+        (r["tenant_id"], r["date_rapport"], r["vendeur_login"]))
+    clients_list = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone
+        FROM ventes WHERE tenant_id=%s AND date=%s AND client_nom!=''""" if IS_PG else
+        """SELECT DISTINCT client_nom as nom, client_tel as telephone
+        FROM ventes WHERE tenant_id=? AND date=? AND client_nom!=''""",
+        (r["tenant_id"], r["date_rapport"]))
+    conn.close()
+    return render_template("rapport_print.html", rapport=r, tenant_nom=tenant_nom,
+                           ventes_list=ventes_list, clients_list=clients_list)
+
+@app.route("/rapport/<int:rapport_id>/pdf")
+@login_required
+def rapport_pdf(rapport_id):
+    from fpdf import FPDF
+    conn = get_db()
+    r = db_fetchone(conn, "SELECT * FROM rapports WHERE id=%s" if IS_PG else "SELECT * FROM rapports WHERE id=?", (rapport_id,))
+    if not r:
+        conn.close()
+        flash("Rapport introuvable", "error")
+        return redirect(url_for("dashboard"))
+    t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
+    tenant_nom = t["nom"] if t else "Admin Global"
+    ventes_list = db_fetchall(conn, """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
+        FROM ventes v JOIN produits p ON v.produit_id=p.id
+        WHERE v.tenant_id=%s AND v.date=%s AND v.vendeur_login=%s""" if IS_PG else
+        """SELECT p.nom, v.quantite, v.prix_unit_usd, v.total_usd
+        FROM ventes v JOIN produits p ON v.produit_id=p.id
+        WHERE v.tenant_id=? AND v.date=? AND v.vendeur_login=?""",
+        (r["tenant_id"], r["date_rapport"], r["vendeur_login"]))
+    conn.close()
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # Header
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(0, 160, 130)
+    pdf.cell(0, 12, "Baguma Market", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 6, "Rapport officiel Admin", ln=True, align="C")
+    pdf.ln(4)
+
+    # Ligne
+    pdf.set_draw_color(0, 230, 184)
+    pdf.set_line_width(0.8)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(6)
+
+    # Info
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(26, 26, 46)
+    pdf.cell(0, 7, f"Date : {r['date_rapport']}", ln=True)
+    pdf.cell(0, 7, f"Tenant : {tenant_nom}", ln=True)
+    pdf.cell(0, 7, f"Vendeur : {r['vendeur_login']}", ln=True)
+    pdf.cell(0, 7, "Responsable : Admin Placide", ln=True)
+    pdf.ln(4)
+
+    # Resume
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(0, 160, 130)
+    pdf.cell(0, 8, "RESUME DE LA JOURNEE", ln=True)
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(26, 26, 46)
+    pdf.cell(95, 7, f"Clients servis : {r['nb_clients']}", border=0)
+    pdf.cell(95, 7, f"Ventes realisees : {r['nb_ventes']}", border=0, ln=True)
+    pdf.cell(95, 7, f"Total USD : ${dg(r['total_usd'], session.get('dg_mode', False))}", border=0)
+    pdf.cell(95, 7, f"Total CDF : {dg(r['total_cdf'], session.get('dg_mode', False))} CDF", border=0, ln=True)
+    pdf.ln(4)
+
+    # Ventes
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(0, 160, 130)
+    pdf.cell(0, 8, "DETAILS DES VENTES", ln=True)
+    pdf.ln(2)
+
+    if ventes_list:
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(241, 245, 249)
+        pdf.cell(70, 7, "Produit", border=1, fill=True)
+        pdf.cell(25, 7, "Qte", border=1, fill=True, align="C")
+        pdf.cell(35, 7, "Prix unit.", border=1, fill=True, align="C")
+        pdf.cell(35, 7, "Total", border=1, fill=True, align="C")
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        total = 0
+        for v in ventes_list:
+            pdf.cell(70, 6, v["nom"], border=1)
+            pdf.cell(25, 6, str(v["quantite"]), border=1, align="C")
+            pdf.cell(35, 6, f"${dg(v['prix_unit_usd'], session.get('dg_mode', False))}", border=1, align="C")
+            pdf.cell(35, 6, f"${dg(v['total_usd'], session.get('dg_mode', False))}", border=1, align="C")
+            pdf.ln()
+            total += v["total_usd"]
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(240, 253, 244)
+        pdf.cell(130, 7, "TOTAL", border=1, fill=True, align="R")
+        pdf.cell(35, 7, f"${dg(total, session.get('dg_mode', False))}", border=1, fill=True, align="C")
+        pdf.ln()
+    else:
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(148, 163, 184)
+        pdf.cell(0, 10, "Aucune vente detaillee disponible", ln=True, align="C")
+
+    pdf.ln(6)
+
+    # Signature
+    pdf.set_draw_color(200, 200, 200)
+    pdf.set_line_width(0.3)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, "Baguma Market - Rapport officiel Admin", ln=True, align="L")
+    pdf.cell(0, 5, f"Developpe par Gamaliel Placide | {r['date_rapport']}", ln=True, align="L")
+
+    filename = f"rapport_{r['date_rapport']}_{tenant_nom.replace(' ','_')}.pdf"
+    pdf.output(filename)
+    from flask import send_file
+    return send_file(filename, as_attachment=True, download_name=filename)
+
 @app.route("/admin/cleanup")
 def admin_cleanup():
     if not is_admin():
