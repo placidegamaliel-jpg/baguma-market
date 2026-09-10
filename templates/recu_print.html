@@ -7,55 +7,61 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#f0f0f0;display:flex;justify-content:center;padding:16px;min-height:100vh}
-.receipt{width:100%;max-width:380px;background:#fff;padding:28px;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+body{font-family:'Inter',system-ui,sans-serif;background:#f0f0f0;display:flex;justify-content:center;padding:12px;min-height:100vh}
+.receipt{width:100%;max-width:380px;background:#fff;padding:22px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,0.1)}
 
-.header{text-align:center;border-bottom:3px dashed #e0e0e0;padding-bottom:20px;margin-bottom:20px}
-.logo{font-size:42px;margin-bottom:10px}
-.shop-name{font-size:22px;font-weight:900;color:#1a1a1a;letter-spacing:2px;background:linear-gradient(135deg,#00b894,#0984e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase}
-.shop-city{font-size:14px;color:#666;margin-top:3px;font-weight:500}
-.date-time{font-size:12px;color:#999;margin-top:10px;font-weight:500}
-.recu-num{text-align:center;font-size:18px;font-weight:800;color:#00b894;margin:16px 0;padding:12px;background:rgba(0,184,148,0.08);border-radius:12px;border:2px solid rgba(0,184,148,0.15)}
+.header{text-align:center;border-bottom:2px dashed #e0e0e0;padding-bottom:14px;margin-bottom:14px}
+.logo{font-size:36px;margin-bottom:6px}
+.shop-name{font-size:17px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#00b894,#0984e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase}
+.shop-city{font-size:12px;color:#666;margin-top:2px;font-weight:600}
+.date-time{font-size:11px;color:#999;margin-top:6px;font-weight:500}
+.recu-num{text-align:center;font-size:15px;font-weight:800;color:#00b894;margin:12px 0;padding:8px;background:rgba(0,184,148,0.06);border-radius:10px;border:1.5px solid rgba(0,184,148,0.12)}
 
-.section{margin:16px 0}
-.section-title{font-size:11px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px}
-.info-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#333}
+.section{margin:10px 0}
+.section-title{font-size:9px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.info-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:#333}
 .info-row .label{color:#888;font-weight:500}
 .info-row .value{font-weight:700}
 
-.divider{border:none;border-top:2px dashed #e0e0e0;margin:16px 0}
+.divider{border:none;border-top:1.5px dashed #e0e0e0;margin:12px 0}
 
-table{width:100%;border-collapse:collapse;margin:10px 0}
-th{font-size:11px;font-weight:800;color:#999;text-transform:uppercase;text-align:left;padding:8px 4px;border-bottom:2px solid #eee;letter-spacing:0.5px}
-td{font-size:13px;padding:10px 4px;border-bottom:1px solid #f0f0f0;color:#333}
+table{width:100%;border-collapse:collapse;margin:6px 0}
+th{font-size:9px;font-weight:800;color:#999;text-transform:uppercase;text-align:left;padding:6px 3px;border-bottom:1.5px solid #eee;letter-spacing:0.5px}
+td{font-size:11px;padding:7px 3px;border-bottom:1px solid #f0f0f0;color:#333}
 td:last-child{text-align:right;font-weight:700}
 
-.totals{background:#f8f9fa;border-radius:12px;padding:16px;margin-top:12px}
-.total-row{display:flex;justify-content:space-between;font-size:15px;padding:5px 0}
-.total-row.grand{font-size:20px;font-weight:900;color:#00b894;border-top:3px solid #00b894;padding-top:10px;margin-top:6px}
+.totals{background:#f8f9fa;border-radius:10px;padding:12px;margin-top:10px}
+.total-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.total-row.grand{font-size:17px;font-weight:900;color:#00b894;border-top:2px solid #00b894;padding-top:8px;margin-top:4px}
 
-.security{text-align:center;margin-top:20px;padding:16px;background:rgba(0,184,148,0.05);border-radius:12px;border:2px solid rgba(0,184,148,0.12)}
-.security .label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
-.security .code{font-family:'Courier New',monospace;font-size:16px;font-weight:800;color:#00b894;margin:6px 0;letter-spacing:3px}
-.security .auth{font-size:11px;color:#666;font-weight:500}
+.security{text-align:center;margin-top:14px;padding:10px;background:rgba(0,184,148,0.04);border-radius:10px;border:1.5px solid rgba(0,184,148,0.1)}
+.security .label{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.security .code{font-family:'Courier New',monospace;font-size:13px;font-weight:800;color:#00b894;margin:4px 0;letter-spacing:2px}
+.security .auth{font-size:9px;color:#666;font-weight:500}
 
-.footer{text-align:center;margin-top:20px;padding-top:16px;border-top:3px dashed #e0e0e0}
-.footer .thanks{font-size:16px;font-weight:800;color:#333;margin-bottom:6px}
-.footer .contact{font-size:11px;color:#999;font-weight:500}
+.footer{text-align:center;margin-top:14px;padding-top:10px;border-top:2px dashed #e0e0e0}
+.footer .thanks{font-size:13px;font-weight:800;color:#333;margin-bottom:4px}
+.footer .contact{font-size:9px;color:#999;font-weight:500}
 
-.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:800}
+.badge{display:inline-block;padding:3px 10px;border-radius:14px;font-size:9px;font-weight:800}
 .badge-honneur{background:rgba(244,114,182,0.1);color:#f472b6}
 .badge-cash{background:rgba(0,184,148,0.1);color:#00b894}
 .badge-dette{background:rgba(249,115,22,0.1);color:#f97316}
 
-.qr-section{text-align:center;margin-top:20px;padding:16px;background:#f8f9fa;border-radius:12px}
-.qr-section .label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700}
-.qr-section img{width:130px;height:130px;border-radius:10px;border:2px solid #eee}
-.qr-section .url{font-size:9px;color:#999;margin-top:8px;font-family:monospace;word-break:break-all}
+.qr-section{text-align:center;margin-top:14px;padding:10px;background:#f8f9fa;border-radius:10px}
+.qr-section .label{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:700}
+.qr-section img{width:100px;height:100px;border-radius:8px;border:1.5px solid #eee}
+.qr-section .url{font-size:8px;color:#999;margin-top:6px;font-family:monospace;word-break:break-all}
+
+.legal-compact{background:#f8f9fa;border-radius:8px;padding:8px 10px;margin:8px 0;border:1px solid #eee}
+.legal-compact .info-row{font-size:10px;padding:2px 0}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:8px 0}
+.info-grid .info-row{font-size:10px;padding:2px 0}
 
 @media print{
   body{background:#fff;padding:0}
-  .receipt{box-shadow:none;border:none;max-width:100%;padding:20px}
+  .receipt{box-shadow:none;border:none;max-width:100%;padding:16px}
   .no-print{display:none!important}
 }
 </style>
@@ -71,26 +77,61 @@ td:last-child{text-align:right;font-weight:700}
 
   <div class="recu-num">Recu N° {{recu.numero}}</div>
 
+  {% set is_goma = 'Goma' in tenant_nom %}
+
+  {% if is_goma %}
   <div class="section">
     <div class="section-title">Informations legales</div>
-    <div class="info-row"><span class="label">RCCM</span><span class="value">{% if 'Goma' in tenant_nom %}GOMA/RCCM/24-00540{% else %}BKV/RCCM/24-00540{% endif %}</span></div>
-    <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
-    <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
-    <div class="info-row"><span class="label">Adresse</span><span class="value">{% if 'Goma' in tenant_nom %}BIRERE GALERIE TAKENGA{% else %}MARCHE DE KADUTU{% endif %}</span></div>
-    <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
+    <div class="legal-compact">
+      <div class="info-row"><span class="label">RCCM</span><span class="value">GOMA/RCCM/24-00540</span></div>
+      <div class="info-row"><span class="label">Adresse</span><span class="value">BIRERE GALERIE TAKENGA</span></div>
+      <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
+      <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
+      <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
+    </div>
   </div>
 
   <div class="section">
     <div class="section-title">Informations</div>
-    <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
-    <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Client occasionnel'}}</span></div>
+    <div class="info-grid">
+      <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
+      <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Occasionnel'}}</span></div>
+    </div>
     {% if recu.client_tel %}
-    <div class="info-row"><span class="label">Telephone</span><span class="value">{{recu.client_tel}}</span></div>
+    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Telephone</span><span class="value">{{recu.client_tel}}</span></div>
     {% endif %}
     {% if recu.est_honneur %}
-    <div class="info-row"><span class="label">Type</span><span class="value"><span class="badge badge-honneur">⭐ Client d'honneur</span></span></div>
+    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Type</span><span class="value"><span class="badge badge-honneur">⭐ Client d'honneur</span></span></div>
     {% endif %}
   </div>
+
+  {% else %}
+
+  <div class="section">
+    <div class="info-grid">
+      <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
+      <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Occasionnel'}}</span></div>
+    </div>
+    {% if recu.client_tel %}
+    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Telephone</span><span class="value">{{recu.client_tel}}</span></div>
+    {% endif %}
+    {% if recu.est_honneur %}
+    <div class="info-row" style="font-size:10px;padding:2px 0"><span class="label">Type</span><span class="value"><span class="badge badge-honneur">⭐ Client d'honneur</span></span></div>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Informations legales</div>
+    <div class="legal-compact">
+      <div class="info-row"><span class="label">RCCM</span><span class="value">BKV/RCCM/24-00540</span></div>
+      <div class="info-row"><span class="label">Adresse</span><span class="value">MARCHE DE KADUTU</span></div>
+      <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
+      <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
+      <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
+    </div>
+  </div>
+
+  {% endif %}
 
   <hr class="divider">
 
@@ -110,9 +151,14 @@ td:last-child{text-align:right;font-weight:700}
   </div>
 
   <div class="totals">
-    <div class="total-row grand"><span>TOTAL CDF</span><span>{{ recu.total_cdf|dg }}</span></div>
-    <div class="total-row"><span>TOTAL USD</span><span>{{ recu.total_usd|dg }}</span></div>
-    <div class="total-row"><span>Paiement</span><span>{% if recu.est_honneur %}<span class="badge badge-dette">Credit</span>{% else %}<span class="badge badge-cash">Cash</span>{% endif %}</span></div>
+    {% if is_goma %}
+    <div class="total-row"><span>USD</span><span>{{ recu.total_usd|dg }} $</span></div>
+    <div class="total-row grand"><span>CDF</span><span>{{ recu.total_cdf|dg }} FC</span></div>
+    {% else %}
+    <div class="total-row grand"><span>USD</span><span>{{ recu.total_usd|dg }} $</span></div>
+    <div class="total-row"><span>CDF</span><span>{{ recu.total_cdf|dg }} FC</span></div>
+    {% endif %}
+    <div class="total-row" style="font-size:11px"><span>Paiement</span><span>{% if recu.est_honneur %}<span class="badge badge-dette">Credit</span>{% else %}<span class="badge badge-cash">Cash</span>{% endif %}</span></div>
   </div>
 
   <div class="security">
@@ -129,14 +175,13 @@ td:last-child{text-align:right;font-weight:700}
 
   <div class="footer">
     <div class="thanks">Merci pour votre confiance !</div>
-    <div class="contact">Tel : +243 891624401 | {{tenant_nom}}</div>
+    <div class="contact">+243 891624401 | {{tenant_nom}}</div>
   </div>
 
-  <div class="no-print" style="text-align:center;margin-top:24px">
-    <a href="/recu/pdf/{{recu.id}}" style="padding:16px 32px;background:linear-gradient(135deg,#50b4fe,#3b82f6);color:#fff;border:none;border-radius:14px;font-weight:800;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;margin:6px;box-shadow:0 6px 20px rgba(80,180,254,0.35)">📥 Telecharger PDF</a>
-    <br>
-    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF ci-dessus pour imprimer')}" style="padding:14px 28px;background:linear-gradient(135deg,#00e6b8,#00ccaa);color:#000;border:none;border-radius:12px;font-weight:800;cursor:pointer;font-size:14px;margin:10px 4px;box-shadow:0 4px 15px rgba(0,230,184,0.3)">🖨️ Imprimer</button>
-    <br><a href="/recus" style="color:#888;font-size:12px;margin-top:10px;display:inline-block;font-weight:600">Retour aux recus</a>
+  <div class="no-print" style="text-align:center;margin-top:20px">
+    <a href="/recu/pdf/{{recu.id}}" style="padding:12px 24px;background:linear-gradient(135deg,#50b4fe,#3b82f6);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;margin:4px;box-shadow:0 4px 14px rgba(80,180,254,0.3)">📥 PDF</a>
+    <button onclick="try{window.print()}catch(e){alert('Utilisez le bouton PDF')}" style="padding:12px 24px;background:linear-gradient(135deg,#00e6b8,#00ccaa);color:#000;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px;margin:4px;box-shadow:0 4px 12px rgba(0,230,184,0.3)">🖨️ Imprimer</button>
+    <br><a href="/recus" style="color:#888;font-size:11px;margin-top:8px;display:inline-block;font-weight:600">Retour aux recus</a>
   </div>
 </div>
 </body>

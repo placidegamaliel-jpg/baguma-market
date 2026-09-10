@@ -1049,119 +1049,176 @@ def recu_pdf(rid):
     is_goma = "goma" in tenant_nom.lower()
 
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 14)
-    
-    # En-tete
-    pdf.cell(0, 8, "EST BAGUMA MARKET", ln=True, align="C")
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, tenant_nom, ln=True, align="C")
-    pdf.cell(0, 6, f"Date : {recu['date']} a {recu['heure']}", ln=True, align="C")
+
+    # --- En-tete ---
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 7, f"Recu N : {recu['numero']}", ln=True, align="C")
-
-    pdf.ln(2)
-    pdf.set_draw_color(0, 184, 148)
-    pdf.set_line_width(0.5)
-    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-    pdf.ln(3)
-
-    # Infos legales
-    pdf.set_font("Helvetica", "B", 9)
-    pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 5, "INFORMATIONS LEGALES", ln=True, align="L")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 5, f"RCCM : {'GOMA/RCCM/24-00540' if is_goma else 'BKV/RCCM/24-00540'}", ln=True)
-    pdf.cell(0, 5, "IDN : 22-G4701-N47626D", ln=True)
-    pdf.cell(0, 5, "N Impot : A2155289W", ln=True)
-    pdf.cell(0, 5, f"Adresse : {'BIRERE GALERIE TAKENGA' if is_goma else 'MARCHE DE KADUTU'}", ln=True)
-    pdf.cell(0, 5, "Tel : +243 891624401", ln=True)
+    pdf.cell(0, 6, "EST BAGUMA MARKET", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, tenant_nom, ln=True, align="C")
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(0, 6, f"Recu N : {recu['numero']}", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 4, f"{recu['date']} a {recu['heure']}", ln=True, align="C")
     pdf.set_text_color(0, 0, 0)
 
+    pdf.set_draw_color(0, 184, 148)
+    pdf.set_line_width(0.4)
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+    pdf.ln(5)
+
+    if is_goma:
+        # --- GOMA : legales en premier, compact ---
+        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_text_color(120, 120, 120)
+        pdf.cell(0, 4, "INFORMATIONS LEGALES", ln=True)
+        pdf.set_font("Helvetica", "", 7)
+        pdf.cell(95, 4, f"RCCM : GOMA/RCCM/24-00540")
+        pdf.cell(95, 4, f"Adresse : BIRERE GALERIE TAKENGA", ln=True)
+        pdf.cell(95, 4, "IDN : 22-G4701-N47626D")
+        pdf.cell(95, 4, "N Impot : A2155289W", ln=True)
+        pdf.cell(0, 4, "Tel : +243 891624401", ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+        pdf.ln(2)
+        pdf.set_draw_color(220, 220, 220)
+        pdf.set_line_width(0.1)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(2)
+
+        # Vendeur/Client cote a cote
+        pdf.set_font("Helvetica", "", 8)
+        pdf.cell(95, 5, f"Vendeur : {recu['vendeur_login'] or 'N/A'}")
+        pdf.cell(95, 5, f"Client : {recu['client_nom'] or 'Occasionnel'}", ln=True)
+        if recu['client_tel']:
+            pdf.cell(0, 4, f"Tel client : {recu['client_tel']}", ln=True)
+        if recu['est_honneur']:
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.cell(0, 5, "Type : Client d'honneur", ln=True)
+        pdf.set_font("Helvetica", "", 8)
+
+    else:
+        # --- BUKAVU : client/vendeur d'abord, legales apres ---
+        pdf.set_font("Helvetica", "", 8)
+        pdf.cell(95, 5, f"Vendeur : {recu['vendeur_login'] or 'N/A'}")
+        pdf.cell(95, 5, f"Client : {recu['client_nom'] or 'Occasionnel'}", ln=True)
+        if recu['client_tel']:
+            pdf.cell(0, 4, f"Tel client : {recu['client_tel']}", ln=True)
+        if recu['est_honneur']:
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.cell(0, 5, "Type : Client d'honneur", ln=True)
+            pdf.set_font("Helvetica", "", 8)
+
+        pdf.ln(2)
+        pdf.set_draw_color(220, 220, 220)
+        pdf.set_line_width(0.1)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(2)
+
+        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_text_color(120, 120, 120)
+        pdf.cell(0, 4, "INFORMATIONS LEGALES", ln=True)
+        pdf.set_font("Helvetica", "", 7)
+        pdf.cell(95, 4, f"RCCM : BKV/RCCM/24-00540")
+        pdf.cell(95, 4, f"Adresse : MARCHE DE KADUTU", ln=True)
+        pdf.cell(95, 4, "IDN : 22-G4701-N47626D")
+        pdf.cell(95, 4, "N Impot : A2155289W", ln=True)
+        pdf.cell(0, 4, "Tel : +243 891624401", ln=True)
+        pdf.set_text_color(0, 0, 0)
+
+    # Separateur
     pdf.ln(2)
     pdf.set_draw_color(200, 200, 200)
     pdf.set_line_width(0.2)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(3)
 
-    # Infos client/vendeur
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, f"Vendeur : {recu['vendeur_login'] or 'N/A'}", ln=True)
-    pdf.cell(0, 6, f"Client : {recu['client_nom'] or 'Client occasionnel'}", ln=True)
-    if recu['client_tel']:
-        pdf.cell(0, 6, f"Telephone : {recu['client_tel']}", ln=True)
-    if recu['est_honneur']:
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(0, 6, "Type : Client d'honneur", ln=True)
-
-    # Separateur
-    pdf.ln(2)
-    pdf.set_draw_color(200, 200, 200)
-    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-    pdf.ln(3)
-
-    # Tableau des produits
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(80, 7, "Produit", 1, align="L", fill=True)
-    pdf.cell(20, 7, "Qte", 1, align="C", fill=True)
-    pdf.cell(40, 7, "Prix", 1, align="C", fill=True)
-    pdf.cell(40, 7, "Total", 1, align="C", fill=True)
+    # --- Tableau des produits ---
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_fill_color(245, 245, 245)
+    pdf.cell(80, 6, "Produit", 1, align="L", fill=True)
+    pdf.cell(18, 6, "Qte", 1, align="C", fill=True)
+    pdf.cell(38, 6, "Prix", 1, align="C", fill=True)
+    pdf.cell(38, 6, "Total", 1, align="C", fill=True)
     pdf.ln()
 
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font("Helvetica", "", 8)
     for v in ventes_list:
-        if pdf.get_y() > 260:
+        if pdf.get_y() > 265:
             pdf.add_page()
-        pdf.cell(80, 7, str(v['produit_nom'])[:35], 1, align="L")
-        pdf.cell(20, 7, str(v['quantite']), 1, align="C")
-        pdf.cell(40, 7, f"{v['prix_unit_usd']:,.2f}", 1, align="C")
-        pdf.cell(40, 7, f"{v['total_usd']:,.2f}", 1, align="C")
+        pdf.cell(80, 5, str(v['produit_nom'])[:35], 1, align="L")
+        pdf.cell(18, 5, str(v['quantite']), 1, align="C")
+        pdf.cell(38, 5, f"{v['prix_unit_usd']:,.2f}", 1, align="C")
+        pdf.cell(38, 5, f"{v['total_usd']:,.2f}", 1, align="C")
         pdf.ln()
 
-    # Separateur
+    # --- Totaux ---
     pdf.ln(2)
-    pdf.set_draw_color(200, 200, 200)
+    pdf.set_draw_color(0, 184, 148)
+    pdf.set_line_width(0.3)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(3)
 
-    # Totaux
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, f"TOTAL USD : {recu['total_usd']:,.2f}", ln=True, align="R")
-    pdf.cell(0, 8, f"TOTAL CDF : {recu['total_cdf']:,.0f} CDF", ln=True, align="R")
+    if is_goma:
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(95, 5, "USD :")
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(95, 5, f"{recu['total_usd']:,.2f} $", ln=True, align="R")
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(0, 184, 148)
+        pdf.cell(95, 6, "CDF :")
+        pdf.cell(95, 6, f"{recu['total_cdf']:,.0f} FC", ln=True, align="R")
+        pdf.set_text_color(0, 0, 0)
+    else:
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(0, 184, 148)
+        pdf.cell(95, 6, "USD :")
+        pdf.cell(95, 6, f"{recu['total_usd']:,.2f} $", ln=True, align="R")
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(95, 5, "CDF :")
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(95, 5, f"{recu['total_cdf']:,.0f} FC", ln=True, align="R")
+
     paie = "Credit" if recu['est_honneur'] else "Cash"
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, f"Paiement : {paie}", ln=True, align="R")
-
-    # Separateur
-    pdf.ln(2)
-    pdf.set_draw_color(200, 200, 200)
-    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-    pdf.ln(3)
-
-    # Code securite
-    pdf.set_font("Helvetica", "B", 9)
-    pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 5, "CODE DE SECURITE", ln=True, align="C")
-    pdf.set_font("Courier", "B", 12)
-    pdf.set_text_color(0, 184, 148)
-    pdf.cell(0, 8, recu['signature'] or '', ln=True, align="C")
-    pdf.set_text_color(120, 120, 120)
-    pdf.set_font("Helvetica", "", 8)
-    pdf.cell(0, 5, "Authentifie par EST BAGUMA MARKET", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 4, f"Paiement : {paie}", ln=True, align="R")
     pdf.set_text_color(0, 0, 0)
 
-    pdf.ln(5)
+    # --- Code securite ---
+    pdf.ln(3)
     pdf.set_draw_color(0, 184, 148)
-    pdf.set_line_width(0.5)
+    pdf.set_line_width(0.3)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(3)
 
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(0, 7, "Merci pour votre confiance !", ln=True, align="C")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 6, f"Tel : +243 891624401 | {tenant_nom}", ln=True, align="C")
+    pdf.set_font("Helvetica", "B", 7)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(0, 4, "CODE DE SECURITE", ln=True, align="C")
+    pdf.set_font("Courier", "B", 10)
+    pdf.set_text_color(0, 184, 148)
+    pdf.cell(0, 6, recu['signature'] or '', ln=True, align="C")
+    pdf.set_text_color(120, 120, 120)
+    pdf.set_font("Helvetica", "", 6)
+    pdf.cell(0, 4, "Authentifie par EST BAGUMA MARKET", ln=True, align="C")
+    pdf.set_text_color(0, 0, 0)
+
+    # --- Footer ---
+    pdf.ln(3)
+    pdf.set_draw_color(0, 184, 148)
+    pdf.set_line_width(0.4)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(3)
+
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.cell(0, 5, "Merci pour votre confiance !", ln=True, align="C")
+    pdf.set_font("Helvetica", "", 7)
+    pdf.cell(0, 4, f"+243 891624401 | {tenant_nom}", ln=True, align="C")
 
     pdf_path = f"/tmp/recu_{recu['numero']}.pdf"
     pdf.output(pdf_path)
