@@ -786,21 +786,38 @@ def rapports():
     days = {}
     for r in rapports_list:
         d = r["date_rapport"]
-        if d not in days:
-            days[d] = []
-        rd = dict(r)
+        key = f"{d}_{r['tenant_id']}"
+        if key not in days:
+            days[key] = {
+                "date": d, "tenant_nom": r["tenant_nom"], "tenant_id": r["tenant_id"],
+                "total_usd": 0, "total_cdf": 0, "nb_ventes": 0, "nb_clients": 0,
+                "rapports": [], "ventes_list": [], "vendeurs": set()
+            }
+        days[key]["total_usd"] += r["total_usd"]
+        days[key]["total_cdf"] += r["total_cdf"]
+        days[key]["nb_ventes"] += r["nb_ventes"]
+        days[key]["nb_clients"] += r["nb_clients"]
+        days[key]["rapports"].append(r)
+        for vl in r["vendeur_login"].split(","):
+            days[key]["vendeurs"].add(vl.strip())
         if r["ventes_json"]:
             try:
-                rd["ventes_list"] = _json.loads(r["ventes_json"])
+                vlist = _json.loads(r["ventes_json"])
+                days[key]["ventes_list"].extend(vlist)
             except Exception:
-                rd["ventes_list"] = []
-        else:
-            rd["ventes_list"] = []
-        days[d].append(rd)
+                pass
 
-    sorted_days = sorted(days.keys(), reverse=True)
+    day_groups = {}
+    for key, day_data in days.items():
+        d = day_data["date"]
+        if d not in day_groups:
+            day_groups[d] = []
+        day_data["vendeurs"] = ", ".join(sorted(day_data["vendeurs"]))
+        day_groups[d].append(day_data)
+
+    sorted_days = sorted(day_groups.keys(), reverse=True)
     conn.close()
-    return render_template("rapports.html", days=days, sorted_days=sorted_days, is_admin=is_admin())
+    return render_template("rapports.html", day_groups=day_groups, sorted_days=sorted_days, is_admin=is_admin())
 
 @app.route("/clients")
 @login_required
@@ -1464,31 +1481,31 @@ def fin_journee():
         t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (tid,))
         tenant_nom = t["nom"] if t else "Inconnu"
 
-        stats = db_fetchone(conn, "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else
-                            "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
+        stats = db_fetchone(conn, "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE date=%s AND tenant_id=%s" if IS_PG else
+                            "SELECT COALESCE(SUM(total_usd),0) as total_usd, COALESCE(SUM(total_cdf),0) as total_cdf, COUNT(*) as nb_ventes FROM ventes WHERE date=? AND tenant_id=?", (today, tid))
         total_usd = stats["total_usd"] if stats else 0
         total_cdf = stats["total_cdf"] if stats else 0
         nb_ventes = stats["nb_ventes"] if stats else 0
 
-        clients = db_fetchone(conn, "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND client_nom!=''" if IS_PG else
-                              "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''", (vendeur_login, today, tid))
+        clients = db_fetchone(conn, "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE date=%s AND tenant_id=%s AND client_nom!=''" if IS_PG else
+                              "SELECT COUNT(DISTINCT client_nom) as nb FROM ventes WHERE date=? AND tenant_id=? AND client_nom!=''", (today, tid))
         nb_clients = clients["nb"] if clients else 0
 
         import json as _json
-        ventes_detail = db_fetchall(conn, """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, p.nom as produit_nom
+        ventes_detail = db_fetchall(conn, """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, v.vendeur_login, p.nom as produit_nom
             FROM ventes v JOIN produits p ON v.produit_id=p.id
-            WHERE v.vendeur_login=%s AND v.date=%s AND v.tenant_id=%s""" if IS_PG else
-            """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, p.nom as produit_nom
+            WHERE v.date=%s AND v.tenant_id=%s""" if IS_PG else
+            """SELECT v.produit_id, v.quantite, v.prix_unit_usd, v.prix_unit_cdf, v.total_usd, v.total_cdf, v.client_nom, v.client_tel, v.vendeur_login, p.nom as produit_nom
             FROM ventes v JOIN produits p ON v.produit_id=p.id
-            WHERE v.vendeur_login=? AND v.date=? AND v.tenant_id=?""", (vendeur_login, today, tid))
+            WHERE v.date=? AND v.tenant_id=?""", (today, tid))
         clients_detail = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone
-            FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND client_nom!=''""" if IS_PG else
+            FROM ventes WHERE date=%s AND tenant_id=%s AND client_nom!=''""" if IS_PG else
             """SELECT DISTINCT client_nom as nom, client_tel as telephone
-            FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''""", (vendeur_login, today, tid))
+            FROM ventes WHERE date=? AND tenant_id=? AND client_nom!=''""", (today, tid))
         clients_honneur = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone, total_usd
-            FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND est_client_honneur=1 AND client_nom!=''""" if IS_PG else
+            FROM ventes WHERE date=%s AND tenant_id=%s AND est_client_honneur=1 AND client_nom!=''""" if IS_PG else
             """SELECT DISTINCT client_nom as nom, client_tel as telephone, total_usd
-            FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND est_client_honneur=1 AND client_nom!=''""", (vendeur_login, today, tid))
+            FROM ventes WHERE date=? AND tenant_id=? AND est_client_honneur=1 AND client_nom!=''""", (today, tid))
         stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, p.code, p.couleur, p.stock, p.prix_usd, p.prix_cdf
             FROM produits p WHERE p.tenant_id=%s ORDER BY p.nom""" if IS_PG else
             """SELECT p.nom as produit_nom, p.code, p.couleur, p.stock, p.prix_usd, p.prix_cdf
@@ -1500,10 +1517,24 @@ def fin_journee():
             "clients_honneur": [dict(c) for c in clients_honneur]
         }, default=str)
 
-        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
-                  "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                  (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json))
-        rapport_id = rapport_r[0] if rapport_r else 0
+        existing = db_fetchone(conn, "SELECT id FROM rapports WHERE tenant_id=%s AND date_rapport=%s" if IS_PG else
+                               "SELECT id FROM rapports WHERE tenant_id=? AND date_rapport=?", (tid, today))
+        if existing:
+            rapport_id = existing["id"]
+            vendeurs = db_fetchall(conn, "SELECT DISTINCT vendeur_login FROM ventes WHERE date=%s AND tenant_id=%s" if IS_PG else
+                                   "SELECT DISTINCT vendeur_login FROM ventes WHERE date=? AND tenant_id=?", (today, tid))
+            vendeur_list = [v["vendeur_login"] for v in vendeurs]
+            if vendeur_login not in vendeur_list:
+                vendeur_list.append(vendeur_login)
+            vendeurs_text = ", ".join(vendeur_list)
+            db_execute(conn, "UPDATE rapports SET vendeur_login=%s, total_usd=%s, total_cdf=%s, nb_ventes=%s, nb_clients=%s, ventes_json=%s, clients_json=%s, stock_json=%s WHERE id=%s" if IS_PG else
+                       "UPDATE rapports SET vendeur_login=?, total_usd=?, total_cdf=?, nb_ventes=?, nb_clients=?, ventes_json=?, clients_json=?, stock_json=? WHERE id=?",
+                       (vendeurs_text, total_usd, total_cdf, nb_ventes, nb_clients, ventes_json, clients_json, stock_json, rapport_id))
+        else:
+            rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                      "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                      (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json))
+            rapport_id = rapport_r[0] if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -1513,17 +1544,16 @@ def fin_journee():
                   "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable, rapport_id) VALUES (0,?,0,?,?,?)",
                   (f"Rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f}", now, vendeur_login, rapport_id))
 
-        # Verrouiller les recus du vendeur pour aujourd'hui
-        db_execute(conn, "UPDATE recus SET verrouille=1 WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else
-                   "UPDATE recus SET verrouille=1 WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
+        db_execute(conn, "UPDATE recus SET verrouille=1 WHERE date=%s AND tenant_id=%s" if IS_PG else
+                   "UPDATE recus SET verrouille=1 WHERE date=? AND tenant_id=?", (today, tid))
 
-        db_execute(conn, "DELETE FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=?", (vendeur_login, today, tid))
+        db_execute(conn, "DELETE FROM ventes WHERE date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE date=? AND tenant_id=?", (today, tid))
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
                   (vendeur_id, vendeur_login, tid, "fin_journee", f"${total_usd:.2f} | {nb_ventes} ventes | {nb_clients} clients", now))
         conn.commit()
         conn.close()
-        flash("Rapport envoye avec succes", "success")
+        flash("Rapport de la journee envoye avec succes", "success")
     except Exception as e:
         flash(f"Erreur: {str(e)}", "error")
     return redirect(url_for("dashboard"))
