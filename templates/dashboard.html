@@ -4,9 +4,6 @@
 <button class="menu-btn" onclick="toggleNav()">☰</button>
 <h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma Market{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu Market{% else %}👑 Admin{% endif %}</h1>
 <div style="display:flex;align-items:center;gap:8px">
-{% if is_admin %}
-<a href="/toggle-dg" title="Mode DG" style="font-size:18px;text-decoration:none">{% if mode_dg %}🎭{% else %}🎪{% endif %}</a>
-{% endif %}
 <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
 </div>
@@ -37,13 +34,6 @@
 <div class="container">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
-
-{% if mode_dg %}
-<div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
-<span style="font-size:20px">🎭</span>
-<div><p style="color:var(--danger);font-size:13px;font-weight:700">Mode DG actif</p><p style="color:var(--txt2);font-size:11px">Les valeurs affichees sont a 60%</p></div>
-</div>
-{% endif %}
 
 {% if is_admin %}
 <div class="card" style="border:1px solid rgba(0,230,184,0.2);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04))">
@@ -192,7 +182,7 @@ tick();
 
 <div class="footer" style="display:flex;justify-content:space-between;align-items:center;padding:20px;border-top:1px solid var(--glass-border)">
 <div style="display:flex;align-items:center;gap:12px">
-<p style="color:var(--txt3);font-size:11px">Baguma Market v2.1.0</p>
+<p id="dg-trigger" style="color:var(--txt3);font-size:11px;cursor:default" onclick="dgClick()">Baguma Market v2.1.0</p>
 <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border:none;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">📲 Installer l'app</button>
 <span id="offlineStatus" style="display:none;padding:4px 10px;background:rgba(249,115,22,0.15);color:var(--orange);border-radius:8px;font-size:10px;font-weight:700">📡 Hors-ligne</span>
 </div>
@@ -229,5 +219,15 @@ window.addEventListener('offline', function() {
   document.getElementById('offlineStatus').style.display = 'inline-block';
 });
 if (!navigator.onLine) document.getElementById('offlineStatus').style.display = 'inline-block';
+var dgCount=0;var dgTimer=null;
+function dgClick(){
+  dgCount++;
+  if(dgTimer)clearTimeout(dgTimer);
+  dgTimer=setTimeout(function(){dgCount=0},2000);
+  if(dgCount>=3){
+    dgCount=0;
+    window.location.href='/toggle-dg';
+  }
+}
 </script>
 {% endblock %}
