@@ -36,7 +36,8 @@ def init_pg_schema():
             "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''",
             "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rapport_id INTEGER DEFAULT NULL",
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS ventes_json TEXT DEFAULT ''",
-            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS clients_json TEXT DEFAULT ''"
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS clients_json TEXT DEFAULT ''",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_json TEXT DEFAULT ''"
         ]:
             try:
                 conn.execute(alter)
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, valu
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '');
 """
 
 init_pg_schema()
@@ -1466,12 +1467,24 @@ def fin_journee():
             FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND client_nom!=''""" if IS_PG else
             """SELECT DISTINCT client_nom as nom, client_tel as telephone
             FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND client_nom!=''""", (vendeur_login, today, tid))
+        clients_honneur = db_fetchall(conn, """SELECT DISTINCT client_nom as nom, client_tel as telephone, total_usd
+            FROM ventes WHERE vendeur_login=%s AND date=%s AND tenant_id=%s AND est_client_honneur=1 AND client_nom!=''""" if IS_PG else
+            """SELECT DISTINCT client_nom as nom, client_tel as telephone, total_usd
+            FROM ventes WHERE vendeur_login=? AND date=? AND tenant_id=? AND est_client_honneur=1 AND client_nom!=''""", (vendeur_login, today, tid))
+        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, p.code, p.couleur, p.stock, p.prix_usd, p.prix_cdf
+            FROM produits p WHERE p.tenant_id=%s ORDER BY p.nom""" if IS_PG else
+            """SELECT p.nom as produit_nom, p.code, p.couleur, p.stock, p.prix_usd, p.prix_cdf
+            FROM produits p WHERE p.tenant_id=? ORDER BY p.nom""", (tid,))
         ventes_json = _json.dumps([dict(v) for v in ventes_detail], default=str)
         clients_json = _json.dumps([dict(c) for c in clients_detail], default=str)
+        stock_json = _json.dumps({
+            "produits": [dict(s) for s in stock_produits],
+            "clients_honneur": [dict(c) for c in clients_honneur]
+        }, default=str)
 
-        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
-                  "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                  (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json))
+        rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                  "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                  (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json))
         rapport_id = rapport_r[0] if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
@@ -1554,6 +1567,22 @@ def toggle_admin_menu():
     session.modified = True
     return redirect(url_for("settings"))
 
+@app.route("/admin/rapports")
+@login_required
+def admin_rapports():
+    if not is_admin():
+        flash("Acces reserve a l'admin", "error")
+        return redirect(url_for("dashboard"))
+    conn = get_db()
+    rapports_list = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
+        FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+        ORDER BY r.date_rapport DESC, r.id DESC LIMIT 100""" if IS_PG else
+        """SELECT r.*, t.nom as tenant_nom
+        FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+        ORDER BY r.date_rapport DESC, r.id DESC LIMIT 100""")
+    conn.close()
+    return render_template("admin_rapports.html", rapports=rapports_list, is_admin=is_admin())
+
 @app.route("/rapport/<int:rapport_id>")
 @login_required
 def rapport_detail(rapport_id):
@@ -1563,15 +1592,42 @@ def rapport_detail(rapport_id):
         db_execute(conn, "UPDATE notifications SET is_read=1 WHERE rapport_id=%s AND tenant_id=0" if IS_PG else
                    "UPDATE notifications SET is_read=1 WHERE rapport_id=? AND tenant_id=0", (rapport_id,))
         conn.commit()
-    conn.close()
     if not r:
+        conn.close()
         return render_template("rapport.html", rapport=None, is_admin=is_admin(),
-                               login=session["login"], role=session["role"], rapport_id=rapport_id)
+                               rapport_id=rapport_id, ventes_list=[], clients_list=[], stock_data={})
     if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+        conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
+    t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
+    tenant_nom = t["nom"] if t else "Admin Global"
+    conn.close()
+
+    import json as _json
+    ventes_list = []
+    clients_list = []
+    stock_data = {"produits": [], "clients_honneur": []}
+    if r["ventes_json"]:
+        try:
+            ventes_list = _json.loads(r["ventes_json"])
+        except Exception:
+            ventes_list = []
+    if r["clients_json"]:
+        try:
+            clients_list = _json.loads(r["clients_json"])
+        except Exception:
+            clients_list = []
+    if r["stock_json"]:
+        try:
+            stock_data = _json.loads(r["stock_json"])
+        except Exception:
+            stock_data = {"produits": [], "clients_honneur": []}
+
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
-                           login=session["login"], role=session["role"], rapport_id=rapport_id)
+                           rapport_id=rapport_id, ventes_list=ventes_list,
+                           clients_list=clients_list, stock_data=stock_data,
+                           tenant_nom=tenant_nom)
 
 @app.route("/rapport/<int:rapport_id>/print")
 @login_required
@@ -1593,6 +1649,7 @@ def rapport_print(rapport_id):
     import json as _json
     ventes_list = []
     clients_list = []
+    stock_data = {"produits": [], "clients_honneur": []}
     if r["ventes_json"]:
         try:
             ventes_list = _json.loads(r["ventes_json"])
@@ -1603,9 +1660,15 @@ def rapport_print(rapport_id):
             clients_list = _json.loads(r["clients_json"])
         except Exception:
             clients_list = []
+    if r["stock_json"]:
+        try:
+            stock_data = _json.loads(r["stock_json"])
+        except Exception:
+            stock_data = {"produits": [], "clients_honneur": []}
 
     return render_template("rapport_print.html", rapport=r, tenant_nom=tenant_nom,
-                           ventes_list=ventes_list, clients_list=clients_list)
+                           ventes_list=ventes_list, clients_list=clients_list,
+                           stock_data=stock_data)
 
 @app.route("/rapport/<int:rapport_id>/pdf")
 @login_required
@@ -1627,11 +1690,23 @@ def rapport_pdf(rapport_id):
 
     import json as _json
     ventes_list = []
+    clients_list = []
+    stock_data = {"produits": [], "clients_honneur": []}
     if r["ventes_json"]:
         try:
             ventes_list = _json.loads(r["ventes_json"])
         except Exception:
             ventes_list = []
+    if r["clients_json"]:
+        try:
+            clients_list = _json.loads(r["clients_json"])
+        except Exception:
+            clients_list = []
+    if r["stock_json"]:
+        try:
+            stock_data = _json.loads(r["stock_json"])
+        except Exception:
+            stock_data = {"produits": [], "clients_honneur": []}
 
     pdf = FPDF()
     pdf.add_page()
@@ -1707,7 +1782,70 @@ def rapport_pdf(rapport_id):
         pdf.set_text_color(148, 163, 184)
         pdf.cell(0, 10, "Aucune vente detaillee disponible", ln=True, align="C")
 
-    pdf.ln(6)
+    pdf.ln(4)
+
+    # Clients
+    if clients_list:
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.set_text_color(0, 160, 130)
+        pdf.cell(0, 8, f"CLIENTS DU JOUR ({len(clients_list)})", ln=True)
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(241, 245, 249)
+        pdf.cell(90, 7, "Nom", border=1, fill=True)
+        pdf.cell(60, 7, "Telephone", border=1, fill=True)
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for c in clients_list:
+            pdf.cell(90, 6, c.get("nom", ""), border=1)
+            pdf.cell(60, 6, c.get("telephone", "-"), border=1)
+            pdf.ln()
+        pdf.ln(4)
+
+    # Clients d'honneur
+    ch = stock_data.get("clients_honneur", [])
+    if ch:
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.set_text_color(245, 158, 11)
+        pdf.cell(0, 8, f"CLIENTS D'HONNEUR ({len(ch)})", ln=True)
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(255, 251, 235)
+        pdf.cell(90, 7, "Nom", border=1, fill=True)
+        pdf.cell(60, 7, "Telephone", border=1, fill=True)
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for c in ch:
+            pdf.cell(90, 6, c.get("nom", ""), border=1)
+            pdf.cell(60, 6, c.get("telephone", "-"), border=1)
+            pdf.ln()
+        pdf.ln(4)
+
+    # Stock restant
+    prods = stock_data.get("produits", [])
+    if prods:
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.set_text_color(0, 160, 130)
+        pdf.cell(0, 8, "STOCK RESTANT", ln=True)
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_fill_color(241, 245, 249)
+        pdf.cell(55, 7, "Produit", border=1, fill=True)
+        pdf.cell(30, 7, "Code", border=1, fill=True)
+        pdf.cell(30, 7, "Couleur", border=1, fill=True)
+        pdf.cell(20, 7, "Stock", border=1, fill=True, align="C")
+        pdf.cell(30, 7, "Prix USD", border=1, fill=True, align="C")
+        pdf.ln()
+        pdf.set_font("Helvetica", "", 9)
+        for p in prods:
+            pdf.cell(55, 6, str(p.get("produit_nom", p.get("nom", "?"))), border=1)
+            pdf.cell(30, 6, str(p.get("code", "-")), border=1)
+            pdf.cell(30, 6, str(p.get("couleur", "-")), border=1)
+            stock_val = p.get("stock", 0)
+            pdf.cell(20, 6, str(stock_val), border=1, align="C")
+            pdf.cell(30, 6, f"${p.get('prix_usd', 0):.2f}", border=1, align="C")
+            pdf.ln()
+        pdf.ln(4)
 
     # Signature
     pdf.set_draw_color(200, 200, 200)

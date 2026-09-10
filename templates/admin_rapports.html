@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+<button class="menu-btn" onclick="toggleNav()">☰</button>
+<h1>📈 Rapports Admin</h1>
+<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+<a href="/dashboard">📊 Dashboard</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
+<a href="/ventes">💰 Ventes</a>
+<a href="/recus">🧾 Recus</a>
+<a href="/rapports">📈 Rapports</a>
+<a href="/admin/rapports" class="active">📋 Rapports Admin</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
+<a href="/produits">👟 Produits</a>
+<a href="/stock">📦 Stock</a>
+<a href="/clients">👥 Clients</a>
+<a href="/dettes">💳 Dettes</a>
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
+<a href="/settings">⚙️ Parametres</a>
+<a href="/notifications">🔔 Notifications</a>
+{% if is_admin and show_admin_menu %}
+<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
+<a href="/tenants">🏢 Tenants</a>
+<a href="/utilisateurs">👮 Users</a>
+<a href="/logs">📝 Logs</a>
+<a href="/corbeille">🗑️ Corbeille</a>
+{% endif %}
+</nav>
+<div class="container">
+<div class="card-header">
+<span>📈 Tous les rapports de fin de journee</span>
+</div>
+
+{% if rapports %}
+<div class="table-scroll">
+<table>
+<tr>
+<th>Date</th>
+<th>Tenant</th>
+<th>Vendeur</th>
+<th>Ventes</th>
+<th>Clients</th>
+<th>Total USD</th>
+<th>Total CDF</th>
+<th>Actions</th>
+</tr>
+{% for r in rapports %}
+<tr>
+<td style="font-weight:600">{{ r.date_rapport }}</td>
+<td><span style="background:rgba(80,180,254,0.15);color:var(--blue);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">{{ r.tenant_nom or 'N/A' }}</span></td>
+<td style="font-weight:600">{{ r.vendeur_login }}</td>
+<td style="color:var(--accent);font-weight:700">{{ r.nb_ventes }}</td>
+<td style="color:var(--blue);font-weight:700">{{ r.nb_clients }}</td>
+<td style="font-weight:700">${{ r.total_usd|dg }}</td>
+<td style="font-weight:700;color:var(--gold)">{{ r.total_cdf|dg }} CDF</td>
+<td>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<a href="/rapport/{{ r.id }}" style="padding:6px 12px;background:rgba(0,230,184,0.15);color:var(--accent);border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Voir</a>
+<a href="/rapport/{{ r.id }}/print" style="padding:6px 12px;background:rgba(80,180,254,0.15);color:var(--blue);border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Imprimer</a>
+<a href="/rapport/{{ r.id }}/pdf" style="padding:6px 12px;background:rgba(168,85,247,0.15);color:var(--purple);border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">PDF</a>
+</div>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% else %}
+<div class="empty">
+<div style="font-size:3rem;margin-bottom:1rem">📭</div>
+<p>Aucun rapport de fin de journee disponible.</p>
+<p style="margin-top:8px;font-size:12px">Les rapports sont generes quand un vendeur fait "Fin de journee".</p>
+</div>
+{% endif %}
+
+<div class="footer">Baguma Market &copy; 2026</div>
+</div>
+{% endblock %}
