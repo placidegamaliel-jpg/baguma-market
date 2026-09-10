@@ -278,6 +278,9 @@ def login():
             session["role"] = user_role
             if ville_tid is not None:
                 session["tenant_slug"] = ville
+            mode_dg = get_mode_dg(conn, 0)
+            session["dg_mode"] = mode_dg
+            session.modified = True
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
                       "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -1698,9 +1701,11 @@ def settings():
 @app.route("/toggle-dg", methods=["GET", "POST"])
 @login_required
 def toggle_mode_dg():
+    if not is_admin():
+        flash("Seul l'admin peut activer/desactiver le mode DG", "error")
+        return redirect(url_for("dashboard"))
     conn = get_db()
-    tid = 0 if is_admin() else session.get("tenant_id", 0)
-    current = get_mode_dg(conn, tid)
+    current = get_mode_dg(conn, 0)
     new_val = "0" if current else "1"
     cur = conn.execute("DELETE FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
                        "DELETE FROM settings WHERE tenant_id=0 AND key='mode_dg'")
