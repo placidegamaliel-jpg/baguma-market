@@ -42,7 +42,7 @@
 {% endif %}
 <div class="form-group"><label>Produit</label>
 <select id="cart_produit">
-{% for p in prods %}<option value="{{p.id}}" data-prix="{{p.prix_usd}}" data-nom="{{p.nom}}">{{p.nom}} (stock: {{p.stock}} - ${{ "%.2f"|format(p.prix_usd) }})</option>{% endfor %}
+{% for p in prods %}<option value="{{p.id}}" data-prix="{{p.prix_usd}}" data-nom="{{p.nom}}">{{p.nom}} (stock: {{p.stock}} - ${{ p.prix_usd|dg }})</option>{% endfor %}
 </select></div>
 <div style="display:flex;gap:10px">
 <div class="form-group" style="flex:1"><label>Quantite</label><input type="number" id="cart_qte" min="1" value="1"></div>

@@ -48,7 +48,7 @@
 <td style="color:var(--accent);font-weight:600;font-size:12px">{{p.code or '-'}}</td>
 <td style="font-size:12px">{{p.couleur or '-'}}</td>
 <td style="color:var(--txt2)">{{p.cat_nom}}</td>
-<td class="tag-entree" style="font-weight:600">${{ "%.2f"|format(p.prix_usd) }}</td>
+<td class="tag-entree" style="font-weight:600">${{ p.prix_usd|dg }}</td>
 <td style="color:var(--txt2)">{{ "{:,.0f}".format(p.prix_cdf) }}</td>
 <td class="{{'tag-sortie' if p.stock<=5 else 'tag-entree'}}" style="font-weight:600">{{p.stock}}</td>
 {% if is_admin %}<td style="font-size:11px;color:var(--txt2)">{{tenants_map.get(p.tenant_id, '')}}</td>

@@ -93,7 +93,7 @@ td:last-child{text-align:right;font-weight:700}
       <tr>
         <td style="text-align:left;font-weight:600">{{v.produit_nom}}</td>
         <td style="text-align:center">{{v.quantite}}</td>
-        <td style="text-align:right">{{ "%.2f"|format(v.prix_unit_usd) }}</td>
+        <td style="text-align:right">{{ v.prix_unit_usd|dg }}</td>
         <td style="text-align:right;font-weight:700">{{ v.total_usd|dg }}</td>
       </tr>
       {% endfor %}
