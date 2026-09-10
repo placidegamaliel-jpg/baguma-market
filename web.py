@@ -763,26 +763,40 @@ def rapports():
     conn = get_db()
     etid = get_effective_tid()
 
-    if etid is not None:
-        all_rows = db_fetchall(conn, """SELECT v.date, v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login
-            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=%s
-            ORDER BY v.date DESC, v.heure DESC LIMIT 500""" if IS_PG else """SELECT v.date, v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login
-            FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.tenant_id=?
-            ORDER BY v.date DESC, v.heure DESC LIMIT 500""", (etid,))
+    if is_admin():
+        rapports_list = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
+            FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+            ORDER BY r.date_rapport DESC, r.id DESC LIMIT 200""" if IS_PG else
+            """SELECT r.*, t.nom as tenant_nom
+            FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+            ORDER BY r.date_rapport DESC, r.id DESC LIMIT 200""")
+    elif etid is not None:
+        rapports_list = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
+            FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+            WHERE r.tenant_id=%s
+            ORDER BY r.date_rapport DESC, r.id DESC LIMIT 100""" if IS_PG else
+            """SELECT r.*, t.nom as tenant_nom
+            FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
+            WHERE r.tenant_id=?
+            ORDER BY r.date_rapport DESC, r.id DESC LIMIT 100""", (etid,))
     else:
-        all_rows = db_fetchall(conn, """SELECT v.date, v.heure, p.nom, v.quantite, v.total_usd, v.client_nom, v.vendeur_login
-            FROM ventes v JOIN produits p ON v.produit_id=p.id
-            ORDER BY v.date DESC, v.heure DESC LIMIT 500""")
+        rapports_list = []
 
+    import json as _json
     days = {}
-    for r in all_rows:
-        d = r["date"]
+    for r in rapports_list:
+        d = r["date_rapport"]
         if d not in days:
-            days[d] = {"rows": [], "total_usd": 0, "total_qte": 0, "nb_ventes": 0}
-        days[d]["rows"].append(r)
-        days[d]["total_usd"] += r["total_usd"]
-        days[d]["total_qte"] += r["quantite"]
-        days[d]["nb_ventes"] += 1
+            days[d] = []
+        rd = dict(r)
+        if r["ventes_json"]:
+            try:
+                rd["ventes_list"] = _json.loads(r["ventes_json"])
+            except Exception:
+                rd["ventes_list"] = []
+        else:
+            rd["ventes_list"] = []
+        days[d].append(rd)
 
     sorted_days = sorted(days.keys(), reverse=True)
     conn.close()
@@ -832,10 +846,14 @@ def recu_edit(rid):
     if not recu:
         conn.close()
         return redirect(url_for("recus"))
+    if recu["verrouille"] and request.method == "POST":
+        conn.close()
+        flash("Ce recu est verrouille - modification impossible", "error")
+        return redirect(url_for("recus"))
     if recu["verrouille"]:
         conn.close()
-        flash("Ce recu est verrouille apres le rapport de fin de journee", "error")
-        return redirect(url_for("recus"))
+        flash("Recu verrouille (lecture seule)", "success")
+        return render_template("recu_edit.html", recu=recu, is_admin=is_admin(), readonly=True)
     if request.method == "POST":
         data = request.form
         client_nom = data.get("client_nom", recu["client_nom"])

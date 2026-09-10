@@ -2,11 +2,11 @@
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1>✏️ Modifier Recu</h1>
+<h1>{% if readonly %}👁️ Recu #{{recu.numero}}{% else %}✏️ Modifier Recu{% endif %}</h1>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
 </div>
 <nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Dashboard</a>
+<a href="/dashboard">📊 Accueil</a>
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
 <a href="/ventes">💰 Ventes</a>
 <a href="/recus" class="active">🧾 Recus</a>
@@ -32,20 +32,43 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 <div class="card" style="border-radius:20px;padding:28px">
+{% if readonly %}
+<h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:8px">👁️ Recu #{{recu.numero}}</h2>
+<div style="background:rgba(245,197,66,0.1);border:1px solid rgba(245,197,66,0.2);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
+  <p style="color:var(--gold);font-weight:700;font-size:13px">🔒 Recu verrouille - Lecture seule</p>
+  <p style="color:var(--txt2);font-size:11px">Ce recu a ete verrouille lors du rapport de fin de journee.</p>
+</div>
+{% else %}
 <h2 style="color:var(--txt);font-size:18px;font-weight:700;margin-bottom:8px">✏️ Modifier Recu #{{recu.numero}}</h2>
+{% endif %}
 <p style="color:var(--txt2);font-size:12px;margin-bottom:6px">Commerce: {{recu.tenant_nom or 'Admin Global'}} | Date: {{recu.date}} {{recu.heure}}</p>
+<p style="color:var(--txt2);font-size:12px;margin-bottom:6px">Vendeur: {{recu.vendeur_login or 'N/A'}}</p>
 {% if recu.signature %}
 <p style="font-size:11px;margin-bottom:20px">
   Signature: <code style="background:rgba(0,212,170,0.1);padding:2px 8px;border-radius:6px;color:var(--accent);font-size:10px">{{recu.signature}}</code>
-  {% if recu.verrouille %}<span style="color:var(--red);font-weight:700;margin-left:8px">🔒 Verrouille</span>{% endif %}
 </p>
 {% endif %}
-{% if recu.verrouille %}
-<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
-  <p style="color:var(--red);font-weight:700;font-size:13px">🔒 Ce recu est verrouille</p>
-  <p style="color:var(--txt2);font-size:11px">Envoye lors du rapport de fin de journee. Modification impossible.</p>
+
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem">
+  <div class="card" style="padding:.8rem;text-align:center">
+    <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Client</div>
+    <div style="font-weight:600;margin-top:4px">{{recu.client_nom or 'Client occasionnel'}}</div>
+  </div>
+  <div class="card" style="padding:.8rem;text-align:center">
+    <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Telephone</div>
+    <div style="font-weight:600;margin-top:4px">{{recu.client_tel or '-'}}</div>
+  </div>
+  <div class="card" style="padding:.8rem;text-align:center">
+    <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Total USD</div>
+    <div style="font-size:1.2rem;font-weight:700;color:var(--accent);margin-top:4px">${{recu.total_usd|dg}}</div>
+  </div>
+  <div class="card" style="padding:.8rem;text-align:center">
+    <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Total CDF</div>
+    <div style="font-size:1.2rem;font-weight:700;color:var(--gold);margin-top:4px">{{recu.total_cdf|dg}} CDF</div>
+  </div>
 </div>
-{% else %}
+
+{% if not readonly %}
 <form method="POST">
 <div class="form-group">
 <label>Client Nom</label>
@@ -61,7 +84,7 @@
 </div>
 <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(244,114,182,0.05);border:1px solid rgba(244,114,182,0.15);border-radius:12px">
 <input type="checkbox" name="est_honneur" id="recu_honneur" {{'checked' if recu.est_honneur}} style="width:18px;height:18px;accent-color:var(--pink)">
-<label for="recu_honneur" style="color:var(--pink);font-size:13px;font-weight:500">⭐ Client d'honneur</label>
+<label for="recu_honneur" style="color:var(--pink);font-size:13px;font-weight:500">Client d'honneur</label>
 </div>
 <div style="display:flex;gap:10px;margin-top:20px">
 <button type="submit" class="btn btn-green" style="flex:1;padding:14px">Enregistrer</button>
@@ -69,9 +92,15 @@
 </div>
 </form>
 {% endif %}
+
 {% if recu.id %}
 <div style="margin-top:12px">
 <a href="/recu/print/{{recu.id}}" class="btn btn-green" style="width:100%;padding:14px;text-align:center">🖨️ Imprimer le recu</a>
+</div>
+{% endif %}
+{% if readonly %}
+<div style="margin-top:10px">
+<a href="/recus" class="btn btn-gold" style="width:100%;padding:14px;text-align:center">Retour aux recus</a>
 </div>
 {% endif %}
 </div>
