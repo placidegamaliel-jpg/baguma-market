@@ -294,6 +294,7 @@ def switch_tenant(tenant_slug):
 def dashboard():
     conn = get_db()
     etid = get_effective_tid()
+    today = datetime.now().strftime("%Y-%m-%d")
 
     if etid is not None:
         cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
@@ -338,12 +339,19 @@ def dashboard():
 
     rapport_envoye = False
     rapport = None
+    rapport_id = None
     if session.get("role") == "vendeur" and session.get("tenant_id", 0) != 0:
         r = db_fetchone(conn, "SELECT * FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
                         "SELECT * FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
         if r:
             rapport_envoye = True
             rapport = r
+        rr = db_fetchone(conn, "SELECT * FROM rapports WHERE tenant_id=%s AND date_rapport=%s ORDER BY id DESC LIMIT 1" if IS_PG else
+                         "SELECT * FROM rapports WHERE tenant_id=? AND date_rapport=? ORDER BY id DESC LIMIT 1", (session["tenant_id"], today))
+        if rr:
+            rapport_id = rr["id"]
+            if not rapport_envoye:
+                rapport = rr
 
     unread_notifs = 0
     try:
@@ -398,7 +406,7 @@ def dashboard():
                            ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
-                           unread_notifs=unread_notifs, recent_rapports=recent_rapports)
+                           unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id)
 
 @app.route("/produits")
 @login_required
@@ -878,12 +886,21 @@ def recus():
     etid = get_effective_tid()
 
     if etid is not None:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-            FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-            FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
+        if is_admin():
+            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
+        else:
+            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r WHERE r.tenant_id=%s AND r.verrouille=0 ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r WHERE r.tenant_id=? AND r.verrouille=0 ORDER BY r.date DESC LIMIT 100""", (etid,))
     else:
-        recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-            FROM recus r ORDER BY r.date DESC LIMIT 100""")
+        if is_admin():
+            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r ORDER BY r.date DESC LIMIT 100""")
+        else:
+            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
+                FROM recus r WHERE r.verrouille=0 ORDER BY r.date DESC LIMIT 100""")
 
     conn.close()
     return render_template("recus.html", recus_list=recus_list, is_admin=is_admin())
