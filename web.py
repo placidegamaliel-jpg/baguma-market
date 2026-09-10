@@ -182,6 +182,18 @@ def dg(val, mode_dg):
 def dg_filter(val):
     if session.get("dg_mode", False):
         return int(round(val * 0.6))
+    try:
+        conn = get_db()
+        row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
+                          "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
+        if row and row["value"] == "1":
+            session["dg_mode"] = True
+            session.modified = True
+            conn.close()
+            return int(round(val * 0.6))
+        conn.close()
+    except Exception:
+        pass
     return val
 
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
