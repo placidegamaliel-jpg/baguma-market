@@ -1538,6 +1538,10 @@ def toggle_admin_menu():
 def rapport_detail(rapport_id):
     conn = get_db()
     r = db_fetchone(conn, "SELECT * FROM rapports WHERE id=%s" if IS_PG else "SELECT * FROM rapports WHERE id=?", (rapport_id,))
+    if r:
+        db_execute(conn, "UPDATE notifications SET is_read=1 WHERE rapport_id=%s AND tenant_id=0" if IS_PG else
+                   "UPDATE notifications SET is_read=1 WHERE rapport_id=? AND tenant_id=0", (rapport_id,))
+        conn.commit()
     conn.close()
     if not r:
         return render_template("rapport.html", rapport=None, is_admin=is_admin(),
