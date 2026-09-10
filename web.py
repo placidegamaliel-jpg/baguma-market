@@ -162,15 +162,21 @@ def get_taux(conn, tenant_id):
     return float(row["value"]) if row and row["value"] else 2800.0
 
 def get_mode_dg(conn, tenant_id):
-    row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=%s AND key='mode_dg'" if IS_PG else
-                      "SELECT value FROM settings WHERE tenant_id=? AND key='mode_dg'", (tenant_id,))
-    if row and row["value"] == "1":
-        return True
-    if tenant_id != 0:
-        row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
-                          "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
-        if row and row["value"] == "1":
+    cur = conn.execute("SELECT value FROM settings WHERE tenant_id=%s AND key='mode_dg'" if IS_PG else
+                       "SELECT value FROM settings WHERE tenant_id=? AND key='mode_dg'", (tenant_id,))
+    row = cur.fetchone()
+    if row:
+        v = row[0] if isinstance(row, tuple) else row.get("value", "")
+        if str(v) == "1" or v == 1 or v is True:
             return True
+    if tenant_id != 0:
+        cur = conn.execute("SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
+                           "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
+        row = cur.fetchone()
+        if row:
+            v = row[0] if isinstance(row, tuple) else row.get("value", "")
+            if str(v) == "1" or v == 1 or v is True:
+                return True
     return False
 
 def dg(val, mode_dg):
@@ -180,21 +186,26 @@ def dg(val, mode_dg):
 
 @app.template_filter('dg')
 def dg_filter(val):
-    if session.get("dg_mode", False):
-        return int(round(val * 0.6))
-    try:
-        conn = get_db()
-        row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
-                          "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
-        if row and row["value"] == "1":
-            session["dg_mode"] = True
-            session.modified = True
+    dg = session.get("dg_mode")
+    if dg is None or dg is False:
+        try:
+            conn = get_db()
+            cur = conn.execute("SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
+                               "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
+            row = cur.fetchone()
+            if row:
+                v = row[0] if isinstance(row, tuple) else row.get("value", "")
+                if str(v) == "1" or v == 1 or v is True:
+                    session["dg_mode"] = True
+                    session.modified = True
+                    conn.close()
+                    return int(round(val * 0.6))
             conn.close()
-            return int(round(val * 0.6))
-        conn.close()
-    except Exception:
-        pass
-    return val
+        except Exception:
+            pass
+        session["dg_mode"] = False
+        return val
+    return int(round(val * 0.6))
 
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 
@@ -1691,10 +1702,10 @@ def toggle_mode_dg():
     tid = 0 if is_admin() else session.get("tenant_id", 0)
     current = get_mode_dg(conn, tid)
     new_val = "0" if current else "1"
-    if IS_PG:
-        db_execute(conn, "INSERT INTO settings (tenant_id, key, value) VALUES (%s, 'mode_dg', %s) ON CONFLICT (tenant_id, key) DO UPDATE SET value=EXCLUDED.value", (tid, new_val))
-    else:
-        db_execute(conn, "INSERT OR REPLACE INTO settings (tenant_id, key, value) VALUES (?, 'mode_dg', ?)", (tid, new_val))
+    cur = conn.execute("DELETE FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
+                       "DELETE FROM settings WHERE tenant_id=0 AND key='mode_dg'")
+    cur = conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (0, 'mode_dg', %s)" if IS_PG else
+                       "INSERT INTO settings (tenant_id, key, value) VALUES (0, 'mode_dg', ?)", (new_val,))
     conn.commit()
     conn.close()
     session["dg_mode"] = (new_val == "1")
