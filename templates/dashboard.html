@@ -51,7 +51,6 @@
 </div>
 {% endif %}
 
-{% if not (session.role == 'vendeur' and rapport) %}
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
 <a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
 <div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👟</div>
@@ -87,7 +86,6 @@
 <div class="value pink">{{nb_dettes}}</div>
 </a>
 </div>
-{% endif %}
 
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">
 <a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer;text-align:left;padding:20px">
@@ -175,8 +173,6 @@ tick();
 {% endif %}
 {% endif %}
 
-{% if not (session.role == 'vendeur' and rapport) %}
-{% if not (session.role == 'vendeur' and rapport) %}
 <div class="card" style="padding:0;overflow:hidden">
 <div style="padding:18px 20px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px">
 <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">📋</div>
@@ -216,8 +212,6 @@ tick();
 {% endif %}
 </div>
 </div>
-{% endif %}
-{% endif %}
 
 <div class="footer" style="padding:20px;border-top:1px solid var(--glass-border);text-align:center">
 <p id="dg-trigger" onclick="dgClick()" style="color:var(--txt2);font-size:13px;font-weight:500;padding:12px 20px;display:inline-block;cursor:default;user-select:none;-webkit-user-select:none">Baguma Market v2.1.0</p>

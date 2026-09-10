@@ -90,11 +90,9 @@
   {% endif %}
 
   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-    {% for r in day_data.rapports %}
-    <a href="/rapport/{{ r.id }}" style="padding:8px 16px;background:rgba(0,230,184,0.15);color:var(--accent);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">Voir</a>
-    <a href="/rapport/{{ r.id }}/print" style="padding:8px 16px;background:rgba(80,180,254,0.15);color:var(--blue);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">Imprimer</a>
-    <a href="/rapport/{{ r.id }}/pdf" style="padding:8px 16px;background:rgba(168,85,247,0.15);color:var(--purple);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">PDF</a>
-    {% endfor %}
+    <a href="/rapport/{{ day_data.rapport_id }}" style="padding:8px 16px;background:rgba(0,230,184,0.15);color:var(--accent);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">Voir</a>
+    <a href="/rapport/{{ day_data.rapport_id }}/print" style="padding:8px 16px;background:rgba(80,180,254,0.15);color:var(--blue);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">Imprimer</a>
+    <a href="/rapport/{{ day_data.rapport_id }}/pdf" style="padding:8px 16px;background:rgba(168,85,247,0.15);color:var(--purple);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none">PDF</a>
   </div>
 </div>
 {% endfor %}

@@ -836,13 +836,14 @@ def rapports():
             days[key] = {
                 "date": d, "tenant_nom": r["tenant_nom"], "tenant_id": r["tenant_id"],
                 "total_usd": 0, "total_cdf": 0, "nb_ventes": 0, "nb_clients": 0,
-                "rapports": [], "ventes_list": [], "vendeurs": set()
+                "rapport_id": None, "ventes_list": [], "vendeurs": set()
             }
         days[key]["total_usd"] += r["total_usd"]
         days[key]["total_cdf"] += r["total_cdf"]
         days[key]["nb_ventes"] += r["nb_ventes"]
         days[key]["nb_clients"] += r["nb_clients"]
-        days[key]["rapports"].append(r)
+        if days[key]["rapport_id"] is None:
+            days[key]["rapport_id"] = r["id"]
         for vl in r["vendeur_login"].split(","):
             days[key]["vendeurs"].add(vl.strip())
         if r["ventes_json"]:
