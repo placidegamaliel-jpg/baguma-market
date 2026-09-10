@@ -72,6 +72,15 @@ td:last-child{text-align:right;font-weight:700}
   <div class="recu-num">Recu N° {{recu.numero}}</div>
 
   <div class="section">
+    <div class="section-title">Informations legales</div>
+    <div class="info-row"><span class="label">RCCM</span><span class="value">{% if 'Goma' in tenant_nom %}GOMA/RCCM/24-00540{% else %}BKV/RCCM/24-00540{% endif %}</span></div>
+    <div class="info-row"><span class="label">IDN</span><span class="value">22-G4701-N47626D</span></div>
+    <div class="info-row"><span class="label">N° Impot</span><span class="value">A2155289W</span></div>
+    <div class="info-row"><span class="label">Adresse</span><span class="value">{% if 'Goma' in tenant_nom %}BIRERE GALERIE TAKENGA{% else %}MARCHE DE KADUTU{% endif %}</span></div>
+    <div class="info-row"><span class="label">Tel</span><span class="value">+243 891624401</span></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Informations</div>
     <div class="info-row"><span class="label">Vendeur</span><span class="value">{{recu.vendeur_login or 'N/A'}}</span></div>
     <div class="info-row"><span class="label">Client</span><span class="value">{{recu.client_nom or 'Client occasionnel'}}</span></div>
@@ -120,7 +129,7 @@ td:last-child{text-align:right;font-weight:700}
 
   <div class="footer">
     <div class="thanks">Merci pour votre confiance !</div>
-    <div class="contact">Tel : +243 97 000 0000 | {{tenant_nom}}</div>
+    <div class="contact">Tel : +243 891624401 | {{tenant_nom}}</div>
   </div>
 
   <div class="no-print" style="text-align:center;margin-top:24px">
