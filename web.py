@@ -340,6 +340,7 @@ def dashboard():
     rapport_envoye = False
     rapport = None
     rapport_id = None
+    vendeur_a_fait_rapport = False
     if session.get("role") == "vendeur" and session.get("tenant_id", 0) != 0:
         r = db_fetchone(conn, "SELECT * FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
                         "SELECT * FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
@@ -350,8 +351,14 @@ def dashboard():
                          "SELECT * FROM rapports WHERE tenant_id=? AND date_rapport=? ORDER BY id DESC LIMIT 1", (session["tenant_id"], today))
         if rr:
             rapport_id = rr["id"]
-            if not rapport_envoye:
-                rapport = rr
+            vendeurs_list = [v.strip() for v in (rr["vendeur_login"] or "").split(",")]
+            if session["login"] in vendeurs_list:
+                vendeur_a_fait_rapport = True
+                if not rapport_envoye:
+                    rapport = rr
+            else:
+                rapport = None
+                rapport_id = None
 
     unread_notifs = 0
     try:
@@ -406,7 +413,8 @@ def dashboard():
                            ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
-                           unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id)
+                           unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id,
+                           vendeur_a_fait_rapport=vendeur_a_fait_rapport)
 
 @app.route("/produits")
 @login_required
