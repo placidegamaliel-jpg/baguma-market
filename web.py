@@ -1382,10 +1382,10 @@ def notifications():
     conn = get_db()
     etid = get_effective_tid()
     if etid is not None:
-        notifs = db_fetchall(conn, "SELECT * FROM notifications WHERE tenant_id=%s ORDER BY created_at DESC LIMIT 50" if IS_PG else
-                             "SELECT * FROM notifications WHERE tenant_id=? ORDER BY created_at DESC LIMIT 50", (etid,))
+        notifs = db_fetchall(conn, "SELECT * FROM notifications WHERE tenant_id=%s ORDER BY rapport_id DESC NULLS LAST, created_at DESC LIMIT 50" if IS_PG else
+                             "SELECT * FROM notifications WHERE tenant_id=? ORDER BY rapport_id DESC, created_at DESC LIMIT 50", (etid,))
     else:
-        notifs = db_fetchall(conn, "SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50")
+        notifs = db_fetchall(conn, "SELECT * FROM notifications ORDER BY rapport_id DESC NULLS LAST, created_at DESC LIMIT 50")
     row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0" + (" AND tenant_id=%s" if IS_PG else " AND tenant_id=?") if etid is not None else
                       "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0",
                       (etid,) if etid is not None else ())

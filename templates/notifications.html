@@ -41,12 +41,14 @@
 <table>
 <tr><th>Date/Heure</th><th>Notification</th><th>Responsable</th><th>Etat</th></tr>
 {% for n in notifs %}
-<tr style="border-left:3px solid {% if n.is_read %}var(--txt3){% else %}var(--gold){% endif %}">
+<tr style="border-left:3px solid {% if n.rapport_id %}var(--accent){% elif n.is_read %}var(--txt3){% else %}var(--gold){% endif %}">
 <td style="font-size:11px;white-space:nowrap;color:var(--txt2)">{{n.created_at[:16]}}</td>
 <td style="text-align:left;font-size:12px;font-weight:500;color:{% if n.is_read %}var(--txt2){% else %}var(--gold){% endif %}">
-{{n.message}}
+{% if n.rapport_id %}<span style="font-size:14px;margin-right:4px">📊</span>{% endif %}{{n.message}}
 {% if n.rapport_id %}
-<a href="/rapport/{{n.rapport_id}}" style="display:inline-block;margin-top:6px;padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Voir le rapport</a>
+<div style="margin-top:8px">
+<a href="/rapport/{{n.rapport_id}}" style="display:inline-block;padding:6px 14px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">📊 Voir le rapport</a>
+</div>
 {% endif %}
 </td>
 <td style="font-size:11px;color:var(--txt2)">{{n.responsable or 'Admin'}}</td>
