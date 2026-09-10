@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 GOMA{% elif session.tenant_slug == 'bukavu' %}📍 BUKAVU{% elif is_admin and not session.view_tenant %}📍 GOMA{% else %}📍 {{session.tenant_slug|upper}}{% endif %}</h1>
+<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 GOMA{% elif session.tenant_slug == 'bukavu' %}📍 BUKAVU{% elif is_admin and not session.view_tenant %}📍 BAGUMA BUSINESS{% else %}📍 {{session.tenant_slug|upper}}{% endif %}</h1>
 <div style="display:flex;align-items:center;gap:8px">
 <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
@@ -24,7 +24,7 @@
 <a href="/notifications">🔔 Notifications{% if unread_notifs > 0 %} <span class="badge">{{unread_notifs}}</span>{% endif %}</a>
 {% if is_admin and show_admin_menu %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
-<a href="/admin/rapports">📋 Rapports GOMA/BUKAVU</a>
+<a href="/admin/rapports">📋 Rapports BAGUMA BUSINESS</a>
 <a href="/tenants">🏢 Tenants</a>
 <a href="/utilisateurs">👮 Users</a>
 <a href="/logs">📝 Logs</a>
@@ -170,7 +170,7 @@ tick();
     {% set ns.first = false %}
     <div style="border-left:3px solid var(--accent);padding:10px 14px;margin:12px 0 8px;background:rgba(0,212,170,0.04);border-radius:0 10px 10px 0">
     <div style="font-size:14px;font-weight:700;color:var(--accent)">📅 {{r.date}}</div>
-    <div style="font-size:11px;color:var(--txt2);margin-top:2px">{{r.tenant_nom or 'GOMA'}} &bull; {{r.vendeur_login}}</div>
+    <div style="font-size:11px;color:var(--txt2);margin-top:2px">{{r.tenant_nom or 'BAGUMA BUSINESS'}} &bull; {{r.vendeur_login}}</div>
     </div>
     <div class="table-scroll">
     <table>

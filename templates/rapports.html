@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
@@ -12,7 +12,7 @@
 <a href="/recus">🧾 Recus</a>
 <a href="/rapports" class="active">📈 Rapports</a>
 {% if is_admin and show_admin_menu %}
-<a href="/admin/rapports">📋 Rapports GOMA/BUKAVU</a>
+<a href="/admin/rapports">📋 Rapports BAGUMA BUSINESS</a>
 {% endif %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
 <a href="/produits">👟 Produits</a>
@@ -110,7 +110,7 @@
 <div class="card" style="margin-top:8px;padding:16px">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
     <div>
-      <div style="font-weight:700;font-size:15px;color:var(--txt)">{{ day_data.tenant_nom or 'GOMA' }}</div>
+      <div style="font-weight:700;font-size:15px;color:var(--txt)">{{ day_data.tenant_nom or 'BAGUMA BUSINESS' }}</div>
       <div style="font-size:11px;color:var(--txt2);margin-top:2px">Vendeur(s): {{ day_data.vendeurs }}</div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
