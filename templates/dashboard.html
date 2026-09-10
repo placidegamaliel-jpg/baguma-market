@@ -87,7 +87,7 @@
 </a>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px">
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px">
 <a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer;text-align:left;padding:20px">
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
 <div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">⚠️</div>
@@ -95,11 +95,6 @@
 </div>
 <div class="value red" style="font-size:28px">${{ "%.2f"|format(total_dettes) }}</div>
 </a>
-<div class="stat" style="text-align:center">
-<div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 8px">👤</div>
-<div class="label">Role</div>
-<div style="font-size:14px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:4px">{{session.role}}</div>
-</div>
 </div>
 
 {% if session.role == 'vendeur' and session.tenant_id != 0 %}
@@ -149,18 +144,6 @@ setTimeout(tick,1000);
 tick();
 })();
 </script>
-{% elif rapport %}
-<div id="day-section" style="display:none"></div>
-<div id="rapport-done" class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.08),rgba(80,180,254,0.04));padding:24px;text-align:center">
-<div style="width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">📋</div>
-<div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:6px">Rapport du jour</div>
-<div style="font-size:12px;color:var(--txt2);margin-bottom:16px">{{rapport.date_rapport}} &bull; {{rapport.nb_ventes}} ventes &bull; ${{ rapport.total_usd|dg }}</div>
-<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-<a href="/rapport/{{rapport_id}}" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(80,180,254,0.15);color:var(--blue);border:none;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer">👁️ Voir</a>
-<a href="/rapport/{{rapport_id}}/print" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border:none;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer">🖨️ Imprimer</a>
-<a href="/rapport/{{rapport_id}}/pdf" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(168,85,247,0.15);color:var(--purple);border:none;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer">📄 PDF</a>
-</div>
-</div>
 {% else %}
 <div id="day-section" style="display:block">
 <form method="POST" action="/fin-journee" style="margin-bottom:16px" onsubmit="return confirm('Envoyer le rapport de fin de journee ?')">
