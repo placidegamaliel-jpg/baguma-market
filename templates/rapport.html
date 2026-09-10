@@ -28,6 +28,7 @@
 {% endif %}
 </nav>
 <div class="container">
+{% if rapport %}
 <div style="max-width:600px;margin:1rem auto">
   <div class="card" style="text-align:center;padding:2rem">
     <div style="font-size:3rem;margin-bottom:1rem">📊</div>
@@ -61,6 +62,16 @@
   </div>
   <a href="/dashboard" class="btn btn-gold" style="width:100%;text-align:center;margin-top:1rem;padding:14px">Retour Dashboard</a>
 </div>
+{% else %}
+<div style="max-width:500px;margin:3rem auto;text-align:center">
+  <div class="card" style="padding:3rem">
+    <div style="font-size:3rem;margin-bottom:1rem">📭</div>
+    <h2 style="color:var(--txt2);font-size:16px;font-weight:600;margin-bottom:8px">Aucun rapport disponible</h2>
+    <p style="color:var(--txt3);font-size:13px">Ce rapport n'existe pas ou a ete supprime.</p>
+  </div>
+  <a href="/notifications" class="btn btn-blue" style="width:100%;text-align:center;margin-top:1rem;padding:14px">Retour Notifications</a>
+</div>
+{% endif %}
 <div class="footer">Baguma Market &copy; 2026</div>
 </div>
 {% endblock %}

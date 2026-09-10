@@ -35,7 +35,8 @@ def init_pg_schema():
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS signature TEXT DEFAULT ''",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS vendeur_login TEXT DEFAULT ''",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0",
-            "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''"
+            "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''",
+            "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rapport_id INTEGER DEFAULT NULL"
         ]:
             try:
                 conn.execute(alter)
@@ -1126,10 +1127,10 @@ def utilisateur_supprimer(uid):
     conn.close()
     return redirect(url_for("utilisateurs"))
 
-def create_notif(conn, tenant_id, message, responsable="Admin"):
-    db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (%s,%s,0,%s,%s)" if IS_PG else
-              "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (?, ?, 0, ?, ?)",
-              (tenant_id, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), responsable))
+def create_notif(conn, tenant_id, message, responsable="Admin", rapport_id=None):
+    db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable, rapport_id) VALUES (%s,%s,0,%s,%s,%s)" if IS_PG else
+              "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable, rapport_id) VALUES (?, ?, 0, ?, ?, ?)",
+              (tenant_id, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), responsable, rapport_id))
     conn.commit()
 
 @app.route("/produits/edit/<int:pid>", methods=["GET", "POST"])
@@ -1456,9 +1457,9 @@ def fin_journee():
                   "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (?,?,?,?,?,?,?,?,?)",
                   (tid, vendeur_login, vendeur_id, now, expire, total_usd, total_cdf, nb_ventes, nb_clients))
 
-        db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,%s,0,%s,%s)" if IS_PG else
-                  "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable) VALUES (0,?,0,?,?)",
-                  (f"Rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f} | /rapport/{rapport_id}", now, vendeur_login))
+        db_insert(conn, "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable, rapport_id) VALUES (0,%s,0,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO notifications (tenant_id, message, is_read, created_at, responsable, rapport_id) VALUES (0,?,0,?,?,?)",
+                  (f"Rapport {tenant_nom} - {vendeur_login} | {nb_ventes} ventes | ${total_usd:.2f}", now, vendeur_login, rapport_id))
 
         # Verrouiller les recus du vendeur pour aujourd'hui
         db_execute(conn, "UPDATE recus SET verrouille=1 WHERE vendeur_login=%s AND date=%s AND tenant_id=%s" if IS_PG else
@@ -1539,13 +1540,13 @@ def rapport_detail(rapport_id):
     r = db_fetchone(conn, "SELECT * FROM rapports WHERE id=%s" if IS_PG else "SELECT * FROM rapports WHERE id=?", (rapport_id,))
     conn.close()
     if not r:
-        flash("Rapport introuvable", "error")
-        return redirect(url_for("dashboard"))
+        return render_template("rapport.html", rapport=None, is_admin=is_admin(),
+                               login=session["login"], role=session["role"], rapport_id=rapport_id)
     if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
     return render_template("rapport.html", rapport=r, is_admin=is_admin(),
-                           login=session["login"], role=session["role"])
+                           login=session["login"], role=session["role"], rapport_id=rapport_id)
 
 @app.route("/admin/cleanup")
 def admin_cleanup():

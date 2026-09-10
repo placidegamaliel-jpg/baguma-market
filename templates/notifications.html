@@ -44,10 +44,10 @@
 <tr style="border-left:3px solid {% if n.is_read %}var(--txt3){% else %}var(--gold){% endif %}">
 <td style="font-size:11px;white-space:nowrap;color:var(--txt2)">{{n.created_at[:16]}}</td>
 <td style="text-align:left;font-size:12px;font-weight:500;color:{% if n.is_read %}var(--txt2){% else %}var(--gold){% endif %}">
-{% if '/rapport/' in n.message %}
-  {% set parts = n.message.split('/rapport/') %}
-  {{ parts[0] }}<a href="/rapport/{{ parts[1] }}" style="color:var(--accent);font-weight:700;text-decoration:underline">Voir rapport</a>
-{% else %}{{n.message}}{% endif %}
+{{n.message}}
+{% if n.rapport_id %}
+<a href="/rapport/{{n.rapport_id}}" style="display:inline-block;margin-top:6px;padding:5px 12px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Voir le rapport</a>
+{% endif %}
 </td>
 <td style="font-size:11px;color:var(--txt2)">{{n.responsable or 'Admin'}}</td>
 <td>{% if not n.is_read %}
