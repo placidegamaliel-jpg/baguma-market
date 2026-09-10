@@ -1701,9 +1701,6 @@ def settings():
 @app.route("/toggle-dg", methods=["GET", "POST"])
 @login_required
 def toggle_mode_dg():
-    if not is_admin():
-        flash("Seul l'admin peut activer/desactiver le mode DG", "error")
-        return redirect(url_for("dashboard"))
     conn = get_db()
     current = get_mode_dg(conn, 0)
     new_val = "0" if current else "1"
