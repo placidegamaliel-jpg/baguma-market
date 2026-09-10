@@ -19,7 +19,7 @@
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
 <a href="/settings">⚙️ Parametres</a>
 <a href="/notifications">🔔 Notifications</a>
-{% if is_admin %}
+{% if is_admin and show_admin_menu %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
 <a href="/tenants">🏢 Tenants</a>
 <a href="/utilisateurs">👮 Users</a>
@@ -39,7 +39,7 @@
 <div style="display:flex;gap:16px">
 <span style="color:var(--txt2);font-size:12px">Ventes: <b style="color:var(--gold)">{{day.nb_ventes}}</b></span>
 <span style="color:var(--txt2);font-size:12px">Qte: <b style="color:var(--gold)">{{day.total_qte}}</b></span>
-<span style="color:var(--txt2);font-size:12px">Total: <b style="color:var(--accent)">${{ "%.2f"|format(day.total_usd) }}</b></span>
+<span style="color:var(--txt2);font-size:12px">Total: <b style="color:var(--accent)">${{ day.total_usd|dg }}</b></span>
 </div>
 </div>
 </div>
@@ -51,7 +51,7 @@
 <td style="font-size:11px;color:var(--txt2)">{{r.heure}}</td>
 <td style="font-weight:500">{{r.nom}}</td>
 <td>{{r.quantite}}</td>
-<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
+<td class="tag-entree" style="font-weight:700">${{ r.total_usd|dg }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
 <td style="color:var(--txt2)">{{r.vendeur_login}}</td>
 </tr>

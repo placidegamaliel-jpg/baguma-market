@@ -160,7 +160,13 @@ def get_mode_dg(conn, tenant_id):
 
 def dg(val, mode_dg):
     if mode_dg:
-        return round(val * 0.6, 2)
+        return int(round(val * 0.6))
+    return val
+
+@app.template_filter('dg')
+def dg_filter(val):
+    if session.get("dg_mode", False):
+        return int(round(val * 0.6))
     return val
 
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
@@ -198,6 +204,7 @@ def inject_tenant():
         "is_global_admin": tid == 0 and session.get("role") == "admin",
         "unread_notifs": unread,
         "mode_dg": session.get("dg_mode", False),
+        "show_admin_menu": session.get("show_admin_menu", False),
     }
 
 @app.route("/", methods=["GET", "POST"])
@@ -1503,6 +1510,16 @@ def toggle_mode_dg():
     session["dg_mode"] = not current
     session.modified = True
     return redirect(url_for("dashboard"))
+
+@app.route("/toggle-admin-menu", methods=["GET", "POST"])
+@login_required
+def toggle_admin_menu():
+    if session.get("role") != "admin":
+        return redirect(url_for("dashboard"))
+    current = session.get("show_admin_menu", False)
+    session["show_admin_menu"] = not current
+    session.modified = True
+    return redirect(url_for("settings"))
 
 @app.route("/rapport/<int:rapport_id>")
 @login_required

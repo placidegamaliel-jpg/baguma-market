@@ -19,7 +19,7 @@
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
 <a href="/settings">⚙️ Parametres</a>
 <a href="/notifications">🔔 Notifications</a>
-{% if is_admin %}
+{% if is_admin and show_admin_menu %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
 <a href="/tenants">🏢 Tenants</a>
 <a href="/utilisateurs">👮 Users</a>
@@ -40,7 +40,7 @@
 <tr>
 <td style="font-size:11px;color:var(--accent);font-weight:600">{{r.numero}}</td>
 <td style="font-size:11px;color:var(--txt2)">{{r.date}}</td>
-<td class="tag-entree" style="font-weight:700">${{ "%.2f"|format(r.total_usd) }}</td>
+<td class="tag-entree" style="font-weight:700">${{ r.total_usd|dg }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{r.client_nom or '-'}}</td>
 <td>{{'⭐' if r.est_honneur else '-'}}</td>
 <td style="font-size:10px;font-family:monospace;color:var(--txt2)">{{r.signature[:8] if r.signature else '-'}}</td>
