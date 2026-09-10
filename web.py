@@ -195,6 +195,8 @@ def inject_tenant():
             else:
                 row = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM notifications WHERE is_read=0")
             unread = row["cnt"] if row else 0
+            mode_dg = get_mode_dg(conn, etid or 0)
+            session["dg_mode"] = mode_dg
             conn.close()
         except Exception:
             unread = 0
@@ -203,7 +205,7 @@ def inject_tenant():
         "tenant_name": TENANT_NAMES.get(tid, "Admin Global"),
         "is_global_admin": tid == 0 and session.get("role") == "admin",
         "unread_notifs": unread,
-        "mode_dg": session.get("dg_mode", False),
+        "mode_dg": mode_dg,
         "show_admin_menu": session.get("show_admin_menu", False),
     }
 
@@ -1506,8 +1508,17 @@ def settings():
 @app.route("/toggle-dg", methods=["GET", "POST"])
 @login_required
 def toggle_mode_dg():
-    current = session.get("dg_mode", False)
-    session["dg_mode"] = not current
+    conn = get_db()
+    tid = session.get("tenant_id", 0)
+    current = get_mode_dg(conn, tid)
+    new_val = "0" if current else "1"
+    if IS_PG:
+        db_execute(conn, "INSERT INTO settings (tenant_id, key, value) VALUES (%s, 'mode_dg', %s) ON CONFLICT (tenant_id, key) DO UPDATE SET value=EXCLUDED.value", (tid, new_val))
+    else:
+        db_execute(conn, "INSERT OR REPLACE INTO settings (tenant_id, key, value) VALUES (?, 'mode_dg', ?)", (tid, new_val))
+    conn.commit()
+    conn.close()
+    session["dg_mode"] = (new_val == "1")
     session.modified = True
     return redirect(url_for("dashboard"))
 
