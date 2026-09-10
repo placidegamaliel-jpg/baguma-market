@@ -940,26 +940,35 @@ def clients():
 def recus():
     conn = get_db()
     etid = get_effective_tid()
+    q = request.args.get("q", "").strip()
 
     if etid is not None:
         if is_admin():
-            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r WHERE r.tenant_id=%s ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r WHERE r.tenant_id=? ORDER BY r.date DESC LIMIT 100""", (etid,))
+            sql_base = "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE r.tenant_id=%s" if IS_PG else "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE r.tenant_id=?"
+            params = [etid]
         else:
-            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r WHERE r.tenant_id=%s AND r.verrouille=0 ORDER BY r.date DESC LIMIT 100""" if IS_PG else """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r WHERE r.tenant_id=? AND r.verrouille=0 ORDER BY r.date DESC LIMIT 100""", (etid,))
+            sql_base = "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE r.tenant_id=%s AND r.verrouille=0" if IS_PG else "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE r.tenant_id=? AND r.verrouille=0"
+            params = [etid]
     else:
         if is_admin():
-            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r ORDER BY r.date DESC LIMIT 100""")
+            sql_base = "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE 1=1"
+            params = []
         else:
-            recus_list = db_fetchall(conn, """SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login
-                FROM recus r WHERE r.verrouille=0 ORDER BY r.date DESC LIMIT 100""")
+            sql_base = "SELECT r.id, r.numero, r.date, r.total_usd, r.total_cdf, r.client_nom, r.est_honneur, r.client_tel, r.heure, r.tenant_id, r.signature, r.verrouille, r.vendeur_login FROM recus r WHERE r.verrouille=0"
+            params = []
 
+    if q:
+        like_q = f"%{q}%"
+        if IS_PG:
+            sql_base += " AND (r.numero ILIKE %s OR r.client_nom ILIKE %s OR r.date ILIKE %s OR r.vendeur_login ILIKE %s)"
+        else:
+            sql_base += " AND (r.numero LIKE ? OR r.client_nom LIKE ? OR r.date LIKE ? OR r.vendeur_login LIKE ?)"
+        params.extend([like_q, like_q, like_q, like_q])
+
+    sql_base += " ORDER BY r.date DESC LIMIT 100"
+    recus_list = db_fetchall(conn, sql_base, tuple(params))
     conn.close()
-    return render_template("recus.html", recus_list=recus_list, is_admin=is_admin())
+    return render_template("recus.html", recus_list=recus_list, is_admin=is_admin(), q=q)
 
 @app.route("/recus/edit/<int:rid>", methods=["GET", "POST"])
 @login_required

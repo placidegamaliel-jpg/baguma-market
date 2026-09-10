@@ -34,6 +34,15 @@
 
 {% if not is_admin %}<button class="btn btn-blue btn-sm" onclick="window.print()" style="margin-bottom:12px">🖨️ Imprimer</button>{% endif %}
 
+<form method="GET" style="display:flex;gap:8px;margin-bottom:16px">
+  <input type="text" name="q" value="{{q or ''}}" placeholder="Rechercher par numero, client, date, vendeur..."
+         style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--glass-border);background:var(--card-solid);color:var(--txt);font-size:13px;font-weight:500">
+  <button type="submit" class="btn btn-green" style="padding:10px 16px;font-size:12px;font-weight:700">🔍</button>
+  {% if q %}<a href="/recus" class="btn btn-gold" style="padding:10px 14px;font-size:12px;font-weight:700">✕</a>{% endif %}
+</form>
+
+{% if q %}<p style="font-size:11px;color:var(--txt2);margin-bottom:10px">{{recus_list|length}} resultat{{'s' if recus_list|length != 1}} pour "{{q}}"</p>{% endif %}
+
 <div class="card" style="padding:0;overflow:hidden"><div class="table-scroll">
 <table>
 <tr><th>N° Recu</th><th>Date</th><th>Total</th><th>Client</th><th>Honneur</th><th>Signature</th><th>Etat</th>{% if is_admin %}<th>Actions</th>{% endif %}</tr>
