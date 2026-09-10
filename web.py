@@ -164,7 +164,14 @@ def get_taux(conn, tenant_id):
 def get_mode_dg(conn, tenant_id):
     row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=%s AND key='mode_dg'" if IS_PG else
                       "SELECT value FROM settings WHERE tenant_id=? AND key='mode_dg'", (tenant_id,))
-    return row["value"] == "1" if row and row["value"] else False
+    if row and row["value"] == "1":
+        return True
+    if tenant_id != 0:
+        row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
+                          "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
+        if row and row["value"] == "1":
+            return True
+    return False
 
 def dg(val, mode_dg):
     if mode_dg:
@@ -1668,7 +1675,7 @@ def settings():
 @login_required
 def toggle_mode_dg():
     conn = get_db()
-    tid = session.get("tenant_id", 0)
+    tid = 0 if is_admin() else session.get("tenant_id", 0)
     current = get_mode_dg(conn, tid)
     new_val = "0" if current else "1"
     if IS_PG:
