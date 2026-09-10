@@ -2,7 +2,7 @@
 {% block body %}
 <div class="topbar">
 <button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 Goma Market{% elif session.tenant_slug == 'bukavu' %}📍 Bukavu Market{% else %}👑 Admin{% endif %}</h1>
+<h1>{% if session.view_tenant_name %}{{session.view_tenant_name}}{% elif session.tenant_slug == 'goma' %}📍 GOMA{% elif session.tenant_slug == 'bukavu' %}📍 BUKAVU{% elif is_admin and not session.view_tenant %}📍 GOMA{% else %}📍 {{session.tenant_slug|upper}}{% endif %}</h1>
 <div style="display:flex;align-items:center;gap:8px">
 <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️</button>
 <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">Deconnexion ✕</a>
@@ -24,7 +24,7 @@
 <a href="/notifications">🔔 Notifications{% if unread_notifs > 0 %} <span class="badge">{{unread_notifs}}</span>{% endif %}</a>
 {% if is_admin and show_admin_menu %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
-<a href="/admin/rapports">📋 Rapports Admin</a>
+<a href="/admin/rapports">📋 Rapports GOMA/BUKAVU</a>
 <a href="/tenants">🏢 Tenants</a>
 <a href="/utilisateurs">👮 Users</a>
 <a href="/logs">📝 Logs</a>
@@ -170,7 +170,7 @@ tick();
     {% set ns.first = false %}
     <div style="border-left:3px solid var(--accent);padding:10px 14px;margin:12px 0 8px;background:rgba(0,212,170,0.04);border-radius:0 10px 10px 0">
     <div style="font-size:14px;font-weight:700;color:var(--accent)">📅 {{r.date}}</div>
-    <div style="font-size:11px;color:var(--txt2);margin-top:2px">{{r.tenant_nom or 'Admin'}} &bull; {{r.vendeur_login}}</div>
+    <div style="font-size:11px;color:var(--txt2);margin-top:2px">{{r.tenant_nom or 'GOMA'}} &bull; {{r.vendeur_login}}</div>
     </div>
     <div class="table-scroll">
     <table>
@@ -197,7 +197,7 @@ tick();
 </div>
 
 <div class="footer" style="padding:20px;border-top:1px solid var(--glass-border);text-align:center">
-<p id="dg-trigger" onclick="dgClick()" style="color:var(--txt2);font-size:13px;font-weight:500;padding:12px 20px;display:inline-block;cursor:default;user-select:none;-webkit-user-select:none">Baguma Market v2.1.0</p>
+<p id="dg-trigger" onclick="dgClick()" style="color:var(--txt2);font-size:13px;font-weight:500;padding:12px 20px;display:inline-block;cursor:default;user-select:none;-webkit-user-select:none">EST BAGUMA MARKET v2.1.0</p>
 <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border:none;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;margin-left:8px">📲 Installer</button>
 <span id="offlineStatus" style="display:none;padding:4px 10px;background:rgba(249,115,22,0.15);color:var(--orange);border-radius:8px;font-size:10px;font-weight:700;margin-left:8px">📡 Offline</span>
 <p style="color:var(--txt3);font-size:10px;margin-top:6px">© 2026 Gamaliel Placide</p>
