@@ -41,6 +41,7 @@ def init_pg_schema():
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS vendeur_login TEXT DEFAULT ''",
             "ALTER TABLE recus ADD COLUMN IF NOT EXISTS verrouille INTEGER DEFAULT 0",
             "ALTER TABLE stock ADD COLUMN IF NOT EXISTS couleur TEXT DEFAULT ''",
+            "ALTER TABLE stock ADD COLUMN IF NOT EXISTS motif TEXT DEFAULT ''",
             "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS rapport_id INTEGER DEFAULT NULL",
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS ventes_json TEXT DEFAULT ''",
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS clients_json TEXT DEFAULT ''",
@@ -536,11 +537,11 @@ def stock():
                 GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, s.couleur, p.nom
                 ORDER BY p.nom""", (tid2,))
 
-        historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login
+        historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login, s.motif
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
-                WHERE s.tenant_id=%s ORDER BY s.date_mouvement DESC LIMIT 30""" if IS_PG else """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login
+                WHERE s.tenant_id=%s ORDER BY s.date_mouvement DESC LIMIT 50""" if IS_PG else """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login, s.motif
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
-                WHERE s.tenant_id=? ORDER BY s.date_mouvement DESC LIMIT 30""", (tid2,))
+                WHERE s.tenant_id=? ORDER BY s.date_mouvement DESC LIMIT 50""", (tid2,))
 
         tenant_data.append({"id": tid2, "nom": t["nom"], "entrees": entrees, "sorties": sorties,
                             "net": entrees - sorties, "stock_produits": stock_produits, "historique": historique})
@@ -581,9 +582,9 @@ def stock_entree():
         resp_id = session["user_id"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
-              (tid, pid, "entree", qte, marque, code, couleur, resp_id, now))
+    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+              (tid, pid, "entree", qte, marque, code, couleur, resp_id, now, "Reception marchandise"))
     db_execute(conn, "UPDATE produits SET stock=stock+%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock+? WHERE id=?", (qte, pid))
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -621,9 +622,9 @@ def stock_sortie():
         flash(f"Stock insuffisant ! Disponible : {stock_actuel}", "error")
         return redirect(url_for("stock"))
 
-    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
-              (tid, pid, "sortie", qte, "", code, couleur, resp_id, now))
+    db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+              "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+              (tid, pid, "sortie", qte, "", code, couleur, resp_id, now, "Sortie manuelle"))
     db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
     db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
               "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
@@ -705,9 +706,9 @@ def ventes():
                   "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                   (recu_num, client_nom, client_tel, total_usd, total_cdf, is_honneur, now_date, now_heure, tid_sale, signature, session["login"]))
         db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
-        db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-                  "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
-                  (tid_sale, pid, "sortie", qte, "", "", "", session["user_id"], now))
+        db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                  (tid_sale, pid, "sortie", qte, "", "", "", session["user_id"], now, "Vente"))
 
         if is_honneur:
             db_insert(conn, "INSERT INTO dettes (tenant_id, client_nom, client_tel, montant_usd, montant_cdf, est_paye, date, heure, recu_num, vendeur_login) VALUES (%s,%s,%s,%s,%s,0,%s,%s,%s,%s)" if IS_PG else
@@ -817,9 +818,9 @@ def ventes_validate():
                   (now_date, now_heure, pid, qte, prix_usd, prix_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, is_honneur, tid_sale, session["login"]))
         
         db_execute(conn, "UPDATE produits SET stock=stock-%s WHERE id=%s" if IS_PG else "UPDATE produits SET stock=stock-? WHERE id=?", (qte, pid))
-        db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-                  "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement) VALUES (?,?,?,?,?,?,?,?,?)",
-                  (tid_sale, pid, "sortie", qte, "", "", "", session["user_id"], now))
+        db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                  "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                  (tid_sale, pid, "sortie", qte, "", "", "", session["user_id"], now, "Vente"))
     
     # Signature SHA256
     cle_secrete = app.secret_key
