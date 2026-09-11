@@ -2026,7 +2026,7 @@ def rapport_pdf(rapport_id):
     pdf.cell(0, 7, f"Date : {r['date_rapport']}", ln=True)
     pdf.cell(0, 7, f"Tenant : {tenant_nom}", ln=True)
     pdf.cell(0, 7, f"Vendeur : {r['vendeur_login']}", ln=True)
-    pdf.cell(0, 7, "Responsable : Admin Placide", ln=True)
+    pdf.cell(0, 7, "Responsable : Baguma Business", ln=True)
     pdf.ln(2)
 
     # Infos legales
@@ -2157,7 +2157,7 @@ def rapport_pdf(rapport_id):
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 5, "Baguma Market - Rapport officiel Admin", ln=True, align="L")
-    pdf.cell(0, 5, f"Developpe par Gamaliel Placide | {r['date_rapport']}", ln=True, align="L")
+    pdf.cell(0, 5, f"EST BAGUMA MARKET | {r['date_rapport']}", ln=True, align="L")
 
     filename = f"rapport_{r['date_rapport']}_{tenant_nom.replace(' ','_')}.pdf"
     pdf.output(filename)
