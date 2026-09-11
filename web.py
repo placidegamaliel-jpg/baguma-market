@@ -1444,15 +1444,16 @@ def produit_edit(pid):
         couleur = data.get("couleur", "").strip()
         try:
             prix_usd = float(data["prix_usd"])
+            stock_val = int(data["stock"])
         except (ValueError, KeyError):
             conn.close()
-            flash("Prix invalide", "error")
+            flash("Donnees invalides", "error")
             return redirect(url_for("produits"))
         taux = get_taux(conn, prod["tenant_id"])
         prix_cdf = prix_usd * taux
         ancien_prix = prod["prix_usd"]
-        db_execute(conn, "UPDATE produits SET code=%s, couleur=%s, prix_usd=%s, prix_cdf=%s WHERE id=%s" if IS_PG else
-                   "UPDATE produits SET code=?, couleur=?, prix_usd=?, prix_cdf=? WHERE id=?", (code, couleur, prix_usd, prix_cdf, pid))
+        db_execute(conn, "UPDATE produits SET code=%s, couleur=%s, prix_usd=%s, prix_cdf=%s, stock=%s WHERE id=%s" if IS_PG else
+                   "UPDATE produits SET code=?, couleur=?, prix_usd=?, prix_cdf=?, stock=? WHERE id=?", (code, couleur, prix_usd, prix_cdf, stock_val, pid))
         if prix_usd != ancien_prix:
             create_notif(conn, prod["tenant_id"],
                 f"Prix modifie : {prod['nom']} passe de ${ancien_prix:.2f} a ${prix_usd:.2f}",

@@ -48,6 +48,10 @@
 <label>Prix USD</label>
 <input type="number" name="prix_usd" value="{{prod.prix_usd}}" step="0.01" min="0" required>
 </div>
+<div class="form-group">
+<label>Stock</label>
+<input type="number" name="stock" value="{{prod.stock}}" min="0" required>
+</div>
 <p style="color:var(--txt2);font-size:12px;margin-bottom:16px">Prix actuel CDF: <b style="color:var(--gold)">{{ "{:,.0f}".format(prod.prix_cdf) }}</b></p>
 <div style="display:flex;gap:10px">
 <button type="submit" class="btn btn-green" style="flex:1;padding:14px">Enregistrer</button>
