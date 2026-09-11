@@ -2203,7 +2203,7 @@ def verifier_recu(numero=None):
     r = db_fetchone(conn, "SELECT * FROM recus WHERE numero=%s" if IS_PG else "SELECT * FROM recus WHERE numero=?", (numero,))
     conn.close()
     if not r:
-        return render_template("verifier_recu.html", valide=False, recu=None, numero=numero, is_admin=is_admin())
+        return render_template("verifier_recu.html", valide=False, recu=None, numero=numero)
     
     cle_secrete = app.secret_key
     stored = r['signature'] or ''
@@ -2223,7 +2223,7 @@ def verifier_recu(numero=None):
         if valide:
             break
     
-    return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero, is_admin=is_admin())
+    return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

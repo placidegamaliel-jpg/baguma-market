@@ -1,87 +1,87 @@
-﻿{% extends "base.html" %}
-{% block body %}
-<div class="topbar">
-<button class="menu-btn" onclick="toggleNav()">☰</button>
-<h1 class="brand">🔍 Verification Recu</h1>
-<a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
-</div>
-<nav class="nav" id="mainNav">
-<a href="/dashboard">📊 Accueil</a>
-<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
-<a href="/ventes">💰 Ventes</a>
-<a href="/recus">🧾 Recus</a>
-<a href="/rapports">📈 Rapports</a>
-<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
-<a href="/produits">👟 Produits</a>
-<a href="/stock">📦 Stock</a>
-<a href="/clients">👥 Clients</a>
-<a href="/dettes">💳 Dettes</a>
-<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
-<a href="/settings">⚙️ Parametres</a>
-<a href="/notifications">🔔 Notifications</a>
-{% if is_admin and show_admin_menu %}
-<div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
-<a href="/admin/rapports">📋 Rapports BAGUMA BUSINESS</a>
-<a href="/tenants">🏢 Tenants</a>
-<a href="/utilisateurs">👮 Users</a>
-<a href="/logs">📝 Logs</a>
-<a href="/corbeille">🗑️ Corbeille</a>
-{% endif %}
-</nav>
-<div class="container">
-<div style="max-width:500px;margin:1rem auto">
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification Recu - EST BAGUMA MARKET</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
+.card{width:100%;max-width:400px;background:#fff;border-radius:20px;padding:32px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.08);text-align:center}
+.logo{font-size:48px;margin-bottom:8px}
+.brand{font-size:16px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#00b894,#0984e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;margin-bottom:24px}
+.form-row{display:flex;gap:8px;margin-bottom:16px}
+.form-row input{flex:1;padding:14px;border-radius:12px;border:2px solid #eee;font-size:14px;font-weight:500;outline:none;transition:border .2s}
+.form-row input:focus{border-color:#00b894}
+.btn{padding:14px 20px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s}
+.btn:active{transform:scale(0.97)}
+.btn-green{background:linear-gradient(135deg,#00e6b8,#00b894);color:#000}
+.btn-back{background:none;border:2px solid #eee;color:#999;margin-top:12px;font-size:12px;padding:10px 20px}
+.result{margin-top:20px;padding:20px;border-radius:16px}
+.result-valide{background:rgba(0,184,148,0.08);border:2px solid rgba(0,184,148,0.2)}
+.result-invalide{background:rgba(239,68,68,0.08);border:2px solid rgba(239,68,68,0.2)}
+.result-icon{font-size:48px;margin-bottom:8px}
+.result-title{font-size:18px;font-weight:800;margin-bottom:4px}
+.result-desc{font-size:12px;color:#888}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;text-align:left}
+.info-item{padding:10px;background:#f8f9fa;border-radius:10px}
+.info-label{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.info-value{font-size:12px;font-weight:700;color:#333;margin-top:2px}
+.footer{margin-top:20px;font-size:10px;color:#ccc;letter-spacing:0.5px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">👟</div>
+  <div class="brand">EST BAGUMA MARKET</div>
+
   {% if recu %}
     {% if valide %}
-    <div class="card" style="border:2px solid var(--accent);text-align:center;padding:2rem">
-      <div style="font-size:4rem;margin-bottom:1rem">✅</div>
-      <h2 style="color:var(--accent);margin-bottom:1rem">Recu Valide</h2>
-      <p style="color:var(--txt2);margin-bottom:1.5rem">Ce recu est authentique et n'a pas ete modifie.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:left">
-        <div class="card" style="padding:.8rem">
-          <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Numero</div>
-          <div style="font-weight:700">{{recu.numero}}</div>
+    <div class="result result-valide">
+      <div class="result-icon">✅</div>
+      <div class="result-title" style="color:#00b894">Recu Valide</div>
+      <div class="result-desc">Ce recu est authentique et n'a pas ete modifie.</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Numero</div>
+          <div class="info-value">{{recu.numero}}</div>
         </div>
-        <div class="card" style="padding:.8rem">
-          <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Date</div>
-          <div style="font-weight:700">{{recu.date}} {{recu.heure}}</div>
+        <div class="info-item">
+          <div class="info-label">Date</div>
+          <div class="info-value">{{recu.date}}</div>
         </div>
-        <div class="card" style="padding:.8rem">
-          <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Client</div>
-          <div style="font-weight:700">{{recu.client_nom or 'Anonyme'}}</div>
+        <div class="info-item">
+          <div class="info-label">Client</div>
+          <div class="info-value">{{recu.client_nom or 'Anonyme'}}</div>
         </div>
-        <div class="card" style="padding:.8rem">
-          <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Total</div>
-          <div style="font-weight:700;color:var(--accent)">${{ recu.total_usd|dg }}</div>
+        <div class="info-item">
+          <div class="info-label">Total USD</div>
+          <div class="info-value" style="color:#00b894">${{ recu.total_usd|dg }}</div>
         </div>
-      </div>
-      <div class="card" style="padding:.8rem;margin-top:1rem">
-        <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Signature</div>
-        <div style="font-family:monospace;font-size:.8rem;color:var(--accent);word-break:break-all">{{recu.signature}}</div>
       </div>
     </div>
     {% else %}
-    <div class="card" style="border:2px solid var(--red);text-align:center;padding:2rem">
-      <div style="font-size:4rem;margin-bottom:1rem">❌</div>
-      <h2 style="color:var(--red);margin-bottom:1rem">Recu Invalide</h2>
-      <p style="color:var(--txt2);margin-bottom:1.5rem">Ce recu a ete modifie ou le numero est incorrect.</p>
-      <div class="card" style="padding:.8rem">
-        <div style="font-size:.7rem;color:var(--txt2);text-transform:uppercase">Numero</div>
-        <div style="font-weight:700">{{numero}}</div>
+    <div class="result result-invalide">
+      <div class="result-icon">❌</div>
+      <div class="result-title" style="color:#ef4444">Recu Invalide</div>
+      <div class="result-desc">Ce recu a ete modifie ou le numero est incorrect.</div>
+      <div style="margin-top:12px;padding:8px;background:rgba(239,68,68,0.06);border-radius:8px">
+        <div style="font-size:10px;color:#999">Numero recherche</div>
+        <div style="font-size:13px;font-weight:700;color:#ef4444">{{numero}}</div>
       </div>
     </div>
     {% endif %}
+
   {% else %}
-  <div class="card" style="text-align:center;padding:2rem">
-    <div style="font-size:4rem;margin-bottom:1rem">🔎</div>
-    <h2 style="margin-bottom:1rem">Verifier un recu</h2>
-    <form method="GET" style="display:flex;gap:.5rem" onsubmit="event.preventDefault();window.location.href='/recu/verifier/'+this.numero.value">
-      <input type="text" name="numero" placeholder="Numero (ex: RCP-2026-001)" required
-             style="flex:1;padding:1rem;border-radius:12px;border:1px solid var(--glass-border);background:var(--card-solid);color:var(--txt);font-size:1rem">
-      <button type="submit" class="btn btn-green" style="padding:1rem 2rem">Verifier</button>
-    </form>
-  </div>
+  <form class="form-row" onsubmit="event.preventDefault();window.location.href='/recu/verifier/'+this.numero.value">
+    <input type="text" name="numero" placeholder="Ex: RCP-2026-007" required autocomplete="off">
+    <button type="submit" class="btn btn-green">Verifier</button>
+  </form>
+  <div style="font-size:11px;color:#bbb;margin-top:-8px">Entrez le numero du recu pour verifier son authenticite</div>
   {% endif %}
+
+  <div class="footer">EST BAGUMA MARKET &copy; 2026</div>
 </div>
-<div class="footer">EST BAGUMA MARKET &copy; 2026</div>
-</div>
-{% endblock %}
+</body>
+</html>
