@@ -695,7 +695,7 @@ def ventes():
 
         # Signature SHA256
         cle_secrete = app.secret_key
-        contenu = f"{recu_num}-{_sig_fmt(total_usd)}-{_sig_fmt(total_cdf)}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
+        contenu = f"{recu_num}-{int(float(total_usd))}-{int(float(total_cdf))}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
         signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
 
         db_insert(conn, "INSERT INTO ventes (date, heure, produit_id, quantite, prix_unit_usd, prix_unit_cdf, total_usd, total_cdf, client_nom, client_tel, recu_num, est_client_honneur, tenant_id, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
@@ -817,7 +817,7 @@ def ventes_validate():
     
     # Signature SHA256
     cle_secrete = app.secret_key
-    contenu = f"{recu_num}-{_sig_fmt(total_usd_all)}-{_sig_fmt(total_cdf_all)}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
+    contenu = f"{recu_num}-{int(float(total_usd_all))}-{int(float(total_cdf_all))}-{client_nom}-{client_tel}-{now_date}-{now_heure}-{tid_sale}"
     signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
     
     db_insert(conn, "INSERT INTO recus (numero, client_nom, client_tel, total_usd, total_cdf, est_honneur, date, heure, tenant_id, signature, vendeur_login) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
@@ -1013,7 +1013,7 @@ def recu_edit(rid):
                    (client_nom, client_tel, total_usd, total_cdf, est_honneur, rid))
         # Recalculer la signature
         cle_secrete = app.secret_key
-        contenu = f"{recu['numero']}-{_sig_fmt(total_usd)}-{_sig_fmt(total_cdf)}-{client_nom}-{client_tel}-{recu['date']}-{recu['heure']}-{recu['tenant_id']}"
+        contenu = f"{recu['numero']}-{int(float(total_usd))}-{int(float(total_cdf))}-{client_nom}-{client_tel}-{recu['date']}-{recu['heure']}-{recu['tenant_id']}"
         signature = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
         db_execute(conn, "UPDATE recus SET signature=%s WHERE id=%s" if IS_PG else "UPDATE recus SET signature=? WHERE id=?", (signature, rid))
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2215,9 +2215,22 @@ def verifier_recu(numero=None):
         return render_template("verifier_recu.html", valide=False, recu=None, numero=numero, is_admin=is_admin())
     
     cle_secrete = app.secret_key
-    contenu = f"{r['numero']}-{_sig_fmt(r['total_usd'])}-{_sig_fmt(r['total_cdf'])}-{r['client_nom'] or ''}-{r['client_tel'] or ''}-{r['date']}-{r['heure']}-{r['tenant_id']}"
-    signature_calculee = hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12]
-    valide = signature_calculee == (r['signature'] or '')
+    stored = r['signature'] or ''
+    cn = r['client_nom'] or ''
+    ct = r['client_tel'] or ''
+    vu = str(int(float(r['total_usd'])))
+    vc = str(int(float(r['total_cdf'])))
+    fu = str(r['total_usd'])
+    fc = str(r['total_cdf'])
+    valide = False
+    for usd_s in [vu, fu]:
+        for cdf_s in [vc, fc]:
+            contenu = f"{r['numero']}-{usd_s}-{cdf_s}-{cn}-{ct}-{r['date']}-{r['heure']}-{r['tenant_id']}"
+            if hashlib.sha256((contenu + cle_secrete).encode()).hexdigest()[:12] == stored:
+                valide = True
+                break
+        if valide:
+            break
     
     return render_template("verifier_recu.html", valide=valide, recu=r, numero=numero, is_admin=is_admin())
 
