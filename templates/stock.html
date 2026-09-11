@@ -49,20 +49,19 @@
 <h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--accent){% else %}var(--blue){% endif %};margin:14px 0 8px;font-weight:600">📊 Stock par produit</h3>
 <div class="table-scroll">
 <table>
-<tr><th>Produit</th><th>Code</th><th>Couleur</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Restant</th><th>Resp.</th></tr>
+<tr><th>Produit</th><th>Couleur</th><th>Marque</th><th>Entrees</th><th>Sorties</th><th>Stock Actuel</th><th>Resp.</th></tr>
 {% for s in t.stock_produits %}
 <tr>
 <td style="font-weight:500">{{s.produit_nom}}</td>
-<td style="color:var(--txt2);font-size:11px">{{s.code_produit or '-'}}</td>
 <td style="font-weight:500">{{s.couleur or '-'}}</td>
 <td style="color:var(--txt2)">{{s.marque or '-'}}</td>
 <td class="tag-entree" style="font-weight:600">{{ s.total_entrees|dg }}</td>
 <td class="tag-sortie" style="font-weight:600">{{ s.total_sorties|dg }}</td>
-<td class="{{'tag-sortie' if s.stock_disponible <= 0 else 'tag-entree'}}" style="font-weight:700">{{ s.stock_disponible|dg }}</td>
+<td class="{{'tag-sortie' if s.stock_actuel <= 0 else 'tag-entree'}}" style="font-weight:700;font-size:14px">{{ s.stock_actuel }}</td>
 <td style="font-size:11px;color:var(--txt2)">{{s.responsable or '-'}}</td>
 </tr>
 {% endfor %}
-{% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit en stock</td></tr>{% endif %}
+{% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}
 </table>
 </div>
 <h3 style="font-size:13px;color:var(--txt2);margin:16px 0 8px;font-weight:600">📝 Historique des mouvements</h3>

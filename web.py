@@ -514,28 +514,37 @@ def stock():
         row = db_fetchone(conn, "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=%s AND mouvement='sortie'" if IS_PG else
                           "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='sortie'", (tid2,))
         sorties = row["s"]
+        stock_row = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as s FROM produits WHERE tenant_id=%s" if IS_PG else
+                          "SELECT COALESCE(SUM(stock),0) as s FROM produits WHERE tenant_id=?", (tid2,))
+        stock_total = stock_row["s"]
 
-        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, s.code_produit, s.marque, s.couleur,
-                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
-                       SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
-                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
+        stock_produits = db_fetchall(conn, """SELECT p.nom as produit_nom, p.stock as stock_actuel, p.id as produit_id,
+                       COALESCE(SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END),0) as total_entrees,
+                       COALESCE(SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END),0) as total_sorties,
+                       (SELECT s2.couleur FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=%s AND s2.couleur != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as couleur,
+                       (SELECT s2.code_produit FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=%s AND s2.code_produit != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as code_produit,
+                       (SELECT s2.marque FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=%s AND s2.marque != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as marque,
                        (SELECT u.login FROM stock s2 JOIN utilisateurs u ON s2.user_id=u.id
-                        WHERE s2.product_id=s.product_id AND s2.tenant_id=s.tenant_id AND s2.mouvement='sortie'
+                        WHERE s2.product_id=p.id AND s2.tenant_id=%s
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
-                FROM stock s JOIN produits p ON s.product_id=p.id
-                WHERE s.tenant_id=%s
-                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, s.couleur, p.nom
-                ORDER BY p.nom""" if IS_PG else """SELECT p.nom as produit_nom, s.code_produit, s.marque, s.couleur,
-                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END) as total_entrees,
-                       SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END) as total_sorties,
-                       SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE -s.quantite END) as stock_disponible,
+                FROM produits p
+                LEFT JOIN stock s ON s.product_id=p.id AND s.tenant_id=%s
+                WHERE p.tenant_id=%s
+                GROUP BY p.id, p.nom, p.stock
+                ORDER BY p.nom""" if IS_PG else """SELECT p.nom as produit_nom, p.stock as stock_actuel, p.id as produit_id,
+                       COALESCE(SUM(CASE WHEN s.mouvement='entree' THEN s.quantite ELSE 0 END),0) as total_entrees,
+                       COALESCE(SUM(CASE WHEN s.mouvement='sortie' THEN s.quantite ELSE 0 END),0) as total_sorties,
+                       (SELECT s2.couleur FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=? AND s2.couleur != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as couleur,
+                       (SELECT s2.code_produit FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=? AND s2.code_produit != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as code_produit,
+                       (SELECT s2.marque FROM stock s2 WHERE s2.product_id=p.id AND s2.tenant_id=? AND s2.marque != '' ORDER BY s2.date_mouvement DESC LIMIT 1) as marque,
                        (SELECT u.login FROM stock s2 JOIN utilisateurs u ON s2.user_id=u.id
-                        WHERE s2.product_id=s.product_id AND s2.tenant_id=s.tenant_id AND s2.mouvement='sortie'
+                        WHERE s2.product_id=p.id AND s2.tenant_id=?
                         ORDER BY s2.date_mouvement DESC LIMIT 1) as responsable
-                FROM stock s JOIN produits p ON s.product_id=p.id
-                WHERE s.tenant_id=?
-                GROUP BY s.product_id, s.tenant_id, s.code_produit, s.marque, s.couleur, p.nom
-                ORDER BY p.nom""", (tid2,))
+                FROM produits p
+                LEFT JOIN stock s ON s.product_id=p.id AND s.tenant_id=?
+                WHERE p.tenant_id=?
+                GROUP BY p.id, p.nom, p.stock
+                ORDER BY p.nom""", (tid2, tid2, tid2, tid2, tid2, tid2))
 
         historique = db_fetchall(conn, """SELECT s.date_mouvement, s.mouvement, p.nom, s.code_produit, s.couleur, s.quantite, u.login, s.motif
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
@@ -544,7 +553,7 @@ def stock():
                 WHERE s.tenant_id=? ORDER BY s.date_mouvement DESC LIMIT 50""", (tid2,))
 
         tenant_data.append({"id": tid2, "nom": t["nom"], "entrees": entrees, "sorties": sorties,
-                            "net": entrees - sorties, "stock_produits": stock_produits, "historique": historique})
+                            "net": stock_total, "stock_produits": stock_produits, "historique": historique})
 
     if etid is not None:
         prods = db_fetchall(conn, "SELECT id, nom FROM produits WHERE tenant_id=%s ORDER BY nom" if IS_PG else
