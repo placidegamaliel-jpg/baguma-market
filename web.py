@@ -1234,23 +1234,6 @@ def recu_pdf(rid):
     pdf.cell(0, 5, paie.upper(), ln=True, align="R")
     pdf.set_text_color(0, 0, 0)
 
-    # --- Code de securite ---
-    pdf.ln(5)
-    pdf.set_draw_color(240, 240, 240)
-    pdf.line(60, pdf.get_y(), 150, pdf.get_y())
-    pdf.ln(4)
-
-    pdf.set_font("Helvetica", "B", 6)
-    pdf.set_text_color(180, 180, 180)
-    pdf.cell(0, 3, "CODE D'AUTHENTIFICATION", ln=True, align="C")
-    pdf.set_font("Courier", "B", 10)
-    pdf.set_text_color(0, 184, 148)
-    pdf.cell(0, 6, recu['signature'] or '', ln=True, align="C")
-    pdf.set_font("Helvetica", "", 6)
-    pdf.set_text_color(200, 200, 200)
-    pdf.cell(0, 3, "EST BAGUMA MARKET", ln=True, align="C")
-    pdf.set_text_color(0, 0, 0)
-
     # --- Footer ---
     pdf.ln(5)
     pdf.set_draw_color(240, 240, 240)

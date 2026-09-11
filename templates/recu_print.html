@@ -165,12 +165,6 @@ tbody td:first-child{font-weight:600;max-width:140px;overflow:hidden;text-overfl
     <span class="type {% if recu.est_honneur %}type-credit{% else %}type-cash{% endif %}">{% if recu.est_honneur %}Credit{% else %}Cash{% endif %}</span>
   </div>
 
-  <div class="stamp">
-    <div class="stamp-label">Code d'authentification</div>
-    <div class="stamp-code">{{recu.signature}}</div>
-    <div class="stamp-auth">EST BAGUMA MARKET</div>
-  </div>
-
   <div class="qr">
     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{url_for('verifier_recu', numero=recu.numero, _external=True)}}" alt="QR">
     <div class="hint">Scannez pour verifier</div>
