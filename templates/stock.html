@@ -90,6 +90,35 @@
 {% if not t.stock_produits %}<tr><td colspan="7" class="empty">Aucun produit</td></tr>{% endif %}
 </table>
 </div>
+<div style="margin:16px 0;padding:16px;background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04));border:1px solid rgba(0,230,184,0.15);border-radius:14px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+<div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">📥</div>
+<div style="font-size:14px;font-weight:700;color:var(--txt)">Entrees du jour</div>
+<div style="margin-left:auto;padding:4px 12px;border-radius:20px;background:rgba(0,230,184,0.12);color:var(--accent);font-size:12px;font-weight:700">{{ t.nb_entrees_jour|dg }} paires</div>
+</div>
+{% if t.entrees_jour %}
+<div class="table-scroll">
+<table>
+<tr><th>Heure</th><th>Produit</th><th>Couleur</th><th>Marque</th><th>Code</th><th>Qte</th><th>Motif</th><th>Resp.</th></tr>
+{% for e in t.entrees_jour %}
+<tr style="border-left:3px solid var(--accent)">
+<td style="font-size:11px;color:var(--txt2)">{{e.date_mouvement[11:16]}}</td>
+<td style="font-weight:500">{{e.nom}}</td>
+<td style="font-weight:500">{{e.couleur or '-'}}</td>
+<td style="color:var(--txt2)">{{e.marque or '-'}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{e.code_produit or '-'}}</td>
+<td class="tag-entree" style="font-weight:700">+{{ e.quantite|dg }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{e.motif or '-'}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{e.login}}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% else %}
+<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;border:1px dashed rgba(0,230,184,0.2);border-radius:10px;background:rgba(0,230,184,0.02)">📭 Aucune entree aujourd'hui</div>
+{% endif %}
+</div>
+
 <h3 style="font-size:13px;color:var(--txt2);margin:16px 0 8px;font-weight:600">📝 Historique des mouvements</h3>
 <div class="table-scroll">
 <table>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory, make_response
 import os
 import hashlib
 import sqlite3
@@ -6,8 +6,19 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY", "baguma-market-2026-secret")
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 DB_URL = os.environ.get("DATABASE_URL", "")
 LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "commerce.db")
+
+@app.after_request
+def add_headers(response):
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+    else:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 if DB_URL and not DB_URL.startswith("postgresql"):
     DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
@@ -54,9 +65,9 @@ def init_local_db():
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
-            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
-            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
-            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (0, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2400')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2400')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (0, 'taux_cdf', '2400')")
             for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
                 conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (?, ?, 0)", (cat, ''))
         conn.commit()
@@ -112,8 +123,8 @@ def init_pg_schema():
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
-            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
-            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2400')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2400')")
             for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
                 conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat,''))
         conn.close()
@@ -185,6 +196,8 @@ def db_insert(conn, sql, params=()):
     try:
         row = cur.fetchone()
         if row:
+            if isinstance(row, dict):
+                return list(row.values())[0]
             return row[0]
     except Exception:
         pass
@@ -213,7 +226,7 @@ def get_effective_tid():
 def get_taux(conn, tenant_id):
     row = db_fetchone(conn, "SELECT value FROM settings WHERE tenant_id=%s AND key='taux_cdf'" if IS_PG else
                       "SELECT value FROM settings WHERE tenant_id=? AND key='taux_cdf'", (tenant_id,))
-    return float(row["value"]) if row and row["value"] else 2800.0
+    return float(row["value"]) if row and row["value"] else 2400.0
 
 def get_mode_dg(conn, tenant_id):
     cur = conn.execute("SELECT value FROM settings WHERE tenant_id=%s AND key='mode_dg'" if IS_PG else
@@ -402,45 +415,21 @@ def dashboard():
     recent = []
     all_tenants = []
 
-    if etid is not None:
-        cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
-        params = (etid,)
-    else:
-        cond = ""
-        params = ()
-
     try:
-        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}", params)
-        nb_produits = row["cnt"] if row else 0
-    except Exception:
-        pass
-    try:
-        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM ventes{cond}", params)
-        nb_ventes = row["cnt"] if row else 0
-    except Exception:
-        pass
-    try:
-        row = db_fetchone(conn, f"SELECT COALESCE(SUM(total_usd),0) as s FROM ventes{cond}", params)
-        ca_total = row["s"] if row else 0
-    except Exception:
-        pass
-    try:
-        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM clients{cond}", params)
-        nb_clients = row["cnt"] if row else 0
-    except Exception:
-        pass
-    try:
-        stock_cond = " AND stock<=5" if cond else " WHERE stock<=5"
-        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}{stock_cond}", params)
-        low_stock = row["cnt"] if row else 0
-    except Exception:
-        pass
-
-    try:
-        dettes_cond = " AND est_paye=0" if cond else " WHERE est_paye=0"
-        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt, COALESCE(SUM(montant_usd),0) as total FROM dettes{cond}{dettes_cond}", params)
-        nb_dettes = row["cnt"] if row else 0
-        total_dettes = row["total"] if row else 0
+        if etid is not None:
+            row = db_fetchone(conn, "SELECT (SELECT COUNT(*) FROM produits WHERE tenant_id=%s) as nb_prod, (SELECT COUNT(*) FROM ventes WHERE tenant_id=%s) as nb_ventes, (SELECT COALESCE(SUM(total_usd),0) FROM ventes WHERE tenant_id=%s) as ca, (SELECT COUNT(*) FROM clients WHERE tenant_id=%s) as nb_clients, (SELECT COUNT(*) FROM produits WHERE tenant_id=%s AND stock<=5) as low_stock, (SELECT COUNT(*) FROM dettes WHERE tenant_id=%s AND est_paye=0) as nb_dettes, (SELECT COALESCE(SUM(montant_usd),0) FROM dettes WHERE tenant_id=%s AND est_paye=0) as total_dettes" if IS_PG else
+                              "SELECT (SELECT COUNT(*) FROM produits WHERE tenant_id=?) as nb_prod, (SELECT COUNT(*) FROM ventes WHERE tenant_id=?) as nb_ventes, (SELECT COALESCE(SUM(total_usd),0) FROM ventes WHERE tenant_id=?) as ca, (SELECT COUNT(*) FROM clients WHERE tenant_id=?) as nb_clients, (SELECT COUNT(*) FROM produits WHERE tenant_id=? AND stock<=5) as low_stock, (SELECT COUNT(*) FROM dettes WHERE tenant_id=? AND est_paye=0) as nb_dettes, (SELECT COALESCE(SUM(montant_usd),0) FROM dettes WHERE tenant_id=? AND est_paye=0) as total_dettes",
+                              (etid, etid, etid, etid, etid, etid, etid))
+        else:
+            row = db_fetchone(conn, "SELECT (SELECT COUNT(*) FROM produits) as nb_prod, (SELECT COUNT(*) FROM ventes) as nb_ventes, (SELECT COALESCE(SUM(total_usd),0) FROM ventes) as ca, (SELECT COUNT(*) FROM clients) as nb_clients, (SELECT COUNT(*) FROM produits WHERE stock<=5) as low_stock, (SELECT COUNT(*) FROM dettes WHERE est_paye=0) as nb_dettes, (SELECT COALESCE(SUM(montant_usd),0) FROM dettes WHERE est_paye=0) as total_dettes")
+        if row:
+            nb_produits = row["nb_prod"]
+            nb_ventes = row["nb_ventes"]
+            ca_total = row["ca"]
+            nb_clients = row["nb_clients"]
+            low_stock = row["low_stock"]
+            nb_dettes = row["nb_dettes"]
+            total_dettes = row["total_dettes"]
     except Exception:
         pass
 
@@ -554,13 +543,30 @@ def dashboard():
     except Exception:
         pass
 
+    stock_entrees = stock_sorties = stock_net = 0
+    try:
+        if etid is not None:
+            row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=%s AND SUBSTRING(date_mouvement,1,10)=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=? AND SUBSTR(date_mouvement,1,10)=?", (etid, today))
+        else:
+            row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE SUBSTRING(date_mouvement,1,10)=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE SUBSTR(date_mouvement,1,10)=?", (today,))
+        if row_s:
+            stock_entrees = row_s["entrees"]
+            stock_sorties = row_s["sorties"]
+        stock_net = stock_entrees - stock_sorties
+    except Exception:
+        pass
+
     conn.close()
-    return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, session.get("dg_mode", False)),
+    resp = make_response(render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, session.get("dg_mode", False)),
                            ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
                            unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id,
-                           vendeur_a_fait_rapport=vendeur_a_fait_rapport, low_stock_produits=low_stock_produits)
+                           vendeur_a_fait_rapport=vendeur_a_fait_rapport, low_stock_produits=low_stock_produits,
+                           stock_entrees=dg(stock_entrees, session.get("dg_mode", False)), stock_sorties=dg(stock_sorties, session.get("dg_mode", False)), stock_net=dg(stock_net, session.get("dg_mode", False))))
+    return resp
 
 @app.route("/produits")
 @login_required
@@ -656,8 +662,22 @@ def stock():
                 FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
                 WHERE s.tenant_id=? ORDER BY s.date_mouvement DESC LIMIT 50""", (tid2,))
 
+        today = datetime.now().strftime("%Y-%m-%d")
+        entrees_jour = db_fetchall(conn, """SELECT s.date_mouvement, p.nom, s.couleur, s.marque, s.code_produit, s.quantite, u.login, s.motif
+                FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
+                WHERE s.tenant_id=%s AND s.mouvement='entree' AND SUBSTRING(s.date_mouvement,1,10)=%s
+                ORDER BY s.date_mouvement DESC""" if IS_PG else """SELECT s.date_mouvement, p.nom, s.couleur, s.marque, s.code_produit, s.quantite, u.login, s.motif
+                FROM stock s JOIN produits p ON s.product_id=p.id JOIN utilisateurs u ON s.user_id=u.id
+                WHERE s.tenant_id=? AND s.mouvement='entree' AND SUBSTR(s.date_mouvement,1,10)=?
+                ORDER BY s.date_mouvement DESC""", (tid2, today))
+
+        qte_entrees_jour = db_fetchone(conn, "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=%s AND mouvement='entree' AND SUBSTRING(date_mouvement,1,10)=%s" if IS_PG else
+                        "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='entree' AND SUBSTR(date_mouvement,1,10)=?", (tid2, today))
+        nb_entrees_jour = qte_entrees_jour["s"] if qte_entrees_jour else 0
+
         tenant_data.append({"id": tid2, "nom": t["nom"], "entrees": entrees, "sorties": sorties,
-                            "net": stock_total, "stock_produits": stock_produits, "historique": historique})
+                            "net": stock_total, "stock_produits": stock_produits, "historique": historique,
+                            "entrees_jour": entrees_jour, "nb_entrees_jour": nb_entrees_jour})
 
     if etid is not None:
         prods = db_fetchall(conn, "SELECT id, nom FROM produits WHERE tenant_id=%s ORDER BY nom" if IS_PG else
@@ -1577,8 +1597,16 @@ def produit_edit(pid):
         taux = get_taux(conn, prod["tenant_id"])
         prix_cdf = prix_usd * taux
         ancien_prix = prod["prix_usd"]
+        ancien_stock = int(prod["stock"])
         db_execute(conn, "UPDATE produits SET code=%s, couleur=%s, prix_usd=%s, prix_cdf=%s, stock=%s WHERE id=%s" if IS_PG else
                    "UPDATE produits SET code=?, couleur=?, prix_usd=?, prix_cdf=?, stock=? WHERE id=?", (code, couleur, prix_usd, prix_cdf, stock_val, pid))
+        diff_stock = stock_val - ancien_stock
+        if diff_stock != 0:
+            now_edit = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            mouvement_type = "entree" if diff_stock > 0 else "sortie"
+            db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                      "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                      (prod["tenant_id"], pid, mouvement_type, abs(diff_stock), "", code, couleur, session["user_id"], now_edit, "Modification stock"))
         if prix_usd != ancien_prix:
             create_notif(conn, prod["tenant_id"],
                 f"Prix modifie : {prod['nom']} passe de ${ancien_prix:.2f} a ${prix_usd:.2f}",
@@ -1619,9 +1647,14 @@ def produit_new():
         tid_prod = int(data["tenant_id"]) if is_admin() else (etid or session["tenant_id"])
         taux = get_taux(conn, tid_prod)
         prix_cdf = prix_usd * taux
-        db_insert(conn, "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+        pid_new = db_insert(conn, "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (?,?,?,?,?,?,?,?)",
                   (nom, code, couleur, cat_id, prix_usd, prix_cdf, stock_val, tid_prod))
+        if stock_val > 0 and pid_new:
+            now_prod = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                      "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                      (tid_prod, pid_new, "entree", stock_val, "", code, couleur, session["user_id"], now_prod, "Stock initial"))
         conn.commit()
         create_notif(conn, tid_prod, f"Nouveau produit : {nom} - ${prix_usd:.2f}", session["login"])
         conn.close()
