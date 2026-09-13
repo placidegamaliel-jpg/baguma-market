@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory
 import os
 import hashlib
+import sqlite3
 from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder="static")
@@ -18,6 +19,50 @@ def _sig_fmt(v):
         return str(int(f)) if f == int(f) else str(f)
     except (ValueError, TypeError):
         return str(v or '')
+
+def init_local_db():
+    if IS_PG:
+        return
+    try:
+        conn = sqlite3.connect(LOCAL_DB)
+        pg_schema = SCHEMA_SQL.replace("SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY")
+        for line in pg_schema.strip().split(";"):
+            line = line.strip()
+            if line:
+                try:
+                    conn.execute(line)
+                except Exception:
+                    pass
+        for alter in [
+            "ALTER TABLE recus ADD COLUMN signature TEXT DEFAULT ''",
+            "ALTER TABLE recus ADD COLUMN vendeur_login TEXT DEFAULT ''",
+            "ALTER TABLE recus ADD COLUMN verrouille INTEGER DEFAULT 0",
+            "ALTER TABLE notifications ADD COLUMN rapport_id INTEGER DEFAULT NULL",
+            "ALTER TABLE rapports ADD COLUMN ventes_json TEXT DEFAULT ''",
+            "ALTER TABLE rapports ADD COLUMN clients_json TEXT DEFAULT ''",
+            "ALTER TABLE rapports ADD COLUMN stock_json TEXT DEFAULT ''",
+        ]:
+            try:
+                conn.execute(alter)
+            except Exception:
+                pass
+        cur = conn.execute("SELECT COUNT(*) FROM tenants")
+        if cur.fetchone()[0] == 0:
+            conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Bukavu', 1, 'Bukavu', 'Chaussures')")
+            conn.execute("INSERT INTO tenants (nom, actif, localisation, type_commerce) VALUES ('Chaussure Goma', 1, 'Goma', 'Chaussures')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('0891624401', '251988', 0, 'admin')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
+            conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
+            conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (0, 'taux_cdf', '2800')")
+            for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
+                conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (?, ?, 0)", (cat, ''))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 def init_pg_schema():
     if not IS_PG:
@@ -88,7 +133,7 @@ CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, login T
 CREATE TABLE IF NOT EXISTS tenant_prices (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, produit_id INTEGER NOT NULL, prix_usd REAL, prix_cdf REAL, UNIQUE(tenant_id, produit_id));
 CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, tenant_id INTEGER DEFAULT 0, user_id INTEGER DEFAULT NULL, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, responsable TEXT DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS notif_settings (tenant_id INTEGER PRIMARY KEY, alertes_actives INTEGER DEFAULT 1, notif_ventes INTEGER DEFAULT 1, notif_stock INTEGER DEFAULT 1, notif_prix INTEGER DEFAULT 1, notif_connexion INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, couleur TEXT DEFAULT '', user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS stock (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, product_id INTEGER NOT NULL, mouvement TEXT NOT NULL, quantite INTEGER NOT NULL, marque TEXT, code_produit TEXT, couleur TEXT DEFAULT '', motif TEXT DEFAULT '', user_id INTEGER NOT NULL, date_mouvement TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, value TEXT, PRIMARY KEY (tenant_id, key));
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
@@ -96,6 +141,7 @@ CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEG
 CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '');
 """
 
+init_local_db()
 init_pg_schema()
 
 @app.route("/init")
@@ -221,6 +267,15 @@ TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 def not_found(e):
     return render_template("login.html"), 404
 
+@app.errorhandler(500)
+def server_error(e):
+    return "<div style='text-align:center;padding:60px 20px;font-family:Inter,sans-serif;background:#080818;color:#f0f0f8;min-height:100vh'><h1 style='font-size:48px;margin-bottom:16px'>⚠️</h1><h2 style='font-size:20px;margin-bottom:8px'>Erreur du serveur</h2><p style='color:#7878a0;font-size:14px'>Une erreur s'est produite. Reessayez dans quelques instants.</p><a href='/' style='color:#00e6b8;font-size:14px;margin-top:20px;display:inline-block'>← Retour a la connexion</a></div>", 500
+
+@app.errorhandler(502)
+@app.errorhandler(503)
+def service_unavailable(e):
+    return "<div style='text-align:center;padding:60px 20px;font-family:Inter,sans-serif;background:#080818;color:#f0f0f8;min-height:100vh'><h1 style='font-size:48px;margin-bottom:16px'>🔧</h1><h2 style='font-size:20px;margin-bottom:8px'>Service temporairement indisponible</h2><p style='color:#7878a0;font-size:14px'>Le serveur est en maintenance. Reessayez bientot.</p><a href='/' style='color:#00e6b8;font-size:14px;margin-top:20px;display:inline-block'>← Retour a la connexion</a></div>", 502
+
 @app.route("/manifest.json")
 def manifest():
     return send_from_directory("static", "manifest.json")
@@ -262,42 +317,45 @@ def login():
         login_val = request.form.get("login", "").strip()
         code = request.form.get("code", "").strip()
         ville = request.form.get("ville", "").strip().lower()
-        conn = get_db()
-        row = db_fetchone(conn, "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(%s) AND LOWER(code)=LOWER(%s)" if IS_PG else
-                          "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(?) AND LOWER(code)=LOWER(?)", (login_val, code))
-        if row:
-            user_tid = row["tenant_id"]
-            user_role = row["role"]
-            t_row = db_fetchone(conn, "SELECT id, nom FROM tenants WHERE LOWER(nom)=%s AND actif=1" if IS_PG else
-                                "SELECT id, nom FROM tenants WHERE LOWER(nom)=? AND actif=1", (ville,))
-            ville_tid = t_row["id"] if t_row else None
-            
-            if user_tid == 0 and user_role == "admin":
-                pass
-            elif ville_tid is not None and user_tid == ville_tid:
-                session["tenant_slug"] = ville
-            else:
+        try:
+            conn = get_db()
+            row = db_fetchone(conn, "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(%s) AND LOWER(code)=LOWER(%s)" if IS_PG else
+                              "SELECT id, login, tenant_id, role FROM utilisateurs WHERE LOWER(login)=LOWER(?) AND LOWER(code)=LOWER(?)", (login_val, code))
+            if row:
+                user_tid = row["tenant_id"]
+                user_role = row["role"]
+                t_row = db_fetchone(conn, "SELECT id, nom FROM tenants WHERE LOWER(nom)=%s AND actif=1" if IS_PG else
+                                    "SELECT id, nom FROM tenants WHERE LOWER(nom)=? AND actif=1", (ville,))
+                ville_tid = t_row["id"] if t_row else None
+                
+                if user_tid == 0 and user_role == "admin":
+                    pass
+                elif ville_tid is not None and user_tid == ville_tid:
+                    session["tenant_slug"] = ville
+                else:
+                    conn.close()
+                    flash("Veuillez selectionner votre ville", "error")
+                    return redirect(url_for("login"))
+                session["user_id"] = row["id"]
+                session["login"] = row["login"]
+                session["tenant_id"] = user_tid
+                session["role"] = user_role
+                if ville_tid is not None:
+                    session["tenant_slug"] = ville
+                mode_dg = get_mode_dg(conn, 0)
+                session["dg_mode"] = mode_dg
+                session.modified = True
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
+                          "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
+                          (row["id"], row["login"], user_tid, "Connexion", f"Role: {user_role} | Ville: {ville}", now))
+                conn.commit()
                 conn.close()
-                flash("Veuillez selectionner votre ville", "error")
-                return redirect(url_for("login"))
-            session["user_id"] = row["id"]
-            session["login"] = row["login"]
-            session["tenant_id"] = user_tid
-            session["role"] = user_role
-            if ville_tid is not None:
-                session["tenant_slug"] = ville
-            mode_dg = get_mode_dg(conn, 0)
-            session["dg_mode"] = mode_dg
-            session.modified = True
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
-                      "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
-                      (row["id"], row["login"], user_tid, "Connexion", f"Role: {user_role} | Ville: {ville}", now))
-            conn.commit()
+                return redirect(url_for("dashboard"))
             conn.close()
-            return redirect(url_for("dashboard"))
-        conn.close()
-        flash("Code incorrect", "error")
+            flash("Code incorrect", "error")
+        except Exception as e:
+            flash(f"Erreur de connexion. Reessayez.", "error")
     tenants = []
     try:
         conn = get_db()
@@ -337,6 +395,12 @@ def dashboard():
     conn = get_db()
     etid = get_effective_tid()
     today = datetime.now().strftime("%Y-%m-%d")
+    nb_produits = nb_ventes = nb_clients = low_stock = 0
+    ca_total = 0.0
+    nb_dettes = 0
+    total_dettes = 0.0
+    recent = []
+    all_tenants = []
 
     if etid is not None:
         cond = " WHERE tenant_id=%s" if IS_PG else " WHERE tenant_id=?"
@@ -345,62 +409,91 @@ def dashboard():
         cond = ""
         params = ()
 
-    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}", params)
-    nb_produits = row["cnt"]
-    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM ventes{cond}", params)
-    nb_ventes = row["cnt"]
-    row = db_fetchone(conn, f"SELECT COALESCE(SUM(total_usd),0) as s FROM ventes{cond}", params)
-    ca_total = row["s"]
-    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM clients{cond}", params)
-    nb_clients = row["cnt"]
-    stock_cond = " AND stock<=5" if cond else " WHERE stock<=5"
-    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}{stock_cond}", params)
-    low_stock = row["cnt"]
+    try:
+        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}", params)
+        nb_produits = row["cnt"] if row else 0
+    except Exception:
+        pass
+    try:
+        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM ventes{cond}", params)
+        nb_ventes = row["cnt"] if row else 0
+    except Exception:
+        pass
+    try:
+        row = db_fetchone(conn, f"SELECT COALESCE(SUM(total_usd),0) as s FROM ventes{cond}", params)
+        ca_total = row["s"] if row else 0
+    except Exception:
+        pass
+    try:
+        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM clients{cond}", params)
+        nb_clients = row["cnt"] if row else 0
+    except Exception:
+        pass
+    try:
+        stock_cond = " AND stock<=5" if cond else " WHERE stock<=5"
+        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt FROM produits{cond}{stock_cond}", params)
+        low_stock = row["cnt"] if row else 0
+    except Exception:
+        pass
 
-    dettes_cond = " AND est_paye=0" if cond else " WHERE est_paye=0"
-    row = db_fetchone(conn, f"SELECT COUNT(*) as cnt, COALESCE(SUM(montant_usd),0) as total FROM dettes{cond}{dettes_cond}", params)
-    nb_dettes = row["cnt"]
-    total_dettes = row["total"]
+    try:
+        dettes_cond = " AND est_paye=0" if cond else " WHERE est_paye=0"
+        row = db_fetchone(conn, f"SELECT COUNT(*) as cnt, COALESCE(SUM(montant_usd),0) as total FROM dettes{cond}{dettes_cond}", params)
+        nb_dettes = row["cnt"] if row else 0
+        total_dettes = row["total"] if row else 0
+    except Exception:
+        pass
 
-    if etid is not None:
-        vcond = " WHERE v.tenant_id=%s" if IS_PG else " WHERE v.tenant_id=?"
-        vparams = (etid,)
-    else:
-        vcond = ""
-        vparams = ()
+    try:
+        if etid is not None:
+            vcond = " WHERE v.tenant_id=%s" if IS_PG else " WHERE v.tenant_id=?"
+            vparams = (etid,)
+        else:
+            vcond = ""
+            vparams = ()
+        recent = db_fetchall(conn, f"""SELECT v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.vendeur_login
+            FROM ventes v JOIN produits p ON v.produit_id=p.id{vcond}
+            ORDER BY v.date DESC, v.heure DESC LIMIT 10""", vparams)
+    except Exception:
+        pass
 
-    recent = db_fetchall(conn, f"""SELECT v.date||' '||v.heure as datetime, p.nom, v.quantite, v.total_usd, v.vendeur_login
-        FROM ventes v JOIN produits p ON v.produit_id=p.id{vcond}
-        ORDER BY v.date DESC, v.heure DESC LIMIT 10""", vparams)
-
-    all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+    try:
+        all_tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
+    except Exception:
+        pass
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    db_execute(conn, "DELETE FROM rapports_temp WHERE expire_at<%s" if IS_PG else "DELETE FROM rapports_temp WHERE expire_at<?", (now,))
-    conn.commit()
+    try:
+        db_execute(conn, "DELETE FROM rapports_temp WHERE expire_at<%s" if IS_PG else "DELETE FROM rapports_temp WHERE expire_at<?", (now,))
+        conn.commit()
+    except Exception:
+        pass
 
     rapport_envoye = False
     rapport = None
     rapport_id = None
     vendeur_a_fait_rapport = False
     if session.get("role") == "vendeur" and session.get("tenant_id", 0) != 0:
-        r = db_fetchone(conn, "SELECT * FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
-                        "SELECT * FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
-        if r:
-            rapport_envoye = True
-            rapport = r
-        rr = db_fetchone(conn, "SELECT * FROM rapports WHERE tenant_id=%s AND date_rapport=%s ORDER BY id DESC LIMIT 1" if IS_PG else
-                         "SELECT * FROM rapports WHERE tenant_id=? AND date_rapport=? ORDER BY id DESC LIMIT 1", (session["tenant_id"], today))
-        if rr:
-            rapport_id = rr["id"]
-            vendeurs_list = [v.strip() for v in (rr["vendeur_login"] or "").split(",")]
-            if session["login"] in vendeurs_list:
-                vendeur_a_fait_rapport = True
-                if not rapport_envoye:
-                    rapport = rr
-            else:
-                rapport = None
-                rapport_id = None
+        try:
+            r = db_fetchone(conn, "SELECT * FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                            "SELECT * FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (session["tenant_id"], session["login"], now))
+            if r:
+                rapport_envoye = True
+                rapport = r
+            rr = db_fetchone(conn, "SELECT * FROM rapports WHERE tenant_id=%s AND date_rapport=%s ORDER BY id DESC LIMIT 1" if IS_PG else
+                             "SELECT * FROM rapports WHERE tenant_id=? AND date_rapport=? ORDER BY id DESC LIMIT 1", (session["tenant_id"], today))
+            if rr:
+                rapport_id = rr["id"]
+                vendeurs_list = [v.strip() for v in (rr["vendeur_login"] or "").split(",")]
+                if session["login"] in vendeurs_list:
+                    vendeur_a_fait_rapport = True
+                    if not rapport_envoye:
+                        rapport = rr
+                else:
+                    rapport = None
+                    rapport_id = None
+        except Exception:
+            pass
 
     unread_notifs = 0
     try:
