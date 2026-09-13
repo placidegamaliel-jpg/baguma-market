@@ -1647,12 +1647,24 @@ def produit_new():
         tid_prod = int(data["tenant_id"]) if is_admin() else (etid or session["tenant_id"])
         taux = get_taux(conn, tid_prod)
         prix_cdf = prix_usd * taux
-        pid_new = db_insert(conn, "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+        cur_prod = conn.execute("INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (?,?,?,?,?,?,?,?)",
                   (nom, code, couleur, cat_id, prix_usd, prix_cdf, stock_val, tid_prod))
+        pid_new = None
+        try:
+            row_pid = cur_prod.fetchone()
+            if row_pid:
+                pid_new = list(row_pid.values())[0] if isinstance(row_pid, dict) else row_pid[0]
+        except Exception:
+            pass
+        if not pid_new:
+            try:
+                pid_new = cur_prod.lastrowid
+            except Exception:
+                pass
         if stock_val > 0 and pid_new:
             now_prod = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            db_insert(conn, "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+            conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
                       "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
                       (tid_prod, pid_new, "entree", stock_val, "", code, couleur, session["user_id"], now_prod, "Stock initial"))
         conn.commit()
