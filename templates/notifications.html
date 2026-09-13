@@ -34,6 +34,11 @@
 <button type="submit" class="btn btn-gold btn-sm" style="width:100%">✓ Tout marquer comme lu</button>
 </form>
 {% endif %}
+{% if notifs %}
+<form method="POST" action="/notifications/delete-all" style="margin-bottom:12px" onsubmit="return confirm('Supprimer toutes les notifications ?')">
+<button type="submit" class="btn btn-red btn-sm" style="width:100%">🗑️ Supprimer tout</button>
+</form>
+{% endif %}
 
 <button class="btn btn-blue btn-sm" onclick="window.print()" style="margin-bottom:12px">🖨️ Imprimer</button>
 
@@ -57,7 +62,10 @@
 <form method="POST" action="/notifications/read/{{n.id}}" style="display:inline">
 <button type="submit" class="btn btn-green btn-sm" style="padding:4px 10px;font-size:10px">Lu</button>
 </form>
-{% else %}<span style="color:var(--txt3);font-size:11px">Lu</span>{% endif %}</td>
+{% else %}<span style="color:var(--txt3);font-size:11px">Lu</span>{% endif %}
+<form method="POST" action="/notifications/delete/{{n.id}}" style="display:inline;margin-left:4px" onsubmit="return confirm('Supprimer cette notification ?')">
+<button type="submit" style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2);padding:4px 8px;border-radius:8px;font-size:10px;cursor:pointer;font-weight:600">🗑️</button>
+</form></td>
 </tr>
 {% endfor %}
 {% if not notifs %}<tr><td colspan="4" class="empty">Aucune notification</td></tr>{% endif %}

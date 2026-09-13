@@ -32,6 +32,32 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}{% endwith %}
 
+{% if stock_faible %}
+<div class="card" style="border:2px solid rgba(239,68,68,0.3);background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(249,115,22,0.04));padding:20px;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+<div style="width:40px;height:40px;background:linear-gradient(135deg,var(--red),var(--orange));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🚨</div>
+<div>
+<div style="font-size:15px;font-weight:800;color:var(--red)">Stock Faible</div>
+<div style="font-size:11px;color:var(--txt2);margin-top:2px">{{ stock_faible|length }} produit{{ 's' if stock_faible|length > 1 }} avec stock ≤ 5 paires</div>
+</div>
+</div>
+<div class="table-scroll">
+<table>
+<tr><th>Produit</th><th>Couleur</th><th>Commerce</th><th>Stock</th><th>Etat</th></tr>
+{% for p in stock_faible %}
+<tr style="border-left:3px solid {% if p.stock == 0 %}var(--red){% else %}var(--orange){% endif %}">
+<td style="font-weight:700">{{ p.nom }}</td>
+<td style="font-weight:500">{{ p.couleur or '-' }}</td>
+<td style="font-size:11px;color:var(--txt2)">{{ p.tenant_nom }}</td>
+<td style="font-size:18px;font-weight:900;color:{% if p.stock == 0 %}var(--red){% else %}var(--orange){% endif %}">{{ p.stock }}</td>
+<td><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:{% if p.stock == 0 %}rgba(239,68,68,0.15);color:var(--red){% elif p.stock <= 2 %}rgba(249,115,22,0.15);color:var(--orange){% else %}rgba(245,197,66,0.15);color:var(--gold){% endif %}">{% if p.stock == 0 %}RUPTURE{% elif p.stock <= 2 %}CRITIQUE{% else %}FAIBLE{% endif %}</span></td>
+</tr>
+{% endfor %}
+</table>
+</div>
+</div>
+{% endif %}
+
 <div style="display:flex;gap:10px;margin-bottom:16px">
 <button class="btn btn-green btn-sm" onclick="document.getElementById('modalEntree').style.display='flex'">+ Entree</button>
 <button class="btn btn-red btn-sm" onclick="document.getElementById('modalSortie').style.display='flex'">- Sortie</button>

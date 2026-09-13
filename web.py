@@ -543,13 +543,24 @@ def dashboard():
     except Exception:
         pass
 
+    low_stock_produits = []
+    try:
+        if etid is not None:
+            lsp = db_fetchall(conn, "SELECT p.nom, p.stock, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=%s ORDER BY p.stock ASC" if IS_PG else
+                              "SELECT p.nom, p.stock, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=? ORDER BY p.stock ASC", (etid,))
+        else:
+            lsp = db_fetchall(conn, "SELECT p.nom, p.stock, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 ORDER BY p.stock ASC")
+        low_stock_produits = lsp if lsp else []
+    except Exception:
+        pass
+
     conn.close()
     return render_template("dashboard.html", nb_produits=nb_produits, nb_ventes=dg(nb_ventes, session.get("dg_mode", False)),
                            ca_total=dg(ca_total, session.get("dg_mode", False)), nb_clients=nb_clients, low_stock=low_stock,
                            recent=recent, is_admin=is_admin(), nb_dettes=nb_dettes, total_dettes=dg(total_dettes, session.get("dg_mode", False)),
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
                            unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id,
-                           vendeur_a_fait_rapport=vendeur_a_fait_rapport)
+                           vendeur_a_fait_rapport=vendeur_a_fait_rapport, low_stock_produits=low_stock_produits)
 
 @app.route("/produits")
 @login_required
@@ -659,8 +670,19 @@ def stock():
     else:
         users = db_fetchall(conn, "SELECT id, login FROM utilisateurs")
 
+    stock_faible = []
+    try:
+        if etid is not None:
+            sf = db_fetchall(conn, "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=%s ORDER BY p.stock ASC" if IS_PG else
+                             "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=? ORDER BY p.stock ASC", (etid,))
+        else:
+            sf = db_fetchall(conn, "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 ORDER BY p.stock ASC")
+        stock_faible = sf if sf else []
+    except Exception:
+        pass
+
     conn.close()
-    return render_template("stock.html", tenant_data=tenant_data, is_admin=is_admin(), prods=prods, users=users)
+    return render_template("stock.html", tenant_data=tenant_data, is_admin=is_admin(), prods=prods, users=users, stock_faible=stock_faible)
 
 @app.route("/stock/entree", methods=["POST"])
 @login_required
@@ -1814,6 +1836,28 @@ def notif_read_all():
     conn.close()
     return redirect(url_for("notifications"))
 
+@app.route("/notifications/delete/<int:nid>", methods=["POST"])
+@login_required
+def notif_delete(nid):
+    conn = get_db()
+    db_execute(conn, "DELETE FROM notifications WHERE id=%s" if IS_PG else "DELETE FROM notifications WHERE id=?", (nid,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("notifications"))
+
+@app.route("/notifications/delete-all", methods=["POST"])
+@login_required
+def notif_delete_all():
+    conn = get_db()
+    etid = get_effective_tid()
+    if etid is not None:
+        db_execute(conn, "DELETE FROM notifications WHERE tenant_id=%s" if IS_PG else "DELETE FROM notifications WHERE tenant_id=?", (etid,))
+    else:
+        db_execute(conn, "DELETE FROM notifications")
+    conn.commit()
+    conn.close()
+    return redirect(url_for("notifications"))
+
 @app.route("/fin-journee", methods=["POST"])
 @login_required
 def fin_journee():
@@ -1890,7 +1934,7 @@ def fin_journee():
             rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                       "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                       (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json))
-            rapport_id = rapport_r[0] if rapport_r else 0
+            rapport_id = int(rapport_r) if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                   "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (?,?,?,?,?,?,?,?,?)",
