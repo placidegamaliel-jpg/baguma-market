@@ -417,13 +417,21 @@ def dashboard():
         else:
             missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)")
         for m in (missing or []):
+            mid = m["id"] if isinstance(m, dict) else m[0]
+            mtid = m["tenant_id"] if isinstance(m, dict) else m[2]
+            mcode = m["code"] if isinstance(m, dict) else m[3]
+            mcouleur = m["couleur"] if isinstance(m, dict) else m[4]
+            mstock = m["stock"] if isinstance(m, dict) else m[1]
             conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
                         "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                        (m["tenant_id"], m["id"], "entree", m["stock"], "", m["code"] or "", m["couleur"] or "", session["user_id"], now_sync, "Stock initial"))
+                        (mtid, mid, "entree", mstock, "", mcode or "", mcouleur or "", session["user_id"], now_sync, "Stock initial"))
         if missing:
             conn.commit()
     except Exception:
-        pass
+        try:
+            conn.rollback()
+        except Exception:
+            pass
     nb_produits = nb_ventes = nb_clients = low_stock = 0
     ca_total = 0.0
     nb_dettes = 0
@@ -633,13 +641,21 @@ def stock():
         else:
             missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)")
         for m in (missing or []):
+            mid = m["id"] if isinstance(m, dict) else m[0]
+            mtid = m["tenant_id"] if isinstance(m, dict) else m[2]
+            mcode = m["code"] if isinstance(m, dict) else m[3]
+            mcouleur = m["couleur"] if isinstance(m, dict) else m[4]
+            mstock = m["stock"] if isinstance(m, dict) else m[1]
             conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
                         "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                        (m["tenant_id"], m["id"], "entree", m["stock"], "", m["code"] or "", m["couleur"] or "", session["user_id"], now_sync, "Stock initial"))
+                        (mtid, mid, "entree", mstock, "", mcode or "", mcouleur or "", session["user_id"], now_sync, "Stock initial"))
         if missing:
             conn.commit()
     except Exception:
-        pass
+        try:
+            conn.rollback()
+        except Exception:
+            pass
 
     if etid is not None:
         tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE id=%s AND actif=1" if IS_PG else
