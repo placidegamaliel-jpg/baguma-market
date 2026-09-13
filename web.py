@@ -189,7 +189,7 @@ def get_mode_dg(conn, tenant_id):
 
 def dg(val, mode_dg):
     if mode_dg:
-        return int(round(val * 0.6))
+        return int(round(val * 0.5))
     return val
 
 @app.template_filter('dg')
@@ -207,13 +207,13 @@ def dg_filter(val):
                     session["dg_mode"] = True
                     session.modified = True
                     conn.close()
-                    return int(round(val * 0.6))
+                    return int(round(val * 0.5))
             conn.close()
         except Exception:
             pass
         session["dg_mode"] = False
         return val
-    return int(round(val * 0.6))
+    return int(round(val * 0.5))
 
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 
