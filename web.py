@@ -1076,7 +1076,7 @@ def recu_pdf(rid):
                               "SELECT v.*, p.nom as produit_nom FROM ventes v JOIN produits p ON v.produit_id=p.id WHERE v.recu_num=?", (recu["numero"],))
     conn.close()
     
-    tenant_nom = recu["tenant_nom"] or "EST BAGUMA MARKET"
+    tenant_nom = recu["tenant_nom"] or "MAISON BAGUMA MARKET"
     is_goma = "goma" in tenant_nom.lower()
 
     pdf = FPDF()
@@ -1091,7 +1091,7 @@ def recu_pdf(rid):
     pdf.ln(8)
     pdf.set_font("Helvetica", "B", 13)
     pdf.set_text_color(26, 26, 46)
-    pdf.cell(0, 6, "EST BAGUMA MARKET", ln=True, align="C")
+    pdf.cell(0, 6, "MAISON BAGUMA MARKET", ln=True, align="C")
 
     # Ligne decorative sous le titre
     pdf.set_draw_color(0, 184, 148)
@@ -1261,7 +1261,7 @@ def recu_pdf(rid):
     pdf.cell(0, 4, "Merci pour votre confiance", ln=True, align="C")
     pdf.set_font("Helvetica", "", 6)
     pdf.set_text_color(180, 180, 180)
-    pdf.cell(0, 3, f"+243 891624401  |  {tenant_nom}  |  EST BAGUMA MARKET 2026", ln=True, align="C")
+    pdf.cell(0, 3, f"+243 891624401  |  {tenant_nom}  |  MAISON BAGUMA MARKET 2026", ln=True, align="C")
     pdf.set_text_color(0, 0, 0)
 
     # --- Bandeau bas ---
@@ -2025,7 +2025,7 @@ def rapport_pdf(rapport_id):
     # Header
     pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(0, 160, 130)
-    pdf.cell(0, 12, "EST BAGUMA MARKET", ln=True, align="C")
+    pdf.cell(0, 12, "MAISON BAGUMA MARKET", ln=True, align="C")
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 6, "Rapport officiel Admin", ln=True, align="C")
@@ -2174,7 +2174,7 @@ def rapport_pdf(rapport_id):
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 5, "Baguma Market - Rapport officiel Admin", ln=True, align="L")
-    pdf.cell(0, 5, f"EST BAGUMA MARKET | {r['date_rapport']}", ln=True, align="L")
+    pdf.cell(0, 5, f"MAISON BAGUMA MARKET | {r['date_rapport']}", ln=True, align="L")
 
     filename = f"rapport_{r['date_rapport']}_{tenant_nom.replace(' ','_')}.pdf"
     pdf.output(filename)
