@@ -254,25 +254,12 @@ def dg(val, mode_dg):
 @app.template_filter('dg')
 def dg_filter(val):
     dg = session.get("dg_mode")
-    if dg is None or dg is False:
+    if dg is True:
         try:
-            conn = get_db()
-            cur = conn.execute("SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'" if IS_PG else
-                               "SELECT value FROM settings WHERE tenant_id=0 AND key='mode_dg'")
-            row = cur.fetchone()
-            if row:
-                v = row[0] if isinstance(row, tuple) else row.get("value", "")
-                if str(v) == "1" or v == 1 or v is True:
-                    session["dg_mode"] = True
-                    session.modified = True
-                    conn.close()
-                    return int(round(val * 0.5))
-            conn.close()
+            return int(round(val * 0.5))
         except Exception:
-            pass
-        session["dg_mode"] = False
-        return val
-    return int(round(val * 0.5))
+            return val
+    return val
 
 TENANT_NAMES = {2: "Chaussure Goma", 1: "Chaussure Bukavu", 0: "Admin Global"}
 
@@ -405,33 +392,15 @@ def switch_tenant(tenant_slug):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    conn = get_db()
-    etid = get_effective_tid()
-    today = datetime.now().strftime("%Y-%m-%d")
-
     try:
-        now_sync = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if etid is not None:
-            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=%s AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)" if IS_PG else
-                                  "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=? AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)", (etid,))
-        else:
-            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)")
-        for m in (missing or []):
-            mid = m["id"] if isinstance(m, dict) else m[0]
-            mtid = m["tenant_id"] if isinstance(m, dict) else m[2]
-            mcode = m["code"] if isinstance(m, dict) else m[3]
-            mcouleur = m["couleur"] if isinstance(m, dict) else m[4]
-            mstock = m["stock"] if isinstance(m, dict) else m[1]
-            conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
-                        "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                        (mtid, mid, "entree", mstock, "", mcode or "", mcouleur or "", session["user_id"], now_sync, "Stock initial"))
-        if missing:
-            conn.commit()
-    except Exception:
-        try:
-            conn.rollback()
-        except Exception:
-            pass
+        conn = get_db()
+        etid = get_effective_tid()
+        today = datetime.now().strftime("%Y-%m-%d")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash("Erreur de connexion DB", "error")
+        return redirect(url_for("login"))
     nb_produits = nb_ventes = nb_clients = low_stock = 0
     ca_total = 0.0
     nb_dettes = 0
