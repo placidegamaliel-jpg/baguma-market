@@ -408,6 +408,22 @@ def dashboard():
     conn = get_db()
     etid = get_effective_tid()
     today = datetime.now().strftime("%Y-%m-%d")
+
+    try:
+        now_sync = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if etid is not None:
+            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=%s AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)" if IS_PG else
+                                  "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=? AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)", (etid,))
+        else:
+            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)")
+        for m in (missing or []):
+            conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                        "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                        (m["tenant_id"], m["id"], "entree", m["stock"], "", m["code"] or "", m["couleur"] or "", session["user_id"], now_sync, "Stock initial"))
+        if missing:
+            conn.commit()
+    except Exception:
+        pass
     nb_produits = nb_ventes = nb_clients = low_stock = 0
     ca_total = 0.0
     nb_dettes = 0
@@ -608,6 +624,22 @@ def produits():
 def stock():
     conn = get_db()
     etid = get_effective_tid()
+
+    try:
+        now_sync = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if etid is not None:
+            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=%s AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)" if IS_PG else
+                                  "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND p.tenant_id=? AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)", (etid,))
+        else:
+            missing = db_fetchall(conn, "SELECT p.id, p.stock, p.tenant_id, p.code, p.couleur FROM produits p WHERE p.stock>0 AND NOT EXISTS (SELECT 1 FROM stock s WHERE s.product_id=p.id)")
+        for m in (missing or []):
+            conn.execute("INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" if IS_PG else
+                        "INSERT INTO stock (tenant_id, product_id, mouvement, quantite, marque, code_produit, couleur, user_id, date_mouvement, motif) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                        (m["tenant_id"], m["id"], "entree", m["stock"], "", m["code"] or "", m["couleur"] or "", session["user_id"], now_sync, "Stock initial"))
+        if missing:
+            conn.commit()
+    except Exception:
+        pass
 
     if etid is not None:
         tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE id=%s AND actif=1" if IS_PG else
