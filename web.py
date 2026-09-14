@@ -539,17 +539,23 @@ def _dashboard_work():
     except Exception:
         pass
 
-    stock_entrees = stock_sorties = stock_net = 0
+    stock_entrees = stock_sorties = stock_net = total_stock = 0
     try:
         if etid is not None:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=%s AND SUBSTRING(date_mouvement,1,10)=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=? AND SUBSTR(date_mouvement,1,10)=?", (etid, today))
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=?", (etid,))
         else:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE SUBSTRING(date_mouvement,1,10)=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE SUBSTR(date_mouvement,1,10)=?", (today,))
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits" if IS_PG else
+                                "SELECT COALESCE(SUM(stock),0) as total FROM produits")
         if row_s:
             stock_entrees = row_s["entrees"]
             stock_sorties = row_s["sorties"]
+        if row_ts:
+            total_stock = row_ts["total"]
         stock_net = stock_entrees - stock_sorties
     except Exception:
         pass
@@ -561,7 +567,8 @@ def _dashboard_work():
                            all_tenants=all_tenants, rapport_envoye=rapport_envoye, rapport=rapport,
                            unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id,
                            vendeur_a_fait_rapport=vendeur_a_fait_rapport, low_stock_produits=low_stock_produits,
-                           stock_entrees=dg(stock_entrees, session.get("dg_mode", False)), stock_sorties=dg(stock_sorties, session.get("dg_mode", False)), stock_net=dg(stock_net, session.get("dg_mode", False))))
+                           stock_entrees=dg(stock_entrees, session.get("dg_mode", False)), stock_sorties=dg(stock_sorties, session.get("dg_mode", False)), stock_net=dg(stock_net, session.get("dg_mode", False)),
+                           total_stock=dg(total_stock, session.get("dg_mode", False))))
     return resp
 
 @app.route("/produits")
