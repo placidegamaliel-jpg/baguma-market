@@ -52,14 +52,14 @@
 {% endif %}
 
 {% if session.role == 'vendeur' and vendeur_a_fait_rapport %}
-<div class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04));padding:40px 20px;text-align:center">
-<div style="width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">✅</div>
-<div style="font-size:18px;font-weight:800;color:var(--accent);margin-bottom:8px">Journee terminee!</div>
-<div style="font-size:13px;color:var(--txt2);margin-bottom:4px">Votre rapport a ete envoye avec succes.</div>
-<div style="font-size:12px;color:var(--txt3)">Les stats seront reinitalisees demain.</div>
+<div class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04));padding:16px 20px;display:flex;align-items:center;gap:12px;margin-bottom:16px">
+<div style="width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">✅</div>
+<div>
+<div style="font-size:15px;font-weight:800;color:var(--accent)">Journee terminee!</div>
+<div style="font-size:12px;color:var(--txt2)">Rapport envoye avec succes</div>
 </div>
-
-{% else %}
+</div>
+{% endif %}
 
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
 <a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
@@ -147,7 +147,7 @@
 <style>@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}</style>
 {% endif %}
 
-{% if session.role == 'vendeur' and session.tenant_id != 0 %}
+{% if session.role == 'vendeur' and session.tenant_id != 0 and not vendeur_a_fait_rapport %}
 {% if rapport_envoye and rapport %}
 <div id="rapport-box" class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.08),rgba(80,180,254,0.04));padding:24px">
 <div style="text-align:center;margin-bottom:16px">
