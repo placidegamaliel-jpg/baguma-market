@@ -393,14 +393,16 @@ def switch_tenant(tenant_slug):
 @login_required
 def dashboard():
     try:
-        conn = get_db()
-        etid = get_effective_tid()
-        today = datetime.now().strftime("%Y-%m-%d")
+        return _dashboard_work()
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        flash("Erreur de connexion DB", "error")
-        return redirect(url_for("login"))
+        tb = traceback.format_exc()
+        return f"<pre style='background:#1a1a2e;color:#f0f0f8;padding:20px;font-size:12px;overflow:auto'>{tb}</pre><br><a href='/'>Retour</a>", 500
+
+def _dashboard_work():
+    conn = get_db()
+    etid = get_effective_tid()
+    today = datetime.now().strftime("%Y-%m-%d")
     nb_produits = nb_ventes = nb_clients = low_stock = 0
     ca_total = 0.0
     nb_dettes = 0
