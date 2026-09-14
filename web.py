@@ -2382,10 +2382,20 @@ def rapport_pdf(rapport_id):
     from flask import send_file
     return send_file(filename, as_attachment=True, download_name=filename)
 
-@app.route("/admin/cleanup")
+@app.route("/admin/cleanup", methods=["GET", "POST"])
+@login_required
 def admin_cleanup():
     if not is_admin():
         return "Admin only"
+    if request.method == "GET" or request.form.get("confirm") != "yes":
+        return (
+            "<h1>Attention : suppression definitive de TOUTES les donnees</h1>"
+            "<form method='post'>"
+            "<input type='hidden' name='confirm' value='yes'>"
+            "<button type='submit' onclick=\"return confirm('Supprimer TOUTES les donnees de TOUS les tenants ? Cette action est irreversible.');\">"
+            "Confirmer la suppression totale</button>"
+            "</form>"
+        )
     conn = get_db()
     deleted = {}
     for tbl in ["ventes", "clients", "produits", "dettes", "recus", "rapports", "rapports_temp", "stock", "notifications", "logs", "settings", "notif_settings", "tenant_prices", "utilisateurs", "tenants", "corbeille"]:
