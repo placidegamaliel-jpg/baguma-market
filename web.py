@@ -394,10 +394,11 @@ def switch_tenant(tenant_slug):
 def dashboard():
     try:
         return _dashboard_work()
-    except Exception as e:
+    except Exception:
         import traceback
-        tb = traceback.format_exc()
-        return f"<pre style='background:#1a1a2e;color:#f0f0f8;padding:20px;font-size:12px;overflow:auto'>{tb}</pre><br><a href='/'>Retour</a>", 500
+        traceback.print_exc()
+        flash("Erreur de chargement", "error")
+        return redirect(url_for("login"))
 
 def _dashboard_work():
     conn = get_db()
