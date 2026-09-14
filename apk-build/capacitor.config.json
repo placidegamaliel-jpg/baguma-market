@@ -1,0 +1,23 @@
+{
+  "appId": "com.baguma.market",
+  "appName": "MAISON BAGUMA MARKET",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "url": "https://baguma-market-1.onrender.com",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 2000,
+      "backgroundColor": "#080818",
+      "showSpinner": true,
+      "spinnerColor": "#00e6b8"
+    }
+  }
+}

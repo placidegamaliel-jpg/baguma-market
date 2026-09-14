@@ -1,0 +1,17 @@
+{
+  "name": "baguma-market",
+  "version": "2.1.0",
+  "description": "MAISON BAGUMA MARKET - Application Commerce",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx cap sync android",
+    "android": "npx cap open android"
+  },
+  "author": "Gamaliel",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}
