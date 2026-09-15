@@ -556,13 +556,13 @@ def _dashboard_work():
         if etid is not None:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=%s AND date_jour=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=? AND date_jour=?", (etid, today))
-            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=%s" if IS_PG else
-                                "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=?", (etid,))
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE tenant_id=%s AND date_jour=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE tenant_id=? AND date_jour=?", (etid, today))
         else:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE date_jour=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE date_jour=?", (today,))
-            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits" if IS_PG else
-                                "SELECT COALESCE(SUM(stock),0) as total FROM produits")
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE date_jour=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE date_jour=?", (today,))
         if row_s:
             stock_entrees = row_s["entrees"]
             stock_sorties = row_s["sorties"]
@@ -2164,17 +2164,14 @@ def rapport_detail(rapport_id):
         conn.close()
         return render_template("rapport.html", rapport=None, is_admin=is_admin(),
                                rapport_id=rapport_id, ventes_list=[], clients_list=[], stock_data={})
+    if session.get("role") == "vendeur":
+        conn.close()
+        flash("Acces refuse", "error")
+        return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
-    if session.get("role") == "vendeur":
-        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
-                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        if not t_check:
-            conn.close()
-            flash("Rapport deja envoye - non accessible", "error")
-            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()
@@ -2213,18 +2210,14 @@ def rapport_print(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
+    if session.get("role") == "vendeur":
+        conn.close()
+        flash("Acces refuse", "error")
+        return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
-    if session.get("role") == "vendeur":
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
-                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], now_str))
-        if not t_check:
-            conn.close()
-            flash("Rapport deja envoye - non accessible", "error")
-            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()
@@ -2263,18 +2256,14 @@ def rapport_pdf(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
+    if session.get("role") == "vendeur":
+        conn.close()
+        flash("Acces refuse", "error")
+        return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
-    if session.get("role") == "vendeur":
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
-                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], now_str))
-        if not t_check:
-            conn.close()
-            flash("Rapport deja envoye - non accessible", "error")
-            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()
