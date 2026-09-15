@@ -107,6 +107,31 @@ tr:hover td{background:#f8fafc}
 </div>
 </div>
 
+{% if rapport.stock_initial is defined and rapport.stock_initial is not none %}
+<div class="section">
+<div class="section-title">📦 Mouvements de stock</div>
+<div class="stats-row">
+<div class="stat-box">
+<div class="num" style="font-size:22px;color:#475569">{{ rapport.stock_initial|dg }}</div>
+<div class="lbl">Stock Initial</div>
+</div>
+<div class="stat-box" style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-color:#86efac">
+<div class="num" style="font-size:22px;color:#16a34a">+{{ rapport.stock_entrees|dg }}</div>
+<div class="lbl">Entrees</div>
+</div>
+<div class="stat-box blue" style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border-color:#fca5a5">
+<div class="num" style="font-size:22px;color:#dc2626">-{{ rapport.stock_sorties|dg }}</div>
+<div class="lbl">Sorties</div>
+</div>
+<div class="stat-box gold" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#93c5fd">
+<div class="num" style="font-size:22px;color:#2563eb">{{ rapport.stock_final|dg }}</div>
+<div class="lbl">Stock Final</div>
+</div>
+</div>
+<div style="font-size:11px;color:#64748b;margin-top:8px;text-align:center">Formule : {{ rapport.stock_initial|dg }} + {{ rapport.stock_entrees|dg }} - {{ rapport.stock_sorties|dg }} = {{ rapport.stock_final|dg }}</div>
+</div>
+{% endif %}
+
 {% if ventes_list %}
 <div class="section">
 <div class="section-title">💰 Details des ventes</div>

@@ -102,6 +102,10 @@ def init_pg_schema():
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS ventes_json TEXT DEFAULT ''",
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS clients_json TEXT DEFAULT ''",
             "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_json TEXT DEFAULT ''",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_initial REAL DEFAULT 0",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_entrees REAL DEFAULT 0",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_sorties REAL DEFAULT 0",
+            "ALTER TABLE rapports ADD COLUMN IF NOT EXISTS stock_final REAL DEFAULT 0",
             "ALTER TABLE stock ADD COLUMN IF NOT EXISTS date_jour TEXT DEFAULT ''"
         ]:
             try:
@@ -154,7 +158,7 @@ CREATE TABLE IF NOT EXISTS settings (tenant_id INTEGER DEFAULT 0, key TEXT, valu
 CREATE TABLE IF NOT EXISTS dettes (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, client_nom TEXT NOT NULL, client_tel TEXT DEFAULT '', montant_usd REAL NOT NULL, montant_cdf REAL NOT NULL, est_paye INTEGER DEFAULT 0, date TEXT NOT NULL, heure TEXT NOT NULL, recu_num TEXT DEFAULT '', notes TEXT DEFAULT '', vendeur_login TEXT DEFAULT '', date_paiement TEXT DEFAULT NULL, admin_id INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS corbeille (id SERIAL PRIMARY KEY, table_name TEXT NOT NULL, original_id INTEGER NOT NULL, data TEXT NOT NULL, deleted_by TEXT NOT NULL, deleted_at TEXT NOT NULL, tenant_id INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0);
-CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '', stock_initial REAL DEFAULT 0, stock_entrees REAL DEFAULT 0, stock_sorties REAL DEFAULT 0, stock_final REAL DEFAULT 0);
 """
 
 init_local_db()
@@ -2022,6 +2026,17 @@ def fin_journee():
             "clients_honneur": [dict(c) for c in clients_honneur]
         }, default=str)
 
+        stock_entrees_j = db_fetchone(conn, "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=%s AND mouvement='entree' AND date_jour=%s" if IS_PG else
+                                      "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='entree' AND date_jour=?", (tid, today))
+        stock_sorties_j = db_fetchone(conn, "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=%s AND mouvement='sortie' AND date_jour=%s" if IS_PG else
+                                      "SELECT COALESCE(SUM(quantite),0) as s FROM stock WHERE tenant_id=? AND mouvement='sortie' AND date_jour=?", (tid, today))
+        stock_total_row = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as s FROM produits WHERE tenant_id=%s" if IS_PG else
+                                      "SELECT COALESCE(SUM(stock),0) as s FROM produits WHERE tenant_id=?", (tid,))
+        s_entrees = stock_entrees_j["s"] if stock_entrees_j else 0
+        s_sorties = stock_sorties_j["s"] if stock_sorties_j else 0
+        s_final = stock_total_row["s"] if stock_total_row else 0
+        s_initial = s_final - s_entrees + s_sorties
+
         existing = db_fetchone(conn, "SELECT id FROM rapports WHERE tenant_id=%s AND date_rapport=%s" if IS_PG else
                                "SELECT id FROM rapports WHERE tenant_id=? AND date_rapport=?", (tid, today))
         if existing:
@@ -2032,13 +2047,13 @@ def fin_journee():
             if vendeur_login not in vendeur_list:
                 vendeur_list.append(vendeur_login)
             vendeurs_text = ", ".join(vendeur_list)
-            db_execute(conn, "UPDATE rapports SET vendeur_login=%s, total_usd=%s, total_cdf=%s, nb_ventes=%s, nb_clients=%s, ventes_json=%s, clients_json=%s, stock_json=%s WHERE id=%s" if IS_PG else
-                       "UPDATE rapports SET vendeur_login=?, total_usd=?, total_cdf=?, nb_ventes=?, nb_clients=?, ventes_json=?, clients_json=?, stock_json=? WHERE id=?",
-                       (vendeurs_text, total_usd, total_cdf, nb_ventes, nb_clients, ventes_json, clients_json, stock_json, rapport_id))
+            db_execute(conn, "UPDATE rapports SET vendeur_login=%s, total_usd=%s, total_cdf=%s, nb_ventes=%s, nb_clients=%s, ventes_json=%s, clients_json=%s, stock_json=%s, stock_initial=%s, stock_entrees=%s, stock_sorties=%s, stock_final=%s WHERE id=%s" if IS_PG else
+                       "UPDATE rapports SET vendeur_login=?, total_usd=?, total_cdf=?, nb_ventes=?, nb_clients=?, ventes_json=?, clients_json=?, stock_json=?, stock_initial=?, stock_entrees=?, stock_sorties=?, stock_final=? WHERE id=?",
+                       (vendeurs_text, total_usd, total_cdf, nb_ventes, nb_clients, ventes_json, clients_json, stock_json, s_initial, s_entrees, s_sorties, s_final, rapport_id))
         else:
-            rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
-                      "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                      (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json))
+            rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json, stock_initial, stock_entrees, stock_sorties, stock_final) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
+                      "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json, stock_initial, stock_entrees, stock_sorties, stock_final) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                      (tid, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, today, ventes_json, clients_json, stock_json, s_initial, s_entrees, s_sorties, s_final))
             rapport_id = int(rapport_r) if rapport_r else 0
 
         db_insert(conn, "INSERT INTO rapports_temp (tenant_id, vendeur_login, vendeur_id, date_rapport, expire_at, total_usd, total_cdf, nb_ventes, nb_clients) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
