@@ -137,6 +137,26 @@
 {% if not t.historique %}<tr><td colspan="7" class="empty">Aucun mouvement</td></tr>{% endif %}
 </table>
 </div>
+
+<h3 style="font-size:13px;color:{% if 'Goma' in t.nom %}var(--accent){% else %}var(--blue){% endif %};margin:16px 0 8px;font-weight:600">📅 Historique journalier</h3>
+<div class="table-scroll">
+<table>
+<tr><th>Date</th><th>Produit</th><th>Couleur</th><th>Marque</th><th>Code</th><th style="color:var(--accent)">Entrees</th><th style="color:var(--red)">Sorties</th><th>Stock Final</th></tr>
+{% for j in t.historique_jour %}
+<tr style="border-left:3px solid {% if j.date_jour == today %}var(--accent){% else %}var(--glass-border){% endif %}">
+<td style="font-size:12px;font-weight:600;{% if j.date_jour == today %}color:var(--accent){% else %}color:var(--txt2){% endif %}">{{j.date_jour}}</td>
+<td style="font-weight:500">{{j.produit_nom}}</td>
+<td style="font-weight:500">{{j.couleur or '-'}}</td>
+<td style="color:var(--txt2)">{{j.marque or '-'}}</td>
+<td style="font-size:11px;color:var(--txt2)">{{j.code_produit or '-'}}</td>
+<td class="tag-entree" style="font-weight:700">+{{ j.entrees|dg }}</td>
+<td class="tag-sortie" style="font-weight:700">-{{ j.sorties|dg }}</td>
+<td style="font-weight:700;font-size:14px">{{j.stock_final}}</td>
+</tr>
+{% endfor %}
+{% if not t.historique_jour %}<tr><td colspan="8" class="empty">Aucun mouvement enregistre</td></tr>{% endif %}
+</table>
+</div>
 </div></div>
 {% endfor %}
 
