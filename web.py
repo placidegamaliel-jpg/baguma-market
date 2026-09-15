@@ -2168,6 +2168,13 @@ def rapport_detail(rapport_id):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
+    if session.get("role") == "vendeur":
+        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        if not t_check:
+            conn.close()
+            flash("Rapport deja envoye - non accessible", "error")
+            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()
@@ -2210,6 +2217,14 @@ def rapport_print(rapport_id):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
+    if session.get("role") == "vendeur":
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], now_str))
+        if not t_check:
+            conn.close()
+            flash("Rapport deja envoye - non accessible", "error")
+            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()
@@ -2252,6 +2267,14 @@ def rapport_pdf(rapport_id):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
+    if session.get("role") == "vendeur":
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        t_check = db_fetchone(conn, "SELECT id FROM rapports_temp WHERE tenant_id=%s AND vendeur_login=%s AND expire_at>%s" if IS_PG else
+                              "SELECT id FROM rapports_temp WHERE tenant_id=? AND vendeur_login=? AND expire_at>?", (r["tenant_id"], session["login"], now_str))
+        if not t_check:
+            conn.close()
+            flash("Rapport deja envoye - non accessible", "error")
+            return redirect(url_for("dashboard"))
     t = db_fetchone(conn, "SELECT nom FROM tenants WHERE id=%s" if IS_PG else "SELECT nom FROM tenants WHERE id=?", (r["tenant_id"],))
     tenant_nom = t["nom"] if t else "Admin Global"
     conn.close()

@@ -51,19 +51,55 @@
 </div>
 {% endif %}
 
-{% if session.role == 'vendeur' and vendeur_a_fait_rapport %}
-<div class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.06),rgba(80,180,254,0.04));padding:20px;text-align:center;margin-bottom:16px">
-<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px">
-<div style="width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">✅</div>
-<div style="font-size:16px;font-weight:800;color:var(--accent)">Journee terminee!</div>
+{% if session.role == 'vendeur' and session.tenant_id != 0 %}
+{% if rapport_envoye and rapport %}
+<div id="rapport-box" class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.08),rgba(80,180,254,0.04));padding:24px">
+<div style="text-align:center;margin-bottom:16px">
+<div style="width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">✅</div>
+<div style="font-size:18px;font-weight:800;color:var(--accent)">Rapport envoye!</div>
+<div style="font-size:12px;color:var(--txt2);margin-top:6px">Disponible pendant <span id="countdown" style="font-weight:700;color:var(--accent)">0:05</span></div>
 </div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+<div style="background:rgba(0,230,184,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(0,230,184,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Ventes</div>
+<div style="font-size:22px;font-weight:800;color:var(--accent)">{{rapport.nb_ventes}}</div>
+</div>
+<div style="background:rgba(80,180,254,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(80,180,254,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Clients</div>
+<div style="font-size:22px;font-weight:800;color:var(--blue)">{{rapport.nb_clients}}</div>
+</div>
+<div style="background:rgba(245,197,66,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(245,197,66,0.1)">
+<div style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total USD</div>
+<div style="font-size:22px;font-weight:800;color:var(--gold)">${{ rapport.total_usd|dg }}</div>
+</div>
+</div>
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
 {% if rapport_id %}
-<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
 <a href="/rapport/{{rapport_id}}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">📄 Voir le rapport</a>
 <a href="/rapport/{{rapport_id}}/print" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:rgba(255,255,255,0.1);color:var(--txt);border:1px solid var(--glass-border);border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">🖨️ Imprimer</a>
-</div>
 {% endif %}
 </div>
+</div>
+<script>
+(function(){
+var box=document.getElementById('rapport-box');
+if(!box)return;
+var cd=document.getElementById('countdown');
+var total=5;
+function tick(){
+if(total<=0){
+box.style.transition='opacity 0.5s';box.style.opacity='0';
+setTimeout(function(){box.remove();location.reload()},500);
+return}
+var m=Math.floor(total/60);var s=total%60;
+cd.textContent=m+':'+(s<10?'0':'')+s;
+total--;
+setTimeout(tick,1000);
+}
+tick();
+})();
+</script>
+{% endif %}
 {% endif %}
 
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
