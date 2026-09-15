@@ -61,7 +61,35 @@
 </div>
 {% endif %}
 
+{% if session.role == 'vendeur' and vendeur_a_fait_rapport %}
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👟</div>
+<div class="label">Produits</div>
+<div class="value gold">{{nb_produits}}</div>
+</a>
+<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(80,180,254,0.15),rgba(80,180,254,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">📦</div>
+<div class="label">Stock Total</div>
+<div class="value">{{total_stock}}</div>
+</a>
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(244,114,182,0.15),rgba(244,114,182,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">💳</div>
+<div class="label">Dettes</div>
+<div class="value pink">{{nb_dettes}}</div>
+</a>
+</div>
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px">
+<a href="/dettes" class="stat" style="text-decoration:none;cursor:pointer;text-align:left;padding:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+<div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.05));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">⚠️</div>
+<div class="label">Dettes Impayees</div>
+</div>
+<div class="value red" style="font-size:28px">${{ "%.2f"|format(total_dettes) }}</div>
+</a>
+</div>
+
+{% else %}
 <a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
 <div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👟</div>
 <div class="label">Produits</div>
@@ -238,6 +266,7 @@ tick();
   <p style="color:var(--txt2);font-size:13px;font-weight:600">Aucune vente enregistree</p>
   <p style="color:var(--txt3);font-size:11px;margin-top:4px">Les ventes apparaissent ici apres "Fin de journee"</p>
 </div>
+{% endif %}
 {% endif %}
 {% endif %}
 

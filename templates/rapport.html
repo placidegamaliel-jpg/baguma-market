@@ -125,6 +125,33 @@
   </div>
   {% endif %}
 
+  {% if rapport.stock_initial is defined and rapport.stock_initial is not none and rapport.stock_initial > 0 or rapport.stock_entrees > 0 or rapport.stock_sorties > 0 %}
+  <div class="card" style="margin-top:1rem;border-left:3px solid var(--blue)">
+    <div class="card-header" style="background:linear-gradient(135deg,var(--blue),#3b82f6)"><span>📦 Mouvements de stock</span></div>
+    <div style="padding:16px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+        <div style="text-align:center;padding:14px;background:rgba(100,116,139,0.06);border-radius:10px;border:1px solid rgba(100,116,139,0.1)">
+          <div style="font-size:22px;font-weight:900;color:#475569">{{ rapport.stock_initial|dg }}</div>
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-top:4px">Initial</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:rgba(0,230,184,0.06);border-radius:10px;border:1px solid rgba(0,230,184,0.1)">
+          <div style="font-size:22px;font-weight:900;color:var(--accent)">+{{ rapport.stock_entrees|dg }}</div>
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-top:4px">Entrees</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:rgba(239,68,68,0.06);border-radius:10px;border:1px solid rgba(239,68,68,0.1)">
+          <div style="font-size:22px;font-weight:900;color:var(--red)">-{{ rapport.stock_sorties|dg }}</div>
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-top:4px">Sorties</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:rgba(80,180,254,0.06);border-radius:10px;border:1px solid rgba(80,180,254,0.1)">
+          <div style="font-size:22px;font-weight:900;color:var(--blue)">{{ rapport.stock_final|dg }}</div>
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;margin-top:4px">Final</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--txt2);font-weight:500">{{ rapport.stock_initial|dg }} + {{ rapport.stock_entrees|dg }} - {{ rapport.stock_sorties|dg }} = {{ rapport.stock_final|dg }}</div>
+    </div>
+  </div>
+  {% endif %}
+
   {% if stock_data.produits and stock_data.produits|length > 0 %}
   <div class="card" style="margin-top:1rem">
     <div class="card-header"><span>📦 Stock restant</span></div>
