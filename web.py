@@ -2164,7 +2164,7 @@ def rapport_detail(rapport_id):
         conn.close()
         return render_template("rapport.html", rapport=None, is_admin=is_admin(),
                                rapport_id=rapport_id, ventes_list=[], clients_list=[], stock_data={})
-    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+    if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
@@ -2206,7 +2206,7 @@ def rapport_print(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
-    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+    if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
@@ -2248,7 +2248,7 @@ def rapport_pdf(rapport_id):
         conn.close()
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
-    if not is_admin() and r["tenant_id"] != session.get("tenant_id", 0):
+    if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
         return redirect(url_for("dashboard"))
