@@ -2068,6 +2068,7 @@ def fin_journee():
                    "UPDATE recus SET verrouille=1 WHERE date=? AND tenant_id=?", (today, tid))
 
         db_execute(conn, "DELETE FROM ventes WHERE date=%s AND tenant_id=%s" if IS_PG else "DELETE FROM ventes WHERE date=? AND tenant_id=?", (today, tid))
+        db_execute(conn, "DELETE FROM stock WHERE date_jour=%s AND tenant_id=%s" if IS_PG else "DELETE FROM stock WHERE date_jour=? AND tenant_id=?", (today, tid))
         db_insert(conn, "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (%s,%s,%s,%s,%s,%s)" if IS_PG else
                   "INSERT INTO logs (user_id, login, tenant_id, action, details, date_heure) VALUES (?,?,?,?,?,?)",
                   (vendeur_id, vendeur_login, tid, "fin_journee", f"${total_usd:.2f} | {nb_ventes} ventes | {nb_clients} clients", now))
