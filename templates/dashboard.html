@@ -51,7 +51,6 @@
 </div>
 {% endif %}
 
-{% if session.role == 'vendeur' and session.tenant_id != 0 %}
 {% set journee_fini = (session.role == 'vendeur' and session.tenant_id != 0 and vendeur_a_fait_rapport) %}
 
 {% if rapport_envoye and rapport %}

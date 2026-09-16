@@ -419,7 +419,9 @@ def dashboard():
                                vendeur_a_fait_rapport=False, taux=get_taux(None, get_effective_tid() or 0),
                                today=datetime.now().strftime("%Y-%m-%d"), utilisateurs=[], categories=[],
                                notifications=[], unread_count=0, unread=0, show_admin_menu=session.get("show_admin_menu", False),
-                               admin_notification_count=0, login=session["login"])
+                               admin_notification_count=0, login=session["login"],
+                               recent_rapports=[], total_dettes=0, nb_dettes=0,
+                               all_tenants=[], nb_produits=0)
 
 def _dashboard_work():
     conn = get_db()
@@ -610,7 +612,9 @@ def _dashboard_work():
                            unread_notifs=unread_notifs, recent_rapports=recent_rapports, rapport_id=rapport_id,
                            vendeur_a_fait_rapport=vendeur_a_fait_rapport, low_stock_produits=low_stock_produits,
                            stock_entrees=dg(stock_entrees, session.get("dg_mode", False)), stock_sorties=dg(stock_sorties, session.get("dg_mode", False)), stock_net=dg(stock_net, session.get("dg_mode", False)),
-                           total_stock=dg(total_stock, session.get("dg_mode", False))))
+                           total_stock=dg(total_stock, session.get("dg_mode", False)),
+                           show_admin_menu=session.get("show_admin_menu", False), unread=unread_notifs,
+                           nb_produits_display=nb_produits, login=session["login"]))
     return resp
 
 @app.route("/produits")
