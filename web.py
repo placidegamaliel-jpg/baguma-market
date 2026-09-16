@@ -568,13 +568,13 @@ def _dashboard_work():
         if etid is not None:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=%s AND date_jour=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE tenant_id=? AND date_jour=?", (etid, today))
-            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE tenant_id=%s AND date_jour=%s" if IS_PG else
-                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE tenant_id=? AND date_jour=?", (etid, today))
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=%s" if IS_PG else
+                                "SELECT COALESCE(SUM(stock),0) as total FROM produits WHERE tenant_id=?", (etid,))
         else:
             row_s = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE date_jour=%s" if IS_PG else
                                 "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as entrees, COALESCE(SUM(CASE WHEN mouvement='sortie' THEN quantite ELSE 0 END),0) as sorties FROM stock WHERE date_jour=?", (today,))
-            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE date_jour=%s" if IS_PG else
-                                "SELECT COALESCE(SUM(CASE WHEN mouvement='entree' THEN quantite ELSE 0 END),0) as total FROM stock WHERE date_jour=?", (today,))
+            row_ts = db_fetchone(conn, "SELECT COALESCE(SUM(stock),0) as total FROM produits" if IS_PG else
+                                "SELECT COALESCE(SUM(stock),0) as total FROM produits")
         if row_s:
             stock_entrees = row_s["entrees"]
             stock_sorties = row_s["sorties"]
