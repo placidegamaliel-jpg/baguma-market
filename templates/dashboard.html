@@ -203,7 +203,7 @@ tick();
     {% if not ns.first %}</div>{% endif %}
     {% set ns.first = false %}
     <div style="border-left:3px solid var(--accent);padding:10px 14px;margin:12px 0 8px;background:rgba(0,212,170,0.04);border-radius:0 10px 10px 0">
-    <div style="font-size:14px;font-weight:700;color:var(--accent)">📅 {{r.date}}</div>
+    <div style="font-size:14px;font-weight:700;color:var(--accent)">📅 {{r.date}}{% if not r.id %} <span style="font-size:10px;color:var(--gold);background:rgba(245,197,66,0.15);padding:2px 8px;border-radius:6px;margin-left:6px">En cours</span>{% endif %}</div>
     <div style="font-size:11px;color:var(--txt2);margin-top:2px">{{r.tenant_nom or 'BAGUMA BUSINESS'}} &bull; {{r.vendeur_login}}</div>
     </div>
     <div class="table-scroll">

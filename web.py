@@ -536,6 +536,7 @@ def _dashboard_work():
                 ORDER BY r.date_rapport DESC, r.id DESC""", (etid, today))
         else:
             rr = []
+
         for r in rr:
             ventes = []
             if r["ventes_json"]:
@@ -549,6 +550,23 @@ def _dashboard_work():
                 "total_cdf": r["total_cdf"], "nb_ventes": r["nb_ventes"],
                 "ventes": ventes
             })
+
+        if not is_admin() and etid is not None and not recent_rapports:
+            ventes_today = db_fetchall(conn, """SELECT v.*, p.nom as produit_nom
+                FROM ventes v LEFT JOIN produits p ON v.product_id=p.id
+                WHERE v.date=%s AND v.tenant_id=%s ORDER BY v.id DESC""" if IS_PG else
+                """SELECT v.*, p.nom as produit_nom
+                FROM ventes v LEFT JOIN produits p ON v.product_id=p.id
+                WHERE v.date=? AND v.tenant_id=? ORDER BY v.id DESC""", (today, etid))
+            if ventes_today:
+                total_usd_day = sum(v["total_usd"] for v in ventes_today)
+                total_cdf_day = sum(v["total_cdf"] for v in ventes_today)
+                recent_rapports.append({
+                    "id": None, "date": today, "tenant_nom": "",
+                    "vendeur_login": session.get("login", ""), "total_usd": total_usd_day,
+                    "total_cdf": total_cdf_day, "nb_ventes": len(ventes_today),
+                    "ventes": ventes_today
+                })
     except Exception:
         pass
 
