@@ -528,12 +528,12 @@ def _dashboard_work():
         elif etid is not None:
             rr = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
                 FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
-                WHERE r.tenant_id=%s
-                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""" if IS_PG else
+                WHERE r.tenant_id=%s AND r.date_rapport=%s
+                ORDER BY r.date_rapport DESC, r.id DESC""" if IS_PG else
                 """SELECT r.*, t.nom as tenant_nom
                 FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
-                WHERE r.tenant_id=?
-                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""", (etid,))
+                WHERE r.tenant_id=? AND r.date_rapport=?
+                ORDER BY r.date_rapport DESC, r.id DESC""", (etid, today))
         else:
             rr = []
         for r in rr:
