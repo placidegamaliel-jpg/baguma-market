@@ -2204,9 +2204,12 @@ def rapport_detail(rapport_id):
         return render_template("rapport.html", rapport=None, is_admin=is_admin(),
                                rapport_id=rapport_id, ventes_list=[], clients_list=[], stock_data={})
     if session.get("role") == "vendeur":
-        conn.close()
-        flash("Acces refuse", "error")
-        return redirect(url_for("dashboard"))
+        from datetime import date
+        today_str = date.today().isoformat()
+        if r["date_rapport"] != today_str:
+            conn.close()
+            flash("Acces refuse - rapport d'un autre jour", "error")
+            return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
@@ -2250,9 +2253,12 @@ def rapport_print(rapport_id):
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
     if session.get("role") == "vendeur":
-        conn.close()
-        flash("Acces refuse", "error")
-        return redirect(url_for("dashboard"))
+        from datetime import date
+        today_str = date.today().isoformat()
+        if r["date_rapport"] != today_str:
+            conn.close()
+            flash("Acces refuse - rapport d'un autre jour", "error")
+            return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")
@@ -2296,9 +2302,12 @@ def rapport_pdf(rapport_id):
         flash("Rapport introuvable", "error")
         return redirect(url_for("dashboard"))
     if session.get("role") == "vendeur":
-        conn.close()
-        flash("Acces refuse", "error")
-        return redirect(url_for("dashboard"))
+        from datetime import date
+        today_str = date.today().isoformat()
+        if r["date_rapport"] != today_str:
+            conn.close()
+            flash("Acces refuse - rapport d'un autre jour", "error")
+            return redirect(url_for("dashboard"))
     if not is_admin() and int(r["tenant_id"]) != int(session.get("tenant_id", 0)):
         conn.close()
         flash("Acces refuse", "error")

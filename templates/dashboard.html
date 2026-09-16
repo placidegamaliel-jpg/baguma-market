@@ -82,7 +82,7 @@ var total=5;
 function tick(){
 if(total<=0){
 box.style.transition='opacity 0.5s';box.style.opacity='0';
-setTimeout(function(){box.remove();location.reload()},500);
+setTimeout(function(){box.remove()},500);
 return}
 total--;
 setTimeout(tick,1000);
@@ -91,6 +91,12 @@ tick();
 })();
 </script>
 {% endif %}
+
+{% if rapport_id %}
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+<a href="/rapport/{{rapport_id}}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">📄 Voir le rapport</a>
+<a href="/rapport/{{rapport_id}}/print" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:rgba(255,255,255,0.1);color:var(--txt);border:1px solid var(--glass-border);border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">🖨️ Imprimer</a>
+</div>
 {% endif %}
 
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
