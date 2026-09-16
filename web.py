@@ -521,10 +521,10 @@ def _dashboard_work():
         if is_admin():
             rr = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
                 FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
-                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""" if IS_PG else
+                ORDER BY r.date_rapport DESC, r.id DESC""" if IS_PG else
                 """SELECT r.*, t.nom as tenant_nom
                 FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
-                ORDER BY r.date_rapport DESC, r.id DESC LIMIT 7""")
+                ORDER BY r.date_rapport DESC, r.id DESC""")
         elif etid is not None:
             rr = db_fetchall(conn, """SELECT r.*, t.nom as tenant_nom
                 FROM rapports r LEFT JOIN tenants t ON r.tenant_id=t.id
