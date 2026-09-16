@@ -52,12 +52,14 @@
 {% endif %}
 
 {% if session.role == 'vendeur' and session.tenant_id != 0 %}
+{% set journee_fini = (session.role == 'vendeur' and session.tenant_id != 0 and vendeur_a_fait_rapport) %}
+
 {% if rapport_envoye and rapport %}
 <div id="rapport-box" class="card" style="border:2px solid rgba(0,230,184,0.3);background:linear-gradient(135deg,rgba(0,230,184,0.08),rgba(80,180,254,0.04));padding:24px">
 <div style="text-align:center;margin-bottom:16px">
 <div style="width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">✅</div>
 <div style="font-size:18px;font-weight:800;color:var(--accent)">Rapport envoye!</div>
-<div style="font-size:12px;color:var(--txt2);margin-top:6px">Resume de la journee</div>
+<div style="font-size:12px;color:var(--txt2);margin-top:6px">Bonne soiree !</div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
 <div style="background:rgba(0,230,184,0.08);padding:14px;border-radius:12px;text-align:center;border:1px solid rgba(0,230,184,0.1)">
@@ -92,12 +94,29 @@ tick();
 </script>
 {% endif %}
 
+{% if not journee_fini %}
 {% if rapport_id %}
 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
 <a href="/rapport/{{rapport_id}}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#000;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">📄 Voir le rapport</a>
 <a href="/rapport/{{rapport_id}}/print" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:rgba(255,255,255,0.1);color:var(--txt);border:1px solid var(--glass-border);border-radius:12px;font-size:13px;font-weight:700;text-decoration:none">🖨️ Imprimer</a>
 </div>
 {% endif %}
+{% endif %}
+
+{% if journee_fini %}
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
+<a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(245,197,66,0.15),rgba(245,197,66,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">👟</div>
+<div class="label">Produits</div>
+<div class="value gold">{{nb_produits}}</div>
+</a>
+<a href="/stock" class="stat" style="text-decoration:none;cursor:pointer">
+<div style="width:44px;height:44px;background:linear-gradient(135deg,rgba(80,180,254,0.15),rgba(80,180,254,0.05));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px">📦</div>
+<div class="label">Stock Total</div>
+<div class="value">{{total_stock}}</div>
+</a>
+</div>
+{% else %}
 
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
 <a href="/produits" class="stat" style="text-decoration:none;cursor:pointer">
@@ -232,6 +251,8 @@ tick();
   <p style="color:var(--txt2);font-size:13px;font-weight:600">Aucune vente enregistree</p>
   <p style="color:var(--txt3);font-size:11px;margin-top:4px">Les ventes apparaissent ici apres "Fin de journee"</p>
 </div>
+{% endif %}
+
 {% endif %}
 
 <div class="footer" style="padding:20px;border-top:1px solid var(--glass-border);text-align:center">
