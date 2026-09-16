@@ -117,7 +117,7 @@ def init_pg_schema():
         except Exception:
             pass
         for tbl in [
-            "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '', stock_initial REAL DEFAULT 0, stock_entrees REAL DEFAULT 0, stock_sorties REAL DEFAULT 0, stock_final REAL DEFAULT 0)",
             "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
         ]:
             try:
@@ -175,7 +175,7 @@ def init_route():
         conn.close()
         return "PostgreSQL OK"
     except Exception as e:
-        return f"Error: {str(e)}"
+        return "Erreur de connexion"
 
 def get_db():
     if IS_PG:
@@ -283,7 +283,7 @@ def server_error(e):
 @app.errorhandler(502)
 @app.errorhandler(503)
 def service_unavailable(e):
-    return "<div style='text-align:center;padding:60px 20px;font-family:Inter,sans-serif;background:#080818;color:#f0f0f8;min-height:100vh'><h1 style='font-size:48px;margin-bottom:16px'>🔧</h1><h2 style='font-size:20px;margin-bottom:8px'>Service temporairement indisponible</h2><p style='color:#7878a0;font-size:14px'>Le serveur est en maintenance. Reessayez bientot.</p><a href='/' style='color:#00e6b8;font-size:14px;margin-top:20px;display:inline-block'>← Retour a la connexion</a></div>", 502
+    return "<div style='text-align:center;padding:60px 20px;font-family:Inter,sans-serif;background:#080818;color:#f0f0f8;min-height:100vh'><h1 style='font-size:48px;margin-bottom:16px'>🔧</h1><h2 style='font-size:20px;margin-bottom:8px'>Service temporairement indisponible</h2><p style='color:#7878a0;font-size:14px'>Le serveur est en maintenance. Reessayez bientot.</p><a href='/' style='color:#00e6b8;font-size:14px;margin-top:20px;display:inline-block'>← Retour a la connexion</a></div>", e.code
 
 @app.route("/manifest.json")
 def manifest():
@@ -364,7 +364,11 @@ def login():
             conn.close()
             flash("Code incorrect", "error")
         except Exception as e:
-            flash(f"Erreur de connexion. Reessayez.", "error")
+            try:
+                conn.close()
+            except Exception:
+                pass
+            flash("Erreur de connexion. Reessayez.", "error")
     tenants = []
     try:
         conn = get_db()
@@ -406,8 +410,16 @@ def dashboard():
     except Exception:
         import traceback
         traceback.print_exc()
-        flash("Erreur de chargement", "error")
-        return redirect(url_for("login"))
+        flash("Erreur de chargement du tableau de bord", "error")
+        return render_template("dashboard.html", error=True, nb_ventes=0, ca_total=0, ca_cdf=0, nb_clients=0,
+                               nb_stock=0, stock_entrees=0, stock_sorties=0, stock_net=0, total_stock=0,
+                               low_stock_produits=[], recent_sales=[], recent_clients=[],
+                               is_admin=is_admin(), mode_dg=session.get("dg_mode", False),
+                               rapport_envoye=False, rapport=None, rapport_id=None,
+                               vendeur_a_fait_rapport=False, taux=get_taux(None, get_effective_tid() or 0),
+                               today=datetime.now().strftime("%Y-%m-%d"), utilisateurs=[], categories=[],
+                               notifications=[], unread_count=0, unread=0, show_admin_menu=session.get("show_admin_menu", False),
+                               admin_notification_count=0, login=session["login"])
 
 def _dashboard_work():
     conn = get_db()
@@ -820,6 +832,10 @@ def stock_sortie():
     today = datetime.now().strftime("%Y-%m-%d")
 
     stock_row = db_fetchone(conn, "SELECT stock FROM produits WHERE id=%s" if IS_PG else "SELECT stock FROM produits WHERE id=?", (pid,))
+    if not stock_row:
+        conn.close()
+        flash("Produit introuvable", "error")
+        return redirect(url_for("stock"))
     stock_actuel = stock_row["stock"]
     if qte > stock_actuel:
         conn.close()
@@ -1106,8 +1122,9 @@ def rapports():
         days[key]["nb_clients"] += r["nb_clients"]
         if days[key]["rapport_id"] is None:
             days[key]["rapport_id"] = r["id"]
-        for vl in r["vendeur_login"].split(","):
-            days[key]["vendeurs"].add(vl.strip())
+        if r["vendeur_login"]:
+            for vl in r["vendeur_login"].split(","):
+                days[key]["vendeurs"].add(vl.strip())
         if r["ventes_json"]:
             try:
                 vlist = _json.loads(r["ventes_json"])
@@ -1465,10 +1482,12 @@ def recu_pdf(rid):
     pdf.set_fill_color(0, 184, 148)
     pdf.rect(0, 287, 210, 3, "F")
 
-    pdf_path = f"/tmp/recu_{recu['numero']}.pdf"
+    import tempfile
+    tmp_dir = tempfile.gettempdir()
+    pdf_path = os.path.join(tmp_dir, f"recu_{recu['numero']}.pdf")
     pdf.output(pdf_path)
 
-    return send_from_directory("/tmp", f"recu_{recu['numero']}.pdf", as_attachment=True,
+    return send_from_directory(tmp_dir, f"recu_{recu['numero']}.pdf", as_attachment=True,
                                download_name=f"Recu_{recu['numero']}.pdf")
 
 @app.route("/logs")
@@ -1867,7 +1886,12 @@ def corbeille_restore(cid):
     item = db_fetchone(conn, "SELECT * FROM corbeille WHERE id=%s" if IS_PG else "SELECT * FROM corbeille WHERE id=?", (cid,))
     if item:
         import json
-        data = json.loads(item["data"])
+        try:
+            data = json.loads(item["data"])
+        except Exception:
+            conn.close()
+            flash("Donnees corrompues, impossible de restaurer", "error")
+            return redirect(url_for("corbeille"))
         table = item["table_name"]
         oid = item["original_id"]
         if table == "dettes":
@@ -1973,7 +1997,7 @@ def fin_journee():
     try:
         conn = get_db()
         for tbl in [
-            "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS rapports (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0, date_rapport TEXT NOT NULL, ventes_json TEXT DEFAULT '', clients_json TEXT DEFAULT '', stock_json TEXT DEFAULT '', stock_initial REAL DEFAULT 0, stock_entrees REAL DEFAULT 0, stock_sorties REAL DEFAULT 0, stock_final REAL DEFAULT 0)",
             "CREATE TABLE IF NOT EXISTS rapports_temp (id SERIAL PRIMARY KEY, tenant_id INTEGER NOT NULL, vendeur_login TEXT NOT NULL, vendeur_id INTEGER NOT NULL, date_rapport TEXT NOT NULL, expire_at TEXT NOT NULL, total_usd REAL DEFAULT 0, total_cdf REAL DEFAULT 0, nb_ventes INTEGER DEFAULT 0, nb_clients INTEGER DEFAULT 0)"
         ]:
             try:
@@ -2040,16 +2064,9 @@ def fin_journee():
         existing = db_fetchone(conn, "SELECT id FROM rapports WHERE tenant_id=%s AND date_rapport=%s" if IS_PG else
                                "SELECT id FROM rapports WHERE tenant_id=? AND date_rapport=?", (tid, today))
         if existing:
-            rapport_id = existing["id"]
-            vendeurs = db_fetchall(conn, "SELECT DISTINCT vendeur_login FROM ventes WHERE date=%s AND tenant_id=%s" if IS_PG else
-                                   "SELECT DISTINCT vendeur_login FROM ventes WHERE date=? AND tenant_id=?", (today, tid))
-            vendeur_list = [v["vendeur_login"] for v in vendeurs]
-            if vendeur_login not in vendeur_list:
-                vendeur_list.append(vendeur_login)
-            vendeurs_text = ", ".join(vendeur_list)
-            db_execute(conn, "UPDATE rapports SET vendeur_login=%s, total_usd=%s, total_cdf=%s, nb_ventes=%s, nb_clients=%s, ventes_json=%s, clients_json=%s, stock_json=%s, stock_initial=%s, stock_entrees=%s, stock_sorties=%s, stock_final=%s WHERE id=%s" if IS_PG else
-                       "UPDATE rapports SET vendeur_login=?, total_usd=?, total_cdf=?, nb_ventes=?, nb_clients=?, ventes_json=?, clients_json=?, stock_json=?, stock_initial=?, stock_entrees=?, stock_sorties=?, stock_final=? WHERE id=?",
-                       (vendeurs_text, total_usd, total_cdf, nb_ventes, nb_clients, ventes_json, clients_json, stock_json, s_initial, s_entrees, s_sorties, s_final, rapport_id))
+            conn.close()
+            flash("Rapport deja envoye aujourd'hui", "success")
+            return redirect(url_for("dashboard"))
         else:
             rapport_r = db_insert(conn, "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json, stock_initial, stock_entrees, stock_sorties, stock_final) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
                       "INSERT INTO rapports (tenant_id, vendeur_login, vendeur_id, total_usd, total_cdf, nb_ventes, nb_clients, date_rapport, ventes_json, clients_json, stock_json, stock_initial, stock_entrees, stock_sorties, stock_final) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -2077,6 +2094,10 @@ def fin_journee():
         flash("Rapport de la journee envoye avec succes", "success")
     except Exception as e:
         flash(f"Erreur: {str(e)}", "error")
+        try:
+            conn.close()
+        except Exception:
+            pass
     return redirect(url_for("dashboard"))
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -2446,12 +2467,16 @@ def rapport_pdf(rapport_id):
     pdf.cell(0, 5, "Baguma Market - Rapport officiel Admin", ln=True, align="L")
     pdf.cell(0, 5, f"MAISON BAGUMA MARKET | {r['date_rapport']}", ln=True, align="L")
 
+    import tempfile
+    tmp_dir = tempfile.gettempdir()
     filename = f"rapport_{r['date_rapport']}_{tenant_nom.replace(' ','_')}.pdf"
-    pdf.output(filename)
+    filepath = os.path.join(tmp_dir, filename)
+    pdf.output(filepath)
     from flask import send_file
-    return send_file(filename, as_attachment=True, download_name=filename)
+    return send_file(filepath, as_attachment=True, download_name=filename)
 
 @app.route("/admin/cleanup")
+@login_required
 def admin_cleanup():
     if not is_admin():
         return "Admin only"
