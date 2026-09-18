@@ -33,20 +33,19 @@
 {% for kind, message in messages %}<div class="flash {{ kind }} compact">{{ message }}</div>{% endfor %}
 {% endwith %}
 {% if is_admin %}<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><a href="/produits/new" class="btn btn-green btn-sm">+ Nouveau produit</a><a href="/categories" class="btn btn-blue btn-sm">📂 Catégories</a></div>{% endif %}
-<form method="GET" style="display:flex;gap:8px;margin-bottom:12px">
-<input type="text" name="search" value="{{search}}" placeholder="Rechercher par nom ou code..." style="flex:1;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
-<select name="categorie" style="padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<form method="GET" id="productFilters" style="display:flex;gap:8px;margin-bottom:12px">
+<input id="productSearch" type="search" name="search" value="{{search}}" placeholder="Rechercher par nom ou code..." autocomplete="off" style="flex:1;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<select id="categoryFilter" name="categorie" style="padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <option value="">Toutes</option>
 {% for c in cats %}<option value="{{c}}" {{'selected' if c==cat_selected}}>{{c}}</option>{% endfor %}
 </select>
-<button class="btn btn-gold btn-sm" type="submit">OK</button>
 </form>
 <div class="card" style="padding:0;overflow:hidden">
 <div class="table-scroll">
 <table>
 <tr><th>Produit</th><th>Code</th><th>Couleur</th><th>Catégorie</th><th>Prix USD</th><th>Prix CDF</th><th>Stock</th>{% if is_admin %}<th>Tenant</th><th>Actions</th>{% endif %}</tr>
 {% for p in prods %}
-<tr>
+<tr class="product-row" data-search="{{ p.nom|lower }} {{ (p.code or '')|lower }} {{ p.cat_nom|lower }}" data-category="{{ p.cat_nom }}">
 <td style="font-weight:500">{{p.nom}}</td>
 <td style="color:var(--accent);font-weight:600;font-size:12px">{{p.code or '-'}}</td>
 <td style="font-size:12px">{{p.couleur or '-'}}</td>
@@ -58,9 +57,33 @@
 <td><a href="/produits/edit/{{p.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a></td>{% endif %}
 </tr>
 {% endfor %}
-{% if not prods %}<tr><td colspan="{% if is_admin %}9{% else %}7{% endif %}" class="empty">Aucun produit trouve</td></tr>{% endif %}
+<tr id="noProductResult" {% if prods %}hidden{% endif %}><td colspan="{% if is_admin %}9{% else %}7{% endif %}" class="empty">Aucun produit trouvé</td></tr>
 </table>
 </div></div>
 <div class="footer">MAISON BAGUMA MARKET &copy; 2026</div>
 </div>
+<script>
+(() => {
+  const search = document.getElementById('productSearch');
+  const category = document.getElementById('categoryFilter');
+  const rows = document.querySelectorAll('.product-row');
+  const empty = document.getElementById('noProductResult');
+  if (!search || !category || !empty) return;
+  function filterProducts() {
+    const term = search.value.trim().toLocaleLowerCase();
+    const selectedCategory = category.value;
+    let count = 0;
+    rows.forEach((row) => {
+      const matches = row.dataset.search.includes(term) && (!selectedCategory || row.dataset.category === selectedCategory);
+      row.hidden = !matches;
+      if (matches) count++;
+    });
+    empty.hidden = count > 0;
+  }
+  search.addEventListener('input', filterProducts);
+  category.addEventListener('change', filterProducts);
+  document.getElementById('productFilters').addEventListener('submit', (event) => event.preventDefault());
+  filterProducts();
+})();
+</script>
 {% endblock %}

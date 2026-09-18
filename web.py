@@ -843,10 +843,10 @@ def stock():
                             "historique_jour": historique_jour})
 
     if etid is not None:
-        prods = db_fetchall(conn, "SELECT id, nom FROM produits WHERE tenant_id=%s ORDER BY nom" if IS_PG else
-                            "SELECT id, nom FROM produits WHERE tenant_id=? ORDER BY nom", (etid,))
+        prods = db_fetchall(conn, "SELECT id, nom, tenant_id FROM produits WHERE tenant_id=%s ORDER BY nom" if IS_PG else
+                            "SELECT id, nom, tenant_id FROM produits WHERE tenant_id=? ORDER BY nom", (etid,))
     else:
-        prods = db_fetchall(conn, "SELECT id, nom FROM produits ORDER BY nom")
+        prods = db_fetchall(conn, "SELECT id, nom, tenant_id FROM produits ORDER BY nom")
     if etid is not None:
         users = db_fetchall(conn, "SELECT id, login FROM utilisateurs WHERE tenant_id IN (0,%s)" if IS_PG else
                             "SELECT id, login FROM utilisateurs WHERE tenant_id IN (0,?)", (etid,))
@@ -856,10 +856,10 @@ def stock():
     stock_faible = []
     try:
         if etid is not None:
-            sf = db_fetchall(conn, "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=%s ORDER BY p.stock ASC" if IS_PG else
-                             "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=? ORDER BY p.stock ASC", (etid,))
+            sf = db_fetchall(conn, "SELECT p.id, p.tenant_id, p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=%s ORDER BY p.stock ASC" if IS_PG else
+                             "SELECT p.id, p.tenant_id, p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 AND p.tenant_id=? ORDER BY p.stock ASC", (etid,))
         else:
-            sf = db_fetchall(conn, "SELECT p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 ORDER BY p.stock ASC")
+            sf = db_fetchall(conn, "SELECT p.id, p.tenant_id, p.nom, p.stock, p.couleur, p.code, t.nom as tenant_nom FROM produits p JOIN tenants t ON p.tenant_id=t.id WHERE p.stock<=5 ORDER BY p.stock ASC")
         stock_faible = sf if sf else []
     except Exception:
         pass

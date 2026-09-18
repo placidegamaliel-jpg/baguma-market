@@ -43,7 +43,7 @@
 </div>
 <div class="table-scroll">
 <table>
-<tr><th>Produit</th><th>Couleur</th><th>Commerce</th><th>Stock</th><th>Etat</th></tr>
+<tr><th>Produit</th><th>Couleur</th><th>Commerce</th><th>Stock</th><th>État</th><th>Action</th></tr>
 {% for p in stock_faible %}
 <tr style="border-left:3px solid {% if p.stock == 0 %}var(--red){% else %}var(--orange){% endif %}">
 <td style="font-weight:700">{{ p.nom }}</td>
@@ -51,6 +51,7 @@
 <td style="font-size:11px;color:var(--txt2)">{{ p.tenant_nom }}</td>
 <td style="font-size:18px;font-weight:900;color:{% if p.stock == 0 %}var(--red){% else %}var(--orange){% endif %}">{{ p.stock }}</td>
 <td><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:{% if p.stock == 0 %}rgba(239,68,68,0.15);color:var(--red){% elif p.stock <= 2 %}rgba(249,115,22,0.15);color:var(--orange){% else %}rgba(245,197,66,0.15);color:var(--gold){% endif %}">{% if p.stock == 0 %}RUPTURE{% elif p.stock <= 2 %}CRITIQUE{% else %}FAIBLE{% endif %}</span></td>
+<td><button type="button" class="btn btn-green btn-sm" style="padding:7px 10px" onclick="ouvrirReapprovisionnement({{ p.id }}, {{ p.tenant_id }})">Réapprovisionner</button></td>
 </tr>
 {% endfor %}
 </table>
@@ -169,7 +170,7 @@
 {% for t in tenant_data %}<option value="{{t.id}}">{{t.nom}}</option>{% endfor %}
 </select></div>
 <div class="form-group"><label>Produit</label>
-<select name="produit_id">{% for p in prods %}<option value="{{p.id}}">{{p.nom}}</option>{% endfor %}</select></div>
+<select id="entree_produit" name="produit_id">{% for p in prods %}<option value="{{p.id}}" data-tenant-id="{{p.tenant_id}}">{{p.nom}}</option>{% endfor %}</select></div>
 <div class="form-group"><label>Marque</label><input type="text" name="marque" placeholder="Nike, Adidas..."></div>
 <div class="form-group"><label>Couleur</label><input type="text" name="couleur" placeholder="Noir, Blanc, Rose..."></div>
 <div class="form-group"><label>Code</label><input type="text" name="code" placeholder="Code SKU"></div>
@@ -213,6 +214,16 @@ document.getElementById('sortie_tenant').value='{{session.tenant_id}}';
 document.getElementById('sortie_tenant').style.display='none';
 </script>
 {% endif %}
+<script>
+function ouvrirReapprovisionnement(produitId, tenantId) {
+  const modal = document.getElementById('modalEntree');
+  const tenant = document.getElementById('entree_tenant');
+  const produit = document.getElementById('entree_produit');
+  if (tenant) tenant.value = String(tenantId);
+  if (produit) produit.value = String(produitId);
+  modal.style.display = 'flex';
+}
+</script>
 <div class="footer">MAISON BAGUMA MARKET &copy; 2026</div>
 </div>
 {% endblock %}
