@@ -33,26 +33,32 @@
 {% for kind, message in messages %}<div class="flash {{ kind }} compact">{{ message }}</div>{% endfor %}
 {% endwith %}
 {% if is_admin %}<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><a href="/produits/new" class="btn btn-green btn-sm">+ Nouveau produit</a><a href="/categories" class="btn btn-blue btn-sm">📂 Catégories</a></div>{% endif %}
-<form method="GET" id="productFilters" style="display:flex;gap:8px;margin-bottom:12px">
+<form method="GET" id="productFilters" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
 <input id="productSearch" type="search" name="search" value="{{search}}" placeholder="Rechercher par nom ou code..." autocomplete="off" style="flex:1;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <select id="categoryFilter" name="categorie" style="padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <option value="">Toutes</option>
 {% for c in cats %}<option value="{{c}}" {{'selected' if c==cat_selected}}>{{c}}</option>{% endfor %}
 </select>
+<select id="stockFilter" aria-label="Filtrer par stock" style="padding:14px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
+<option value="">Stock : tous</option>
+<option value="low">Stock faible</option>
+<option value="out">Rupture</option>
+</select>
 </form>
+<p id="productCount" style="margin:-4px 0 10px;color:var(--txt3);font-size:11px"></p>
 <div class="card" style="padding:0;overflow:hidden">
 <div class="table-scroll">
 <table>
 <tr><th>Produit</th><th>Code</th><th>Couleur</th><th>Catégorie</th><th>Prix USD</th><th>Prix CDF</th><th>Stock</th>{% if is_admin %}<th>Tenant</th><th>Actions</th>{% endif %}</tr>
 {% for p in prods %}
-<tr class="product-row" data-search="{{ p.nom|lower }} {{ (p.code or '')|lower }} {{ p.cat_nom|lower }}" data-category="{{ p.cat_nom }}">
+<tr class="product-row" data-search="{{ p.nom|lower }} {{ (p.code or '')|lower }} {{ p.cat_nom|lower }}" data-category="{{ p.cat_nom }}" data-stock="{{ p.stock }}">
 <td style="font-weight:500">{{p.nom}}</td>
 <td style="color:var(--accent);font-weight:600;font-size:12px">{{p.code or '-'}}</td>
 <td style="font-size:12px">{{p.couleur or '-'}}</td>
 <td style="color:var(--txt2)">{{p.cat_nom}}</td>
 <td class="tag-entree" style="font-weight:600">${{ p.prix_usd|dg }}</td>
 <td style="color:var(--txt2)">{{ "{:,.0f}".format(p.prix_cdf) }}</td>
-<td class="{{'tag-sortie' if p.stock<=5 else 'tag-entree'}}" style="font-weight:600">{{p.stock}}</td>
+<td class="{{'tag-sortie' if p.stock<=5 else 'tag-entree'}}" style="font-weight:600">{{p.stock}}{% if p.stock == 0 %}<span style="display:block;font-size:9px;color:var(--red)">RUPTURE</span>{% elif p.stock <= 5 %}<span style="display:block;font-size:9px;color:var(--orange)">FAIBLE</span>{% endif %}</td>
 {% if is_admin %}<td style="font-size:11px;color:var(--txt2)">{{tenants_map.get(p.tenant_id, '')}}</td>
 <td><a href="/produits/edit/{{p.id}}" class="btn btn-gold btn-sm" style="padding:4px 10px;font-size:11px">✏️</a></td>{% endif %}
 </tr>
@@ -66,22 +72,29 @@
 (() => {
   const search = document.getElementById('productSearch');
   const category = document.getElementById('categoryFilter');
+  const stock = document.getElementById('stockFilter');
   const rows = document.querySelectorAll('.product-row');
   const empty = document.getElementById('noProductResult');
-  if (!search || !category || !empty) return;
+  const countLabel = document.getElementById('productCount');
+  if (!search || !category || !stock || !empty || !countLabel) return;
   function filterProducts() {
     const term = search.value.trim().toLocaleLowerCase();
     const selectedCategory = category.value;
+    const stockFilter = stock.value;
     let count = 0;
     rows.forEach((row) => {
-      const matches = row.dataset.search.includes(term) && (!selectedCategory || row.dataset.category === selectedCategory);
+      const quantity = Number(row.dataset.stock);
+      const matchesStock = !stockFilter || (stockFilter === 'low' && quantity > 0 && quantity <= 5) || (stockFilter === 'out' && quantity === 0);
+      const matches = row.dataset.search.includes(term) && (!selectedCategory || row.dataset.category === selectedCategory) && matchesStock;
       row.hidden = !matches;
       if (matches) count++;
     });
     empty.hidden = count > 0;
+    countLabel.textContent = count + ' produit' + (count > 1 ? 's' : '') + ' affiché' + (count > 1 ? 's' : '');
   }
   search.addEventListener('input', filterProducts);
   category.addEventListener('change', filterProducts);
+  stock.addEventListener('change', filterProducts);
   document.getElementById('productFilters').addEventListener('submit', (event) => event.preventDefault());
   filterProducts();
 })();
