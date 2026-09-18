@@ -51,13 +51,9 @@
       <option value="{{ c['id'] }}" data-tenant-id="{{ c['tenant_id'] }}">{{ c['nom'] }}</option>
       {% endfor %}
     </select>
-    <small id="categorie-help" style="display:block;margin-top:7px;color:var(--txt3);font-size:11px">Choisissez d’abord le commerce, puis sa catégorie.</small>
   {% else %}
     <div class="flash error" style="margin:0">Aucune catégorie disponible. Créez-en une avant d’ajouter un produit.</div>
   {% endif %}
-</div>
-<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
-  <a href="{{ url_for('categorie_new', next='produit_new') }}" class="btn btn-blue btn-sm">+ Nouvelle catégorie</a>
 </div>
 <div class="form-group"><label>Prix USD</label><input type="number" name="prix_usd" step="0.01" min="0" required placeholder="0.00"></div>
 <div class="form-group"><label>Stock initial</label><input type="number" name="stock" min="0" value="0"></div>
@@ -79,24 +75,18 @@
 (() => {
   const tenant = document.getElementById('tenant_id');
   const category = document.getElementById('categorie_id');
-  const help = document.getElementById('categorie-help');
   if (!tenant || !category) return;
 
   function refreshCategories() {
     const tenantId = tenant.value;
-    let available = 0;
     for (const option of category.options) {
       if (!option.value) continue;
       const visible = option.dataset.tenantId === '0' || option.dataset.tenantId === tenantId;
       option.hidden = !visible;
       option.disabled = !visible;
-      if (visible) available++;
     }
     const selected = category.options[category.selectedIndex];
     if (!selected || selected.disabled) category.value = '';
-    help.textContent = available
-      ? 'Catégories disponibles pour ce commerce : ' + available
-      : 'Aucune catégorie disponible pour ce commerce. Ajoutez-en une avant de continuer.';
   }
 
   tenant.addEventListener('change', refreshCategories);
