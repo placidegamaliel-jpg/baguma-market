@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+  <button class="menu-btn" onclick="toggleNav()">☰</button>
+  <h1 class="brand">➕ Nouvelle catégorie</h1>
+  <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+  <a href="/dashboard">📊 Accueil</a>
+  <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
+  <a href="/ventes">💰 Ventes</a>
+  <a href="/recus">🧾 Recus</a>
+  <a href="/rapports">📈 Rapports</a>
+  <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
+  <a href="/produits" class="active">👟 Produits</a>
+  <a href="/stock">📦 Stock</a>
+  <a href="/clients">👥 Clients</a>
+  <a href="/dettes">💳 Dettes</a>
+</nav>
+<div class="container">
+  <div class="card">
+    <form method="POST">
+      <input type="hidden" name="next" value="{{ next_page or '' }}">
+      <div class="form-group">
+        <label>Nom de la catégorie</label>
+        <input type="text" name="nom" placeholder="Ex: Chaussures Homme" required>
+      </div>
+      <div class="form-group">
+        <label>Emoji (optionnel)</label>
+        <input type="text" name="emoji" placeholder="Ex: 👟">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        <button type="submit" class="btn btn-green">Enregistrer</button>
+        <a href="/categories" class="btn btn-gold">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

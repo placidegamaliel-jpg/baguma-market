@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topbar">
+  <button class="menu-btn" onclick="toggleNav()">☰</button>
+  <h1 class="brand">📂 Catégories</h1>
+  <a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a>
+</div>
+<nav class="nav" id="mainNav">
+  <a href="/dashboard">📊 Accueil</a>
+  <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
+  <a href="/ventes">💰 Ventes</a>
+  <a href="/recus">🧾 Recus</a>
+  <a href="/rapports">📈 Rapports</a>
+  <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
+  <a href="/produits" class="active">👟 Produits</a>
+  <a href="/stock">📦 Stock</a>
+  <a href="/clients">👥 Clients</a>
+  <a href="/dettes">💳 Dettes</a>
+  <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
+  <a href="/settings">⚙️ Parametres</a>
+  <a href="/notifications">🔔 Notifications</a>
+</nav>
+<div class="container">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <a href="/categories/new" class="btn btn-green btn-sm">+ Nouvelle catégorie</a>
+    <a href="/produits" class="btn btn-gold btn-sm">← Produits</a>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="table-scroll">
+      <table>
+        <tr>
+          <th>ID</th>
+          <th>Nom</th>
+          <th>Emoji</th>
+          <th>Tenant</th>
+          <th>Action</th>
+        </tr>
+        {% for c in categories %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td style="font-weight:600">{{ c.nom }}</td>
+          <td>{{ c.emoji or '-' }}</td>
+          <td>{{ c.tenant_nom or 'Admin global' }}</td>
+          <td>
+            <form method="POST" action="/categories/delete/{{ c.id }}" onsubmit="return confirm('Supprimer cette catégorie ?')">
+              <button type="submit" class="btn btn-red btn-sm">Supprimer</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty">Aucune catégorie pour le moment.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

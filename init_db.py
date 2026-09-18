@@ -191,7 +191,8 @@ def migrate():
         cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('graciella@gmail.com', '251988', 0, 'admin')")
         cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('bukavu@gmail.com', 'Baguma2020', 1, 'vendeur')")
         cur.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
-        cats = [('Chaussures Homme','👞'), ('Chaussures Femme','👠'), ('Chaussures Enfant','👟'), ('Accessoires','👜'), ('Sport','⚽')]
+        cats = [('Chaussures Homme', '👞'), ('Chaussures Femme', '👠'),
+                ('Chaussures Enfant', '👟'), ('Accessoires', '👜'), ('Sport', '⚽')]
         for nom, emoji in cats:
             cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (nom, emoji))
         cat_rows = cur.execute("SELECT id, nom FROM categories ORDER BY id")
@@ -213,6 +214,16 @@ def migrate():
         cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2800')")
         cur.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2800')")
         print("Initial data seeded!")
+
+    # Les tenants peuvent déjà être présents dans Render alors que la table
+    # categories est vide : dans ce cas le menu « Catégorie » restait vide.
+    cur.execute("SELECT COUNT(*) FROM categories")
+    if cur.fetchone()[0] == 0:
+        cats = [('Chaussures Homme', '👞'), ('Chaussures Femme', '👠'),
+                ('Chaussures Enfant', '👟'), ('Accessoires', '👜'), ('Sport', '⚽')]
+        for nom, emoji in cats:
+            cur.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (nom, emoji))
+        print("Catégories de base créées.")
 
     if not os.path.exists(LOCAL_DB):
         print("No local commerce.db found. Schema only.")

@@ -29,7 +29,7 @@
 {% endif %}
 </nav>
 <div class="container">
-{% if is_admin %}<a href="/produits/new" class="btn btn-green btn-sm" style="margin-bottom:12px">+ Nouveau produit</a>{% endif %}
+{% if is_admin %}<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><a href="/produits/new" class="btn btn-green btn-sm">+ Nouveau produit</a><a href="/categories" class="btn btn-blue btn-sm">📂 Catégories</a></div>{% endif %}
 <form method="GET" style="display:flex;gap:8px;margin-bottom:12px">
 <input type="text" name="search" value="{{search}}" placeholder="Rechercher par nom ou code..." style="flex:1;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">
 <select name="categorie" style="padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;color:var(--txt);font-family:inherit;font-size:13px;outline:none">

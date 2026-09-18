@@ -68,7 +68,11 @@ def init_local_db():
             conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2400')")
             conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2400')")
             conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (0, 'taux_cdf', '2400')")
-            for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
+        # Une base existante peut déjà avoir ses tenants mais aucune catégorie.
+        # Dans ce cas, le formulaire « Nouveau produit » affichait un menu vide.
+        cur = conn.execute("SELECT COUNT(*) FROM categories")
+        if cur.fetchone()[0] == 0:
+            for cat in ['Chaussures Homme', 'Chaussures Femme', 'Chaussures Enfant', 'Accessoires', 'Sport']:
                 conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (?, ?, 0)", (cat, ''))
         conn.commit()
         conn.close()
@@ -134,8 +138,12 @@ def init_pg_schema():
             conn.execute("INSERT INTO utilisateurs (login, code, tenant_id, role) VALUES ('goma@gmail.com', 'Baguma2018', 2, 'vendeur')")
             conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (1, 'taux_cdf', '2400')")
             conn.execute("INSERT INTO settings (tenant_id, key, value) VALUES (2, 'taux_cdf', '2400')")
-            for cat in ['Chaussures Homme','Chaussures Femme','Chaussures Enfant','Accessoires','Sport']:
-                conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat,''))
+        # Même réparation pour PostgreSQL/Render : les tenants peuvent exister
+        # alors que la table des catégories est encore vide.
+        cur = conn.execute("SELECT COUNT(*) FROM categories")
+        if cur.fetchone()[0] == 0:
+            for cat in ['Chaussures Homme', 'Chaussures Femme', 'Chaussures Enfant', 'Accessoires', 'Sport']:
+                conn.execute("INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,0)", (cat, ''))
         conn.close()
         print("PostgreSQL schema initialized OK")
     except Exception as e:
@@ -617,6 +625,64 @@ def _dashboard_work():
                            nb_produits_display=nb_produits, login=session["login"]))
     return resp
 
+@app.route("/categories")
+@login_required
+def categories():
+    conn = get_db()
+    etid = get_effective_tid()
+    if is_admin():
+        cats = db_fetchall(conn, "SELECT c.id, c.nom, c.emoji, c.tenant_id, t.nom as tenant_nom FROM categories c LEFT JOIN tenants t ON c.tenant_id=t.id ORDER BY c.nom")
+    elif etid is not None:
+        cats = db_fetchall(conn, "SELECT c.id, c.nom, c.emoji, c.tenant_id, t.nom as tenant_nom FROM categories c LEFT JOIN tenants t ON c.tenant_id=t.id WHERE c.tenant_id IN (0, %s) ORDER BY c.nom" if IS_PG else "SELECT c.id, c.nom, c.emoji, c.tenant_id, t.nom as tenant_nom FROM categories c LEFT JOIN tenants t ON c.tenant_id=t.id WHERE c.tenant_id IN (0, ?) ORDER BY c.nom", (etid,))
+    else:
+        cats = []
+    conn.close()
+    return render_template("categories.html", categories=cats, is_admin=is_admin())
+
+@app.route("/categories/new", methods=["GET", "POST"])
+@login_required
+def categorie_new():
+    conn = get_db()
+    etid = get_effective_tid()
+    next_page = (request.values.get("next") or "").strip()
+    if request.method == "POST":
+        nom = request.form.get("nom", "").strip()
+        emoji = request.form.get("emoji", "").strip()
+        if not nom:
+            flash("Le nom de la catégorie est obligatoire", "error")
+            conn.close()
+            return redirect(url_for("categorie_new", next=next_page) if next_page == "produit_new" else url_for("categories"))
+        tenant_id = etid if etid is not None else session.get("tenant_id", 0)
+        db_insert(conn, "INSERT INTO categories (nom, emoji, tenant_id) VALUES (%s,%s,%s)" if IS_PG else "INSERT INTO categories (nom, emoji, tenant_id) VALUES (?, ?, ?)", (nom, emoji, tenant_id))
+        conn.commit()
+        conn.close()
+        flash(f"Catégorie ajoutée : {nom}", "success")
+        if next_page == "produit_new":
+            return redirect(url_for("produit_new"))
+        return redirect(url_for("categories"))
+    conn.close()
+    return render_template("categorie_new.html", is_admin=is_admin(), etid=etid, next_page=next_page)
+
+@app.route("/categories/delete/<int:cid>", methods=["POST"])
+@login_required
+def categorie_delete(cid):
+    conn = get_db()
+    cat = db_fetchone(conn, "SELECT * FROM categories WHERE id=%s" if IS_PG else "SELECT * FROM categories WHERE id=?", (cid,))
+    if not cat:
+        conn.close()
+        flash("Catégorie introuvable", "error")
+        return redirect(url_for("categories"))
+    count = db_fetchone(conn, "SELECT COUNT(*) as cnt FROM produits WHERE categorie_id=%s" if IS_PG else "SELECT COUNT(*) as cnt FROM produits WHERE categorie_id=?", (cid,))
+    if (count["cnt"] if isinstance(count, dict) else count[0]) > 0:
+        conn.close()
+        flash("Impossible de supprimer une catégorie qui contient des produits", "error")
+        return redirect(url_for("categories"))
+    db_execute(conn, "DELETE FROM categories WHERE id=%s" if IS_PG else "DELETE FROM categories WHERE id=?", (cid,))
+    conn.commit()
+    conn.close()
+    flash(f"Catégorie supprimée : {cat['nom']}", "success")
+    return redirect(url_for("categories"))
+
 @app.route("/produits")
 @login_required
 def produits():
@@ -641,7 +707,12 @@ def produits():
     prods = db_fetchall(conn, f"""SELECT p.id, p.nom, p.code, p.couleur, c.nom as cat_nom, p.prix_usd, p.prix_cdf, p.stock, p.tenant_id
         FROM produits p JOIN categories c ON p.categorie_id=c.id{where} ORDER BY p.nom""", params)
 
-    cats = [r["nom"] for r in db_fetchall(conn, "SELECT DISTINCT nom FROM categories ORDER BY nom")]
+    if is_admin():
+        cats = [r["nom"] for r in db_fetchall(conn, "SELECT DISTINCT nom FROM categories ORDER BY nom")]
+    elif etid is not None:
+        cats = [r["nom"] for r in db_fetchall(conn, "SELECT DISTINCT nom FROM categories WHERE tenant_id IN (0, %s) ORDER BY nom" if IS_PG else "SELECT DISTINCT nom FROM categories WHERE tenant_id IN (0, ?) ORDER BY nom", (etid,))]
+    else:
+        cats = []
 
     tenants_map = {}
     if is_admin():
@@ -1729,7 +1800,9 @@ def produit_new():
         return redirect(url_for("produits"))
     conn = get_db()
     etid = get_effective_tid()
-    cats = db_fetchall(conn, "SELECT id, nom FROM categories ORDER BY nom")
+    # Une catégorie globale (tenant 0) est disponible pour tous les commerces.
+    # Les catégories propres à un tenant ne doivent être proposées qu'à celui-ci.
+    cats = db_fetchall(conn, "SELECT id, nom, tenant_id FROM categories ORDER BY nom")
     tenants = db_fetchall(conn, "SELECT id, nom FROM tenants WHERE actif=1 ORDER BY id")
     if request.method == "POST":
         data = request.form
@@ -1748,7 +1821,21 @@ def produit_new():
             conn.close()
             flash("Le nom est obligatoire", "error")
             return redirect(url_for("produit_new"))
+        if not cats:
+            conn.close()
+            flash("Aucune catégorie disponible. Créez d’abord une catégorie.", "error")
+            return redirect(url_for("categorie_new"))
         tid_prod = int(data["tenant_id"]) if is_admin() else (etid or session["tenant_id"])
+        cat = db_fetchone(
+            conn,
+            "SELECT id, tenant_id FROM categories WHERE id=%s" if IS_PG else
+            "SELECT id, tenant_id FROM categories WHERE id=?",
+            (cat_id,)
+        )
+        if not cat or cat["tenant_id"] not in (0, tid_prod):
+            conn.close()
+            flash("Choisissez une catégorie disponible pour ce commerce.", "error")
+            return redirect(url_for("produit_new"))
         taux = get_taux(conn, tid_prod)
         prix_cdf = prix_usd * taux
         cur_prod = conn.execute("INSERT INTO produits (nom, code, couleur, categorie_id, prix_usd, prix_cdf, stock, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id" if IS_PG else
