@@ -102,11 +102,14 @@ body.light select option{background:#ffffff;color:#1a1a2e}
 .flash{padding:16px 18px;border-radius:14px;margin-bottom:14px;font-size:13px;font-weight:600;backdrop-filter:blur(12px);border:1px solid;animation:slideIn .4s ease}
 .flash.success{background:rgba(0,230,184,0.1);color:var(--accent);border-color:rgba(0,230,184,0.2)}
 .flash.error{background:rgba(239,68,68,0.1);color:var(--red);border-color:rgba(239,68,68,0.2)}
+.flash.compact{padding:10px 14px;font-size:12px;margin-bottom:12px}
 
 .empty{text-align:center;color:var(--txt3);padding:50px 20px;font-size:13px}
 .badge{background:var(--red);color:#fff;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:0.4px}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
 .footer{text-align:center;padding:35px 20px;color:var(--txt3);font-size:11px;letter-spacing:0.4px}
+
+.mobile-bottom-nav{display:none}
 
 body.light{
   --bg:#f5f7fa;--bg2:#eef1f5;--card:rgba(255,255,255,0.9);--card-solid:#ffffff;
@@ -140,12 +143,36 @@ body.light tr:hover td{background:rgba(0,0,0,0.02)}
   .stat{padding:24px 14px}
   .stat .value{font-size:32px}
 }
+@media(max-width:599px){
+  body{padding-bottom:72px}
+  .topbar{padding:12px 14px}
+  .container{padding:12px}
+  .card{padding:16px}
+  .card[style*="padding:28px"]{padding:20px!important}
+  .form-group{margin-bottom:12px}
+  .form-group input,.form-group select{padding:12px 14px}
+  .form-row{display:flex!important;flex-direction:column;gap:0!important}
+  .btn{padding:12px 16px}
+  .mobile-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:200;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(13,13,36,.97);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .mobile-bottom-nav a,.mobile-bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;background:transparent;border:0;color:var(--txt2);font:600 10px 'Inter',sans-serif;text-decoration:none;cursor:pointer}
+  .mobile-bottom-nav a.active,.mobile-bottom-nav button:active{color:var(--accent)}
+  .mobile-bottom-nav .nav-icon{font-size:17px;line-height:1}
+}
 </style>
 </head>
 <body>
 {% block body %}{% endblock %}
+{% if session.get('user_id') %}
+<nav class="mobile-bottom-nav" aria-label="Navigation rapide">
+  <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' else '' }}"><span class="nav-icon">⌂</span>Accueil</a>
+  <a href="/ventes" class="{{ 'active' if request.path.startswith('/ventes') else '' }}"><span class="nav-icon">💰</span>Ventes</a>
+  <a href="/produits" class="{{ 'active' if request.path.startswith('/produits') or request.path.startswith('/categories') else '' }}"><span class="nav-icon">👟</span>Produits</a>
+  <a href="/stock" class="{{ 'active' if request.path.startswith('/stock') else '' }}"><span class="nav-icon">📦</span>Stock</a>
+  <button type="button" onclick="toggleNav()" aria-label="Ouvrir le menu"><span class="nav-icon">☰</span>Menu</button>
+</nav>
+{% endif %}
 <script>
-function toggleNav(){document.getElementById('mainNav').classList.toggle('active')}
+function toggleNav(){var nav=document.getElementById('mainNav');if(nav)nav.classList.toggle('active')}
 function toggleTheme(){
   document.body.classList.toggle('light');
   var isLight=document.body.classList.contains('light');

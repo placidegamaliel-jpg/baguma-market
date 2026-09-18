@@ -1,12 +1,12 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block body %}
 <div class="topbar">
-<button class="menu-btn" onclick="toggleNav()">☰</button><h1 class="brand">⚙️ Parametres</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
+<button class="menu-btn" onclick="toggleNav()">☰</button><h1 class="brand">⚙️ Paramètres</h1><a href="/logout" style="color:var(--red);font-size:12px;font-weight:600">✕</a></div>
 <nav class="nav" id="mainNav">
 <a href="/dashboard">📊 Accueil</a>
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Commerce</div>
 <a href="/ventes">💰 Ventes</a>
-<a href="/recus">🧾 Recus</a>
+<a href="/recus">🧾 Reçus</a>
 <a href="/rapports">📈 Rapports</a>
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Gestion</div>
 <a href="/produits">👟 Produits</a>
@@ -14,7 +14,7 @@
 <a href="/clients">👥 Clients</a>
 <a href="/dettes">💳 Dettes</a>
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700">Compte</div>
-<a href="/settings" class="active">⚙️ Parametres</a>
+<a href="/settings" class="active">⚙️ Paramètres</a>
 <a href="/notifications">🔔 Notifications</a>
 {% if is_admin and show_admin_menu %}
 <div style="padding:6px 20px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-top:4px">Administration</div>
@@ -79,7 +79,7 @@
 <div style="font-size:13px;color:var(--txt2);line-height:2.2">
 <p>1. <b style="color:var(--txt)">Connexion :</b> Choisir la ville (Bukavu/Goma), entrer le code</p>
 <p>2. <b style="color:var(--txt)">Ventes :</b> Ajouter des produits au panier, valider la vente</p>
-<p>3. <b style="color:var(--txt)">Recus :</b> Le recu genere automatiquement, telechargez le PDF</p>
+<p>3. <b style="color:var(--txt)">Reçus :</b> Le recu genere automatiquement, telechargez le PDF</p>
 <p>4. <b style="color:var(--txt)">Dettes :</b> Cocher "Vente a credit" pour enregistrer une dette</p>
 <p>5. <b style="color:var(--txt)">Rapports :</b> Consulter les ventes par jour/semaine/mois</p>
 <p>6. <b style="color:var(--txt)">Fin de journee :</b> Envoyer le rapport de la journee depuis l'accueil</p>
@@ -98,7 +98,7 @@
 <h3 style="font-size:14px;font-weight:700;color:var(--pink);margin-bottom:10px">📋 Historique des mises a jour</h3>
 <div style="font-size:12px;color:var(--txt2);line-height:2.4;border-left:3px solid var(--glass-border);padding-left:14px">
 <p><b style="color:var(--accent)">v2.1.0</b> - Panier multi-produits, dette optionnelle, design professionnel</p>
-<p><b style="color:var(--accent)">v2.0.0</b> - Recus PDF avec QR code, verification de securite, fin de journee</p>
+<p><b style="color:var(--accent)">v2.0.0</b> - Reçus PDF avec QR code, verification de securite, fin de journee</p>
 <p><b style="color:var(--accent)">v1.5.0</b> - Gestion des clients, dettes, stock, corbeille</p>
 <p><b style="color:var(--accent)">v1.0.0</b> - Version initiale - Produits, Ventes, Rapports</p>
 </div></div>
